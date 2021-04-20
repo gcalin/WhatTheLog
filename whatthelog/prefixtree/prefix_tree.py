@@ -14,7 +14,7 @@ Email: tommaso.brandirali@gmail.com
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Union
 import re
 
@@ -28,7 +28,7 @@ from whatthelog.auto_printer import AutoPrinter
 # Prefix Tree
 #****************************************************************************************************
 
-@dataclass()
+@dataclass
 class PrefixTree(AutoPrinter):
     """
     A data class representing the prefix tree for a system.
@@ -37,7 +37,8 @@ class PrefixTree(AutoPrinter):
 
     name: str
     prefix: str
-    __children: List[PrefixTree] = List
+    isRegex: bool
+    __children: List[PrefixTree] = field(default_factory=lambda: [])
 
     #================================================================================
     # Class Methods
@@ -57,7 +58,8 @@ class PrefixTree(AutoPrinter):
         :return: the prefix tree node representing the best match, or None if no match found
         """
 
-        pattern = re.compile(self.prefix)
+        prefix = re.escape(self.prefix) if not self.isRegex else self.prefix
+        pattern = re.compile(prefix)
         stem = re.sub(pattern, '', input)
 
         # Prefix match found

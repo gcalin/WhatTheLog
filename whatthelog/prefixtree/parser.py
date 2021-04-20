@@ -58,9 +58,10 @@ class Parser(AutoPrinter):
 
         name = configs["name"]
         prefix = configs["prefix"]
+        isRegex = configs["isRegex"]
         children = configs["children"]
 
-        tree = PrefixTree(name, prefix)
+        tree = PrefixTree(name, prefix, isRegex)
 
         for child in children:
             tree.insert(self.__parse(child))
