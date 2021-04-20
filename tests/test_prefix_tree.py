@@ -1,5 +1,4 @@
 import pytest
-import re
 
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 
@@ -7,8 +6,6 @@ from whatthelog.prefixtree.prefix_tree import PrefixTree
 def tree():
     return PrefixTree("node", "[node]", False)
 
-
-# def test_insert(tree):
 
 def test_constructor():
     tree = PrefixTree("node", "[name]", False)
