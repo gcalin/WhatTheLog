@@ -15,7 +15,8 @@ Email: tommaso.brandirali@gmail.com
 
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import List
+from typing import List, Union
+import re
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Internal
@@ -36,4 +37,40 @@ class PrefixTree(AutoPrinter):
 
     name: str
     prefix: str
-    children: List[PrefixTree]
+    __children: List[PrefixTree]
+
+    #================================================================================
+    # Class Methods
+    #================================================================================
+
+    def insert(self, child: PrefixTree) -> None:
+        """
+        Add new child to tree.
+        """
+
+        self.__children.append(child)
+
+    def search(self, input: str) -> Union[PrefixTree, None]:
+        """
+        Recursively search the prefix tree for Nodes matching the
+        :param input: the string to match
+        :return: the prefix tree node representing the best match, or None if no match found
+        """
+
+        pattern = re.compile(self.prefix)
+        stem = re.sub(pattern, '', input)
+
+        # Prefix match found
+        if stem != input:
+
+            for child in self.__children:
+
+                result = child.search(stem)
+
+                # Child match found
+                if result:
+                    return result
+
+            return self
+
+        return None
