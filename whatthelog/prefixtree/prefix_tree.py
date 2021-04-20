@@ -37,7 +37,7 @@ class PrefixTree(AutoPrinter):
 
     name: str
     prefix: str
-    __children: List[PrefixTree]
+    __children: List[PrefixTree] = List
 
     #================================================================================
     # Class Methods

@@ -13,6 +13,8 @@ Email: tommaso.brandirali@gmail.com
 # External
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+import json
+
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Internal
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -20,23 +22,47 @@ Email: tommaso.brandirali@gmail.com
 from whatthelog.auto_printer import AutoPrinter
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 
+
 #****************************************************************************************************
 # Parser
 #****************************************************************************************************
 
 class Parser(AutoPrinter):
-
-    #================================================================================
-    # Class Constructor
-    #================================================================================
-
-    def __init__(self):
-        pass
-
+    """
+    A tool for parsing a configuration file into a compiled Prefix Tree.
+    """
 
     #================================================================================
     # Parse input
     #================================================================================
 
-    def parse(self, configs: str) -> PrefixTree:
-        pass
+    def parse_file(self, filepath: str) -> PrefixTree:
+        """
+        Parses a configuration file in JSON format to a compiled Prefix Tree.
+        The input JSON is expected to be a dictionary, with each nested node in the following format:
+        {
+            name: string
+            prefix: string (possibly regex pattern)
+            children: [...]
+        }.
+        :param filepath: the path to the configuration JSON file
+        :return: a compiled instance of PrefixTree
+        """
+
+        with open(filepath, 'r') as f:
+            configs = json.load(f)
+            assert isinstance(configs, dict), f"Invalid configuration file: expected 'dict' but got '{configs.__class__}'"
+            return self.__parse(configs)
+
+    def __parse(self, configs: dict) -> PrefixTree:
+
+        name = configs["name"]
+        prefix = configs["prefix"]
+        children = configs["children"]
+
+        tree = PrefixTree(name, prefix)
+
+        for child in children:
+            tree.insert(self.__parse(child))
+
+        return tree
