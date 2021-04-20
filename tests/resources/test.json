@@ -1,0 +1,26 @@
+{
+  "name": "root",
+  "prefix": "[root]",
+  "isRegex": false,
+  "children": [
+    {
+      "name": "node1",
+      "prefix": "[node1]",
+      "isRegex": false,
+      "children": []
+    },
+    {
+      "name": "node2",
+      "prefix": "(\\d{3}) (\\d{2})",
+      "isRegex": true,
+      "children": [
+        {
+          "name": "node3",
+          "prefix": "[node3]",
+          "isRegex": false,
+          "children": []
+        }
+      ]
+    }
+  ]
+}
