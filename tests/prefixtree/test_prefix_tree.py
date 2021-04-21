@@ -14,6 +14,11 @@ def test_constructor():
     assert tree.prefix == "[name]"
     assert tree.isRegex == False
 
+def test_insert(tree):
+    assert len(tree.get_children()) == 0
+    tree.insert(PrefixTree("childNode", "[childNode]", False))
+    assert len(tree.get_children()) == 1
+
 
 def test_search_root(tree):
     nodeLeft = PrefixTree("nodeLeft", "[nodeLeft]", False)

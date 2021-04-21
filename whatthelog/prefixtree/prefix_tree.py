@@ -44,6 +44,12 @@ class PrefixTree(AutoPrinter):
     # Class Methods
     #================================================================================
 
+    def get_children(self):
+        """
+        Prefix tree children getter.
+        """
+        return self.__children
+
     def insert(self, child: PrefixTree) -> None:
         """
         Add new child to tree.

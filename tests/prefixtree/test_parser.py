@@ -3,14 +3,14 @@ from whatthelog.prefixtree.prefix_tree import PrefixTree
 
 
 def test_parse_file_simple():
-    tree = Parser().parse_file("resources/test_simple.json")
+    tree = Parser().parse_file("tests/resources/test_simple.json")
     expected = PrefixTree("node", "[node]", False)
 
     assert tree == expected
 
 
 def test_parse_file_complex():
-    tree = Parser().parse_file("resources/test.json")
+    tree = Parser().parse_file("tests/resources/test.json")
 
     expected = PrefixTree("root", "[root]", False)
     node1 = PrefixTree("node1", "[node1]", False)
