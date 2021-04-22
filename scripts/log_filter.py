@@ -51,7 +51,7 @@ def main(argv):
     config_filename = argv[0]
     log_filename = argv[1]
     output_filename = argv[2]
-    subprocesses = argv[3] if len(argv) > 3 else default_folds
+    subprocesses = int(argv[3] if len(argv) > 3 else default_folds)
 
     assert path.exists(config_filename), "Config file not found!"
     assert path.exists(log_filename), "Input file not found!"
@@ -76,8 +76,6 @@ def main(argv):
     print("[ Log Filter ] - Removing filtered logs...")
 
     result = filter(lambda x: x is not None, tqdm(result, file=sys.stdout, leave=False))
-
-    print("[ Log Filter ] - Writing output to file...")
 
     with open(output_filename, 'w+') as f:
         f.writelines(result)

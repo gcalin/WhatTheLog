@@ -21,11 +21,6 @@ def test_insert(tree):
 
 
 def test_search_root(tree):
-    nodeLeft = PrefixTree("nodeLeft", "[nodeLeft]", False)
-    nodeRight = PrefixTree("nodeRight", "[nodeRight]", False)
-    tree.insert(nodeLeft)
-    tree.insert(nodeRight)
-
     assert tree.search("[node]").name == tree.name
 
 
@@ -57,4 +52,4 @@ def test_search_regex_invalid(tree):
     tree.insert(nodeLeft)
     tree.insert(nodeRight)
 
-    assert tree.search("[node][regexNode]").name == tree.name
+    assert tree.search("[node][regexNode]") is None
