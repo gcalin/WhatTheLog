@@ -66,7 +66,7 @@ class PrefixTree(AutoPrinter):
 
         prefix = re.escape(self.prefix) if not self.isRegex else self.prefix
         pattern = re.compile(prefix)
-        stem = re.sub(pattern, '', input)
+        stem = re.sub(pattern, '', input, 1)
 
         # Prefix match found
         if stem != input:
