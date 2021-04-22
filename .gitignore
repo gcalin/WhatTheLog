@@ -64,3 +64,6 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+
+# Log files
+*.log
