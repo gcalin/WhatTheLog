@@ -13,32 +13,48 @@ Email: tommaso.brandirali@gmail.com
 # External
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+from multiprocessing import Pool
 from os import path
 import sys
+from time import time
 from tqdm import tqdm
+from typing import Union
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Internal
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 from whatthelog.prefixtree.parser import Parser
+from whatthelog.prefixtree.prefix_tree import PrefixTree
+
+
+#****************************************************************************************************
+# Global Variables
+#****************************************************************************************************
+
+default_folds = 5
 
 
 #****************************************************************************************************
 # Main Code
 #****************************************************************************************************
 
+def check_line(tree: PrefixTree, line: str) -> Union[str, None]:
+    return line if tree.search(line) else None
+
 def main(argv):
 
-    assert len(argv) > 3, "Not enough arguments supplied!"
+    start_time = time()
+
+    assert len(argv) >= 3, "Not enough arguments supplied!"
 
     config_filename = argv[0]
     log_filename = argv[1]
     output_filename = argv[2]
+    subprocesses = argv[3] if len(argv) > 3 else default_folds
 
     assert path.exists(config_filename), "Config file not found!"
     assert path.exists(log_filename), "Input file not found!"
-    assert path.exists(output_filename), "Output file not found!"
 
     print("[ Log Filter ] - Parsing configuration file...")
 
@@ -52,18 +68,20 @@ def main(argv):
 
     print("[ Log Filter ] - Filtering logs...")
 
-    filtered_lines = []
-    pbar = tqdm(unfiltered_lines, file=sys.stdout, leave=False)
-    for line in pbar:
-        if not tree.search(line):
-            filtered_lines.append(line)
+    # --- Run multiprocess ---
+    with Pool(subprocesses) as p:
+        zipped = [(tree, line) for line in unfiltered_lines]
+        result = p.starmap(check_line, tqdm(zipped, file=sys.stdout, leave=False))
+
+    result = filter(lambda x: x is not None, result)
 
     print("[ Log Filter ] - Writing output to file...")
 
-    with open(output_filename, 'w') as f:
-        f.writelines(filtered_lines)
+    with open(output_filename, 'w+') as f:
+        f.writelines(result)
 
-    print("[ Log Filter ] - Done!")
+    end_time = time()
+    print(f"[ Log Filter ] - Done! Time elapsed: {end_time - start_time}")
 
 
 if __name__ == "__main__":
