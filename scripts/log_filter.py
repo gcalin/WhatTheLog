@@ -13,10 +13,13 @@ Email: tommaso.brandirali@gmail.com
 # External
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+from datetime import timedelta
+import math
 from multiprocessing import Pool
 from os import path
 import sys
 from time import time
+import tracemalloc
 from tqdm import tqdm
 from typing import Union
 
@@ -32,56 +35,114 @@ from whatthelog.prefixtree.prefix_tree import PrefixTree
 # Global Variables
 #****************************************************************************************************
 
-default_folds = 5
+pool_size_default = 8
+chunk_size_default = 300000
+
+#****************************************************************************************************
+# Utility Functions
+#****************************************************************************************************
+
+def check_line(tree: PrefixTree, line: str) -> Union[str, None]:
+    return None if tree.search(line) else line
+
+def get_peak_mem(snapshot, key_type='lineno') -> int:
+    snapshot = snapshot.filter_traces((
+        tracemalloc.Filter(False, "<frozen importlib._bootstrap>"),
+        tracemalloc.Filter(False, "<unknown>"),
+    ))
+    return sum(stat.size for stat in snapshot.statistics(key_type))
+
+# --- Parser for human-readable file sizes ---
+def bytes_tostring(num): # Source: https://web.archive.org/web/20111010015624/http://blogmag.net/blog/read/38/Print_human_readable_file_size
+    for x in ['bytes','KB','MB','GB','TB']:
+        if num < 1024.0:
+            return "%3.1f%s" % (num, x)
+        num /= 1024.0
+
+# --- Block splitter for counting line endings ---
+def blocks(files, size=65536):
+    while True:
+        b = files.read(size)
+        if not b: break
+        yield b
 
 
 #****************************************************************************************************
 # Main Code
 #****************************************************************************************************
 
-def check_line(tree: PrefixTree, line: str) -> Union[str, None]:
-    return None if tree.search(line) else line
-
 def main(argv):
 
     start_time = time()
+    tracemalloc.start()
 
     assert len(argv) >= 3, "Not enough arguments supplied!"
 
+    # --- Parse CLI args ---
     config_filename = argv[0]
     log_filename = argv[1]
     output_filename = argv[2]
-    subprocesses = int(argv[3] if len(argv) > 3 else default_folds)
+    subprocesses = int(argv[3] if len(argv) > 3 else pool_size_default)
+    chunk_size = int(argv[4] if len(argv) > 4 else chunk_size_default)
 
     assert path.exists(config_filename), "Config file not found!"
     assert path.exists(log_filename), "Input file not found!"
 
+    # --- Parse prefix tree ---
     print("[ Log Filter ] - Parsing configuration file...")
-
     parser = Parser()
     tree = parser.parse_file(config_filename)
 
-    print("[ Log Filter ] - Reading logs...")
-
+    # --- Count lines in file ---
+    print("[ Log Filter ] - Parsing logs file...")
     with open(log_filename, 'r') as f:
-        unfiltered_lines = f.readlines()
 
+        line_total = sum(bl.count("\n") for bl in blocks(f))
+        print(f"[ Log Filter ] - Counted {line_total} lines")
+
+    # --- Run filtering ---
     print("[ Log Filter ] - Filtering logs...")
+    with open(log_filename, 'r') as f:
 
-    # --- Run multiprocess ---
-    with Pool(subprocesses) as p:
-        zipped = [(tree, line) for line in unfiltered_lines]
-        result = p.starmap(check_line, tqdm(zipped, file=sys.stdout, leave=False))
+        output = []
+        finished = False
+        pbar = tqdm(total=math.ceil(line_total/chunk_size), file=sys.stdout, leave=False)
+        while not finished:
 
+            # --- Parse chunk of lines ---
+            slice = []
+            for x in range(chunk_size):
+                try:
+                    slice.append(str(next(f)))
+                except StopIteration:
+                    finished = True
+                    break
+
+            # --- Filter chunk in subprocesses ---
+            with Pool(subprocesses) as p:
+                zipped = [(tree, line) for line in slice]
+                output += p.starmap(check_line, zipped)
+
+            if finished:
+                pbar.close()
+            else:
+                pbar.update(1)
+
+    # --- Remove nulls from result ---
     print("[ Log Filter ] - Removing filtered logs...")
+    result = [x for x in output if x is not None]
 
-    result = filter(lambda x: x is not None, tqdm(result, file=sys.stdout, leave=False))
-
+    # --- Write output ---
+    print("[ Log Filter ] - Writing output to file...")
     with open(output_filename, 'w+') as f:
         f.writelines(result)
 
-    end_time = time()
-    print(f"[ Log Filter ] - Done! Time elapsed: {end_time - start_time}")
+    print(f"[ Log Filter ] - Done!")
+    print(f"[ Log Filter ] - Time elapsed: {timedelta(seconds=time() - start_time)}")
+
+    snapshot = tracemalloc.take_snapshot()
+    total = get_peak_mem(snapshot)
+    print(f"[ Log Filter ] - Peak memory usage: {bytes_tostring(total)}")
 
 
 if __name__ == "__main__":
