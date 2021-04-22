@@ -83,6 +83,73 @@
       "isRegex": false,
       "children": [
         {
+          "name": "TransactionApplied",
+          "prefix": "Transaction applied: ",
+          "isRegex": false,
+          "children": [
+            {
+              "name": "TransactionAppliedDestinationTagRequired",
+              "prefix": "A destination tag is required.",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "TransactionAppliedInsufficientBalance",
+              "prefix": "Insufficient balance to fund created offer.",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "TransactionAppliedInsufficientXRP",
+              "prefix": "Insufficient XRP balance to send.",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "TransactionAppliedFinalInValidatedLedger",
+              "prefix": "The transaction was applied. Only final in a validated ledger.",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "TransactionAppliedDestinationDoesNotExist",
+              "prefix": "Destination does not exist. Too little XRP sent to create it.",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "transactionAppliedPathCouldNotSendPartialAmount",
+              "prefix": "Path could not send partial amount.",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "transactionAppliedNoSuchLineTooLittleReserve",
+              "prefix": "No such line. Too little reserve to create it.",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "TransactionAppliedInsufficientReserve",
+              "prefix": "Insufficient reserve to create offer.",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "TransactionAppliedFillOrKillOfferKilled",
+              "prefix": "FillOrKill offer killed.",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "DestionationNotExistSendXRP",
+              "prefix": "Destination does not exist. Send XRP to create it.",
+              "isRegex": false,
+              "children": []
+            }
+          ]
+        },
+        {
           "name": "Report",
           "prefix": "Report: ",
           "isRegex": false,
@@ -157,8 +224,50 @@
               "children": []
             },
             {
+              "name": "TakerBalancingFirstLeg",
+              "prefix": "Balancing: adjusted first leg down",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "TakerBalancingSecondLeg",
+              "prefix": "Balancing: adjusted second leg down",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "TakerClamped",
+              "prefix": "(clamped\\son\\s(taker|owner)\\s(funds|output|balance))",
+              "isRegex": true,
+              "children": []
+            },
+            {
+              "name": "TakerFlowXrpToIou",
+              "prefix": "flow_xrp_to_iou",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "TakerFlowIouToXrp",
+              "prefix": "flow_iou_to_xrp",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "TakerFlowIouToIou",
+              "prefix": "flow_iou_to_iou",
+              "isRegex": false,
+              "children": []
+            },
+            {
               "name": "TakerOfferIn",
               "prefix": "(\\s+)Offer\\sin\\:\\s(\\d+)((\\.(\\d+))?)\\/([A-Z]{3})",
+              "isRegex": true,
+              "children": []
+            },
+            {
+              "name": "TakerOrderIn",
+              "prefix": "(\\s+)order\\sin\\:\\s(\\d+)((\\.(\\d+))?)\\/([A-Z]{3})",
               "isRegex": true,
               "children": []
             },
@@ -169,17 +278,205 @@
               "children": []
             },
             {
+              "name": "TakerOrderOut",
+              "prefix": "(\\s+)order\\sout\\:\\s(\\d+)((\\.(\\d+))?)\\/([A-Z]{3})((\\s\\(issuer\\:\\s([A-Za-z0-9]+)\\))?)",
+              "isRegex": true,
+              "children": []
+            },
+            {
+              "name": "TakerConsumingFromOffer",
+              "prefix": "Consuming\\sfrom\\soffer\\s[A-Za-z0-9]{64}",
+              "isRegex": true,
+              "children": []
+            },
+            {
+              "name": "TakerClampedOnTakerInput",
+              "prefix": "(clamped on taker input)",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "TakerDone",
+              "prefix": "Done: all the input currency has been consumed.",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "TakerUnfunded",
+              "prefix": "Unfunded: taker is out of funds.",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "TakerDoneUnfunded",
+              "prefix": "Done: taker out of funds.",
+              "isRegex": false,
+              "children": []
+            },
+            {
               "name": "TakerBalance",
               "prefix": "(\\s+)Balance\\:\\s(\\d+)((\\.(\\d+))?)\\/([A-Z]{3})",
+              "isRegex": true,
+              "children": []
+            },
+            {
+              "name": "TakerDone",
+              "prefix": "Done: the desired amount has been received.",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "TakerAvailableFunds",
+              "prefix": "Available bridge funds:",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "TakerXRP",
+              "prefix": "((\\s+)xrp:\\s(\\d+)\\/([A-Z]{3}))",
               "isRegex": true,
               "children": []
             }
           ]
         },
         {
+          "name": "TransactionRetry",
+          "prefix": "Transaction retry: ",
+          "isRegex": false,
+          "children": [
+            {
+              "name": "TransactionRetryFinalInapplicablePriorTX",
+              "prefix": "Missing/inapplicable prior transaction.",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "TransactionRetryDestinationDoesNotExist",
+              "prefix": "Destination does not exist. Too little XRP sent to create it.",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "TransactionRetryInsufficientXRP",
+              "prefix": "Insufficient XRP balance to send.",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "TransactionRetryPathCouldNotSendPartial",
+              "prefix": "Path could not send partial amount.",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "transactionRetrySourceAccountDoesNotExist",
+              "prefix": "The source account does not exist",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "transactionRetryInsufficientBalance",
+              "prefix": "Insufficient balance to fund created offer.",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "transactionRetryDestinationTagIsRequired",
+              "prefix": "A destination tag is required.",
+              "isRegex": false,
+              "children": []
+            },
+
+            {
+              "name": "transactionRetryDestinationDoesNotExistSendXRPToCreate",
+              "prefix": "Destination does not exist. Send XRP to create it.",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "transactionRetryInsufficientReserve",
+              "prefix": "Insufficient reserve to create offer.",
+              "isRegex": false,
+              "children": []
+            },
+            {
+              "name": "transactionRetryNoSuchLineTooLittleReserve",
+              "prefix": "No such line. Too little reserve to create it.",
+              "isRegex": false,
+              "children": []
+            }
+          ]
+        },
+        {
+          "name": "DirectResult",
+          "prefix": "Direct\\sResult:\\s[A-Za-z]+",
+          "isRegex": true,
+          "children": []
+        },
+        {
+          "name":  "Bridge",
+          "prefix": "\\d+\\sBridge\\:",
+          "isRegex": true,
+          "children": []
+        },
+        {
+          "name": "BridgeResult",
+          "prefix": "Bridge\\sResult:\\s[A-Za-z]+",
+          "isRegex": true,
+          "children": []
+        },
+        {
+          "name": "Direct",
+          "prefix": "\\d\\sDirect:",
+          "isRegex": true,
+          "children": []
+        },
+        {
+          "name": "DelayOffersMustBePartiallyFunded",
+          "prefix": "delay: Offers must be at least partially funded.",
+          "isRegex": true,
+          "children": []
+        },
+        {
+          "name": "FundsInfo",
+          "prefix": "(\\s*funds\\:\\s\\d+((\\.\\d+)?))\\/[A-Z]{3}((\\/[a-zA-z0-9]+)?)",
+          "isRegex": true,
+          "children": []
+        },
+        {
+          "name": "OutInfo",
+          "prefix": "(\\s*out\\:\\s\\d+((\\.\\d+)?))\\/[A-Z]{3}((\\/[a-zA-z0-9]+)?)",
+          "isRegex": true,
+          "children": []
+        },
+        {
+          "name": "QualityInfo",
+          "prefix": "(\\s*quality\\:\\s\\d+)",
+          "isRegex": true,
+          "children": []
+        },
+        {
+          "name": "OwnerInfo",
+          "prefix": "(\\s*owner\\:\\s[a-zA-Z0-9]+)",
+          "isRegex": true,
+          "children": []
+        },
+        {
+          "name": "TryToCancel",
+          "prefix": "The\\staker\\sreports\\she\\'s\\sdone\\sduring\\scrossing\\!",
+          "isRegex": true,
+          "children": []
+        },
+        {
           "name": "Vote",
           "prefix": "(Peer\\s[A-Z0-9]{40}\\svotes\\s(YES|NO)\\son\\s[A-Z0-9]{64})",
           "isRegex": true,
+          "children": []
+        },
+        {
+          "name": "OfferFullyCrossed",
+          "prefix": "Offer fully crossed!",
+          "isRegex": false,
           "children": []
         },
         {
@@ -198,6 +495,12 @@
           "name": "FinalResult",
           "prefix": "(final\\sresult\\:\\s([a-z]+))",
           "isRegex": true,
+          "children": []
+        },
+        {
+          "name": "OfferFullyCrossed",
+          "prefix": "Offer fully crossed!",
+          "isRegex": false,
           "children": []
         },
         {
@@ -225,12 +528,6 @@
           "children": []
         },
         {
-          "name": "TransactionAppliedFinalInValidatedLedger",
-          "prefix": "Transaction applied: The transaction was applied. Only final in a validated ledger.",
-          "isRegex": false,
-          "children": []
-        },
-        {
           "name": "RelayingDisputedTx",
           "prefix": "(Relaying\\sdisputed\\stx\\s[A-Z0-9]{64})",
           "isRegex": true,
@@ -240,6 +537,12 @@
           "name": "EnteringRippleCalcInPayment",
           "prefix": "Entering\\sRippleCalc\\sin\\spayment:\\s([A-Z0-9]+)",
           "isRegex": true,
+          "children": []
+        },
+        {
+          "name": "MissingInapplicablePriorTransaction",
+          "prefix": "Missing inapplicable prior transaction.",
+          "isRegex": false,
           "children": []
         },
         {
@@ -262,32 +565,32 @@
         },
         {
           "name": "TXN_Retry",
-          "prefix": "TXN\\s[A-Z0-9]{64}\/retry",
+          "prefix": "TXN\\s[A-Z0-9]{64}\\/retry",
           "isRegex": true,
           "children": []
         },
         {
-          "name": "TXN_Final",
-          "prefix": "TXN\\s[A-Z0-9]{64}\/final",
+          "name": "Offer",
+          "prefix": "\\s+offer:\\s[A-Z0-9]{64}",
           "isRegex": true,
           "children": []
         },
         {
-          "name": "transaction_retry_path_could_not_send_partial",
-          "prefix": "Transaction retry: Path could not send partial amount.",
-          "isRegex": false,
+          "name": "Offer2",
+          "prefix": "\\s+offer2:\\s[A-Z0-9]{64}",
+          "isRegex": true,
           "children": []
         },
         {
-          "name": "transaction_retry_source_account_does_not_exist",
-          "prefix": "Transaction retry: The source account does not exist",
-          "isRegex": false,
+          "name": "Offer1",
+          "prefix": "\\s+offer1:\\s[A-Z0-9]{64}",
+          "isRegex": true,
           "children": []
         },
         {
-          "name": "transaction_retry_path_could_not_send_partial",
-          "prefix": "Transaction applied: Path could not send partial amount.",
-          "isRegex": false,
+          "name": "In",
+          "prefix": "\\s+in:\\s\\d+(\\.\\d+)?(\\/[A-Z]{3}(\\/[A-Za-z0-9]+)?)?",
+          "isRegex": true,
           "children": []
         },
         {
@@ -344,6 +647,13 @@
           "isRegex": false,
           "children": []
         },
+
+        {
+          "name": "WaitMinimumTimeBeforeClosing",
+          "prefix": "Must wait minimum time before closing",
+          "isRegex": false,
+          "children": []
+        },
         {
           "name": "ConsensusLedgerFullyValidated",
           "prefix": "Consensus ledger fully validated",
@@ -359,6 +669,12 @@
         {
           "name": "TryToCancel",
           "prefix": "Trying\\sto\\scancel\\soffer\\s\\#[\\d+]",
+          "isRegex": true,
+          "children": []
+        },
+        {
+          "name": "TryToCancel",
+          "prefix": "Offer\\s\\#\\d+\\scan\\'t\\sbe\\sfound\\.",
           "isRegex": true,
           "children": []
         },
@@ -572,4 +888,3 @@
     }
   ]
 }
-

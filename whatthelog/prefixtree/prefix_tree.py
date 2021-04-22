@@ -40,6 +40,14 @@ class PrefixTree(AutoPrinter):
     isRegex: bool
     __children: List[PrefixTree] = field(default_factory=lambda: [])
 
+    def __post_init__(self):
+        try:
+            prefix = re.escape(self.prefix) if not self.isRegex else self.prefix
+            self.pattern = re.compile(prefix)
+        except re.error:
+            self.print(f"ERROR: Invalid pattern given for Node '{self.name}'")
+            raise ValueError
+
     #================================================================================
     # Class Methods
     #================================================================================
@@ -64,12 +72,13 @@ class PrefixTree(AutoPrinter):
         :return: the prefix tree node representing the best match, or None if no match found
         """
 
-        prefix = re.escape(self.prefix) if not self.isRegex else self.prefix
-        pattern = re.compile(prefix)
-        stem = re.sub(pattern, '', input, 1)
+        stem = re.sub(self.pattern, '', input, 1)
 
         # Prefix match found
         if stem != input:
+
+            if len(self.__children) == 0:
+                return self
 
             for child in self.__children:
 
@@ -78,7 +87,5 @@ class PrefixTree(AutoPrinter):
                 # Child match found
                 if result:
                     return result
-
-            return self
 
         return None

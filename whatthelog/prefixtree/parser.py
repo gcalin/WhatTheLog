@@ -62,7 +62,6 @@ class Parser(AutoPrinter):
         children = configs["children"]
 
         tree = PrefixTree(name, prefix, isRegex)
-
         for child in children:
             tree.insert(self.__parse(child))
 
