@@ -40,7 +40,7 @@ default_folds = 5
 #****************************************************************************************************
 
 def check_line(tree: PrefixTree, line: str) -> Union[str, None]:
-    return line if tree.search(line) else None
+    return None if tree.search(line) else line
 
 def main(argv):
 
@@ -73,7 +73,9 @@ def main(argv):
         zipped = [(tree, line) for line in unfiltered_lines]
         result = p.starmap(check_line, tqdm(zipped, file=sys.stdout, leave=False))
 
-    result = filter(lambda x: x is not None, result)
+    print("[ Log Filter ] - Removing filtered logs...")
+
+    result = filter(lambda x: x is not None, tqdm(result, file=sys.stdout, leave=False))
 
     print("[ Log Filter ] - Writing output to file...")
 
