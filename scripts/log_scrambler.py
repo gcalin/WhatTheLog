@@ -22,6 +22,7 @@ import sys
 from time import time
 from typing import List
 import tracemalloc
+from tqdm import tqdm
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Internal
@@ -62,12 +63,12 @@ def get_section(lines: List[str], line: int, tree: PrefixTree) -> List[int]:
     section = [line]
 
     counter = line + 1
-    while tree.search(lines[counter]) == node and counter < len(lines) - 1:
+    while counter < len(lines) - 1 and tree.search(lines[counter]) == node:
         section.append(counter)
         counter += 1
 
     counter = line - 1
-    while tree.search(lines[counter]) == node and counter >= 0:
+    while counter >= 0 and tree.search(lines[counter]) == node:
         section.insert(0, counter)
         counter -= 1
 
@@ -81,6 +82,7 @@ def delete_one(lines: List[str], tree: PrefixTree):
 
     line = random.choice(range(len(lines)))
     section = get_section(lines, line, tree)
+    section.reverse()
 
     for l in section:
         del lines[l]
@@ -132,14 +134,14 @@ def main(argv):
 
     input_dir = argv[0]
     output_dir = argv[1]
-    config_file = argv[2] if len(argv) > 1 else config_default
-    pool_size = argv[3] if len(argv) > 2 else pool_size_default
+    config_file = argv[2] if len(argv) > 2 else config_default
+    pool_size = argv[3] if len(argv) > 3 else pool_size_default
 
     assert os.path.isdir(input_dir), "Cannot find input directory!"
     assert os.path.isdir(output_dir), "Cannot find output directory!"
     assert os.path.isfile(config_file), "Cannot find config file!"
 
-    files = [name for name in os.listdir(input_dir) if os.path.isfile(name)]
+    files = [os.path.join(input_dir, name) for name in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, name))]
 
     # --- Parse prefix tree ---
     print("[ Log Filter ] - Parsing configuration file...")
@@ -149,6 +151,7 @@ def main(argv):
     # --- Run filtering ---
     print("[ Log Filter ] - Filtering logs...")
     finished = False
+    pbar = tqdm(total=len(files), file=sys.stdout, leave=False)
     while not finished:
 
         curr_n_files = min(pool_size, len(files))
@@ -157,11 +160,13 @@ def main(argv):
         if curr_n_files < pool_size:
             finished = True
 
-        output_files = [os.path.join(output_dir, name) for name in curr_files]
+        output_files = [os.path.join(output_dir, os.path.basename(name)) for name in curr_files]
 
         # --- Filter chunk in subprocesses ---
         with Pool(curr_n_files) as p:
             p.starmap(process_file, zip(curr_files, output_files, [tree for _ in range(curr_n_files)]))
+
+        pbar.update(curr_n_files)
 
     print(f"[ Log Filter ] - Done!")
     print(f"[ Log Filter ] - Time elapsed: {timedelta(seconds=time() - start_time)}")
