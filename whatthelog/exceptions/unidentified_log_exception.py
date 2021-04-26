@@ -1,0 +1,2 @@
+class UnidentifiedLogException(Exception):
+    pass

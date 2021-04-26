@@ -1,14 +1,14 @@
 import pytest
 
-from whatthelog.prefixtree.prefix_tree import PrefixTree
+from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 
 @pytest.fixture()
 def tree():
-    return PrefixTree("node", "[node]", False)
+    return SyntaxTree("node", "[node]", False)
 
 
 def test_constructor():
-    tree = PrefixTree("node", "[name]", False)
+    tree = SyntaxTree("node", "[name]", False)
 
     assert tree.name == "node"
     assert tree.prefix == "[name]"
@@ -16,7 +16,7 @@ def test_constructor():
 
 def test_insert(tree):
     assert len(tree.get_children()) == 0
-    tree.insert(PrefixTree("childNode", "[childNode]", False))
+    tree.insert(SyntaxTree("childNode", "[childNode]", False))
     assert len(tree.get_children()) == 1
 
 
@@ -29,8 +29,8 @@ def test_invalid_search(tree):
 
 
 def test_search_child_simple(tree):
-    nodeLeft = PrefixTree("nodeLeft", "[nodeLeft]", False)
-    nodeRight = PrefixTree("nodeRight", "[nodeRight]", False)
+    nodeLeft = SyntaxTree("nodeLeft", "[nodeLeft]", False)
+    nodeRight = SyntaxTree("nodeRight", "[nodeRight]", False)
     tree.insert(nodeLeft)
     tree.insert(nodeRight)
 
@@ -38,8 +38,8 @@ def test_search_child_simple(tree):
 
 
 def test_search_regex(tree):
-    nodeLeft = PrefixTree("nodeLeft", r"\[regexNode1+\]", True)
-    nodeRight = PrefixTree("nodeRight", "[nodeRight]", False)
+    nodeLeft = SyntaxTree("nodeLeft", r"\[regexNode1+\]", True)
+    nodeRight = SyntaxTree("nodeRight", "[nodeRight]", False)
     tree.insert(nodeLeft)
     tree.insert(nodeRight)
 
@@ -47,8 +47,8 @@ def test_search_regex(tree):
 
 
 def test_search_regex_invalid(tree):
-    nodeLeft = PrefixTree("nodeLeft", r"\[regexNode1+\]", True)
-    nodeRight = PrefixTree("nodeRight", "[nodeRight]", False)
+    nodeLeft = SyntaxTree("nodeLeft", r"\[regexNode1+\]", True)
+    nodeRight = SyntaxTree("nodeRight", "[nodeRight]", False)
     tree.insert(nodeLeft)
     tree.insert(nodeRight)
 

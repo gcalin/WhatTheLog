@@ -27,8 +27,8 @@ from typing import Union
 # Internal
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-from whatthelog.prefixtree.parser import Parser
-from whatthelog.prefixtree.prefix_tree import PrefixTree
+from whatthelog.syntaxtree.parser import Parser
+from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 
 
 #****************************************************************************************************
@@ -42,7 +42,7 @@ chunk_size_default = 300000
 # Utility Functions
 #****************************************************************************************************
 
-def check_line(tree: PrefixTree, line: str) -> Union[str, None]:
+def check_line(tree: SyntaxTree, line: str) -> Union[str, None]:
     return None if tree.search(line) else line
 
 def get_peak_mem(snapshot, key_type='lineno') -> int:
