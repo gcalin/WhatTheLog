@@ -14,7 +14,6 @@ Email: tommaso.brandirali@gmail.com
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 from datetime import timedelta
-import math
 from multiprocessing import Pool
 from os import path
 import sys
@@ -106,7 +105,7 @@ def main(argv):
 
         output = []
         finished = False
-        pbar = tqdm(total=math.ceil(line_total/chunk_size), file=sys.stdout, leave=False)
+        pbar = tqdm(total=line_total, file=sys.stdout, leave=False)
         while not finished:
 
             # --- Parse chunk of lines ---
@@ -126,7 +125,7 @@ def main(argv):
             if finished:
                 pbar.close()
             else:
-                pbar.update(1)
+                pbar.update(chunk_size)
 
     # --- Remove nulls from result ---
     print("[ Log Filter ] - Removing filtered logs...")
