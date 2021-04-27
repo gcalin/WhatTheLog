@@ -25,7 +25,7 @@ import re
 from whatthelog.auto_printer import AutoPrinter
 
 #****************************************************************************************************
-# Prefix Tree
+# Syntax Tree
 #****************************************************************************************************
 
 @dataclass
@@ -43,7 +43,7 @@ class SyntaxTree(AutoPrinter):
     def __post_init__(self):
         try:
             prefix = re.escape(self.prefix) if not self.isRegex else self.prefix
-            self.pattern = re.compile(prefix)
+            self.__pattern = re.compile(prefix)
         except re.error:
             self.print(f"ERROR: Invalid pattern given for Node '{self.name}'")
             raise ValueError
@@ -54,9 +54,15 @@ class SyntaxTree(AutoPrinter):
 
     def get_children(self):
         """
-        Prefix tree children getter.
+        Syntax tree children getter.
         """
         return self.__children
+
+    def get_pattern(self):
+        """
+        Syntax tree pattern getter.
+        """
+        return self.__pattern
 
     def insert(self, child: SyntaxTree) -> None:
         """
@@ -72,7 +78,7 @@ class SyntaxTree(AutoPrinter):
         :return: the prefix tree node representing the best match, or None if no match found
         """
 
-        stem = re.sub(self.pattern, '', input, 1)
+        stem = re.sub(self.__pattern, '', input, 1)
 
         # Prefix match found
         if stem != input:

@@ -1,10 +1,28 @@
-from __future__ import annotations
+#****************************************************************************************************
+# Imports
+#****************************************************************************************************
 
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# External
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+from __future__ import annotations
 from typing import List, Union
 
-from whatthelog.prefixtree.state import State
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Internal
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-class PrefixTree:
+from whatthelog.prefixtree.state import State
+from whatthelog.auto_printer import AutoPrinter
+
+
+#****************************************************************************************************
+# Syntax Tree
+#****************************************************************************************************
+
+class PrefixTree(AutoPrinter):
+
     """
     Class representing a recursive prefix tree data structure with
     each node holding a State and a list of children.
@@ -69,6 +87,15 @@ class PrefixTree:
 
     def __repr__(self):
         return self.__str__()
+
+    def depth(self) -> int:
+        """
+        Recursively calculates the depth of this tree.
+        The runtime is O(n) where n is the number of nodes in this tree.
+        :return: the depth as an int
+        """
+
+        return 1 + max([child.depth() for child in self.__children]) if self.__children else 1
 
     def merge(self, other: PrefixTree):
         """

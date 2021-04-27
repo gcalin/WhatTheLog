@@ -29,6 +29,8 @@ from typing import Union
 
 from whatthelog.syntaxtree.parser import Parser
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
+from whatthelog.auto_printer import AutoPrinter
+from whatthelog.utils import get_peak_mem, bytes_tostring, blocks
 
 
 #****************************************************************************************************
@@ -45,26 +47,7 @@ chunk_size_default = 300000
 def check_line(tree: SyntaxTree, line: str) -> Union[str, None]:
     return None if tree.search(line) else line
 
-def get_peak_mem(snapshot, key_type='lineno') -> int:
-    snapshot = snapshot.filter_traces((
-        tracemalloc.Filter(False, "<frozen importlib._bootstrap>"),
-        tracemalloc.Filter(False, "<unknown>"),
-    ))
-    return sum(stat.size for stat in snapshot.statistics(key_type))
-
-# --- Parser for human-readable file sizes ---
-def bytes_tostring(num): # Source: https://web.archive.org/web/20111010015624/http://blogmag.net/blog/read/38/Print_human_readable_file_size
-    for x in ['bytes','KB','MB','GB','TB']:
-        if num < 1024.0:
-            return "%3.1f%s" % (num, x)
-        num /= 1024.0
-
-# --- Block splitter for counting line endings ---
-def blocks(files, size=65536):
-    while True:
-        b = files.read(size)
-        if not b: break
-        yield b
+def print(msg): AutoPrinter.static_print(msg)
 
 
 #****************************************************************************************************
@@ -89,19 +72,19 @@ def main(argv):
     assert path.exists(log_filename), "Input file not found!"
 
     # --- Parse prefix tree ---
-    print("[ Log Filter ] - Parsing configuration file...")
+    print("Parsing configuration file...")
     parser = Parser()
     tree = parser.parse_file(config_filename)
 
     # --- Count lines in file ---
-    print("[ Log Filter ] - Parsing logs file...")
+    print("Parsing logs file...")
     with open(log_filename, 'r') as f:
 
         line_total = sum(bl.count("\n") for bl in blocks(f))
         print(f"[ Log Filter ] - Counted {line_total} lines")
 
     # --- Run filtering ---
-    print("[ Log Filter ] - Filtering logs...")
+    print("Filtering logs...")
     with open(log_filename, 'r') as f:
 
         output = []
@@ -129,20 +112,20 @@ def main(argv):
                 pbar.update(1)
 
     # --- Remove nulls from result ---
-    print("[ Log Filter ] - Removing filtered logs...")
+    print("Removing filtered logs...")
     result = [x for x in output if x is not None]
 
     # --- Write output ---
-    print("[ Log Filter ] - Writing output to file...")
+    print("Writing output to file...")
     with open(output_filename, 'w+') as f:
         f.writelines(result)
 
-    print(f"[ Log Filter ] - Done!")
-    print(f"[ Log Filter ] - Time elapsed: {timedelta(seconds=time() - start_time)}")
+    print(f"Done!")
+    print(f"Time elapsed: {timedelta(seconds=time() - start_time)}")
 
     snapshot = tracemalloc.take_snapshot()
     total = get_peak_mem(snapshot)
-    print(f"[ Log Filter ] - Peak memory usage: {bytes_tostring(total)}")
+    print(f"Peak memory usage: {bytes_tostring(total)}")
 
 
 if __name__ == "__main__":
