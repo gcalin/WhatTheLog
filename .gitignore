@@ -69,5 +69,5 @@ MANIFEST
 *.log
 
 # Resources
-resources/traces
+resources/traces*
 resources/prefixtree.png
