@@ -31,7 +31,7 @@ from whatthelog.auto_printer import AutoPrinter
 @dataclass
 class SyntaxTree(AutoPrinter):
     """
-    A data class representing the prefix tree for a system.
+    A data class representing the syntax tree for a system.
     Instances of this class should be created using the
     """
 

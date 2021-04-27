@@ -1,6 +1,8 @@
 import os
 from pprint import pprint
+import sys
 from typing import List, Dict, Tuple
+from tqdm import tqdm
 
 from whatthelog.exceptions.unidentified_log_exception import \
     UnidentifiedLogException
@@ -25,11 +27,13 @@ def generate_prefix_tree(log_dir: str, config_file: str) -> \
     prefix_tree = PrefixTree(State([0]), None)
     log_templates = {"": 0}
 
+    pbar = tqdm(total=len(os.listdir(log_dir)), file=sys.stdout, leave=False)
     for filename in os.listdir(log_dir):
         with open(log_dir + filename, 'r') as f:
             logs = [log.strip() for log in f.readlines()]
 
         parse_trace(logs, log_templates, syntax_tree, prefix_tree)
+        pbar.update(1)
     return prefix_tree, log_templates
 
 
