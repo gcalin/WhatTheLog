@@ -9,4 +9,5 @@ if __name__ == '__main__':
 
     pt = PrefixTreeFactory.get_prefix_tree(path + '/../resources/traces/',
                                            path + '/../resources/config.json')
+
     Visualizer(pt).visualize()

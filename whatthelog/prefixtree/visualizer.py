@@ -3,8 +3,9 @@ from typing import Tuple, Dict
 import networkx as nx
 import matplotlib.pyplot as plt
 
-from whatthelog.prefixtree.prefix_tree import PrefixTree
 from networkx.drawing.nx_pydot import graphviz_layout
+
+from whatthelog.prefixtree.prefix_tree_graph import PrefixTreeGraph
 
 
 class Visualizer:
@@ -12,7 +13,7 @@ class Visualizer:
     Class to visualize Prefix Tree.
     """
 
-    def __init__(self, prefix_tree: PrefixTree):
+    def __init__(self, prefix_tree: PrefixTreeGraph):
         """
         Visualizer constructor.
 
@@ -54,9 +55,9 @@ class Visualizer:
                 number of branches,
                 maximum depth of tree
         """
-        labels = {id(self.prefix_tree.state): str(self.prefix_tree.state)}
+        labels = {id(self.prefix_tree.get_root()): str(self.prefix_tree.get_root())}
 
-        queue = self.prefix_tree.get_children()
+        queue = self.prefix_tree.get_children(self.prefix_tree.get_root())
         branches = 1
         depth = 1
 
@@ -64,14 +65,14 @@ class Visualizer:
             level_size = len(queue)
 
             while level_size > 0:
-                prefix_tree = queue.pop(0)
+                state = queue.pop(0)
 
-                self.G.add_edge(id(prefix_tree.get_parent().state),
-                                id(prefix_tree.state))
+                self.G.add_edge(id(self.prefix_tree.get_parent(state)),
+                                id(state))
 
-                labels[id(prefix_tree.state)] = str(prefix_tree.state)
+                labels[id(state)] = str(state)
 
-                children = prefix_tree.get_children()
+                children = self.prefix_tree.get_children(state)
 
                 if len(children) > 1:
                     branches += len(children) - 1

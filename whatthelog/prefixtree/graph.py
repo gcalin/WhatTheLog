@@ -1,7 +1,6 @@
-from typing import List, Dict, Union
+from typing import List, Union
 
-from whatthelog.prefixtree.edge import Edge
-from whatthelog.prefixtree.state import State
+from whatthelog.prefixtree.state import State, Edge
 
 
 class Graph:
@@ -9,15 +8,18 @@ class Graph:
     Class implementing a graph
     """
     def __init__(self):
-        self.states: Dict[State, Dict[State, Edge]] = {}
+        self.states: List[State] = []
 
     def add_state(self, state: State):
         """
         Method to add a new state to the graph
 
-        :param state:
+        :param state: State to add
+        :raises StateAlreadyExistsException: if state already exists
         """
-        self.states[state] = {}
+        if state in self.states:
+            raise StateAlreadyExistsException()
+        self.states.append(state)
 
     def add_edge(self, edge: Edge) -> bool:
         """
@@ -31,10 +33,11 @@ class Graph:
         end = edge.end
         if start not in self.states:
             return False
-        elif end in self.states[start]:
+        elif end in start.outgoing:
             return False
         else:
-            self.states[edge.start][edge.end] = edge
+            start.outgoing[end] = edge
+            end.incoming[start] = edge
             return True
 
     def size(self):
@@ -45,17 +48,6 @@ class Graph:
         """
         return len(self.states)
 
-    def get_edges(self):
-        """
-        Method to get all the edges in the graph.
-
-        :return: A list of all edges
-        """
-        edges = []
-        for edgesMap in self.states.values():
-            edges += edgesMap.values()
-        return edges
-
     def get_outgoing_edges(self, state: State) -> Union[List[Edge], None]:
         """
         Method to get outgoing edges of a state.
@@ -65,7 +57,7 @@ class Graph:
         If state does not exist return None.
         """
         if state in self.states:
-            return list(self.states[state].values())
+            return list(state.outgoing.values())
         else:
             return None
 
@@ -78,9 +70,39 @@ class Graph:
         If state does not exist return None.
         """
         if state in self.states:
-            return list(self.states[state].keys())
+            return list(state.outgoing.keys())
+        else:
+            return None
+
+    def get_incoming_edges(self, state: State) -> Union[List[Edge], None]:
+        """
+        Method to get incoming edges of a state.
+
+        :param state: State to get incoming edges for
+        :return: List of incoming edges from state.
+        If state does not exist return None.
+        """
+        if state in self.states:
+            return list(state.incoming.values())
+        else:
+            return None
+
+    def get_incoming_states(self, state: State) -> Union[List[State], None]:
+        """
+        Method to get incoming states of a state.
+
+        :param state: State to get incoming states for
+        :return: List of incoming edges from state.
+        If state does not exist return None.
+        """
+        if state in self.states:
+            return list(state.incoming.keys())
         else:
             return None
 
     def __str__(self):
         return str(self.states)
+
+
+class StateAlreadyExistsException(Exception):
+    pass
