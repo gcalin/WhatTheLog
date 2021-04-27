@@ -72,10 +72,11 @@ class SyntaxTree(AutoPrinter):
         :return: the prefix tree node representing the best match, or None if no match found
         """
 
-        stem = re.sub(self.pattern, '', input, 1)
+        # Prefix match found at the beginning of the string
+        position = re.search(self.pattern, input)
+        if position and position.start() == 0:
 
-        # Prefix match found
-        if stem != input:
+            stem = re.sub(self.pattern, '', input, 1)
 
             if len(self.__children) == 0:
                 return self
