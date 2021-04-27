@@ -105,6 +105,7 @@ def delete_one(lines: List[str], tree: PrefixTree):
         return
 
     # Randomly choose an index in the list
+    # TODO: More efficiently?
     line = random.choice(range(len(lines)))
 
     # Get the corresponding section
@@ -156,17 +157,33 @@ def swap(lines: List[str], tree: PrefixTree):
 
 
 def r_swap(lines: List[str], tree: PrefixTree):
-    # TODO: refactor
+    """
+    Swaps two disjoint sections corresponding to two random lines in a list.
+    TODO: Inject mocks for testing?
+    :param lines: the list of lines to delete from.
+    :param tree: the syntax tree that defines which lines form a section.
+    """
+    # If fewer than 1 section, nothing to swap
+    if len(lines) <= 1 or len(get_section(lines, 0, tree)) == len(lines):
+        return
+
+    # Get a random position from the list and its corresponding section
     elem1 = random.choice(range(len(lines)))
     section1 = get_section(lines, elem1, tree)
 
+    # Get another random position from the list, that is not part of the previous find section
     elem2 = random.choice(range(len(lines)))
     while elem2 in section1:
         elem2 = random.choice(range(len(lines)))
+
+    # Get the second corresponding section
     section2 = get_section(lines, elem2, tree)
 
-    lines[section1[0]:section1[-1] + 1], lines[section2[0]:section2[-1] + 1] = \
-        lines[section2[0]:section2[-1] + 1], lines[section1[0]:section1[-1] + 1]
+    lines[:] = lines[:section1[0]] \
+               + lines[section2[0]:section2[-1] + 1] \
+               + lines[section1[-1] + 1:section2[0]] \
+               + lines[section1[0]:section1[-1] + 1] \
+               + lines[section2[-1] + 1:]
 
 
 def process_file(input_file: str, output_file: str, tree: PrefixTree) -> None:
