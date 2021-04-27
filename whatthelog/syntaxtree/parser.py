@@ -20,7 +20,7 @@ import json
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 from whatthelog.auto_printer import AutoPrinter
-from whatthelog.prefixtree.prefix_tree import PrefixTree
+from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 
 
 #****************************************************************************************************
@@ -36,7 +36,7 @@ class Parser(AutoPrinter):
     # Parse input
     #================================================================================
 
-    def parse_file(self, filepath: str) -> PrefixTree:
+    def parse_file(self, filepath: str) -> SyntaxTree:
         """
         Parses a configuration file in JSON format to a compiled Prefix Tree.
         The input JSON is expected to be a dictionary, with each nested node in the following format:
@@ -54,14 +54,14 @@ class Parser(AutoPrinter):
             assert isinstance(configs, dict), f"Invalid configuration file: expected 'dict' but got '{configs.__class__}'"
             return self.__parse(configs)
 
-    def __parse(self, configs: dict) -> PrefixTree:
+    def __parse(self, configs: dict) -> SyntaxTree:
 
         name = configs["name"]
         prefix = configs["prefix"]
         isRegex = configs["isRegex"]
         children = configs["children"]
 
-        tree = PrefixTree(name, prefix, isRegex)
+        tree = SyntaxTree(name, prefix, isRegex)
         for child in children:
             tree.insert(self.__parse(child))
 
