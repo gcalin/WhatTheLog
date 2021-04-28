@@ -136,7 +136,7 @@ class PrefixTreeFactory(AutoPrinter):
         pbar = tqdm(total=total, file=sys.stdout, leave=False)
         while len(trees) > 1:
 
-            threads = max(floor(len(trees)/2), pool_size)
+            threads = min(floor(len(trees)/2), pool_size)
             source_trees = [(trees.pop(0), trees.pop(0)) for _ in range(threads)]
 
             with ThreadPoolExecutor(max_workers=threads) as executor:

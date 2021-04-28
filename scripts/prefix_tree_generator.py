@@ -38,7 +38,7 @@ if __name__ == '__main__':
     pt = PrefixTreeFactory.get_prefix_tree(path + '/../resources/traces/',
                                            path + '/../resources/config.json')
 
-    with open(path + '/../out/fullPrefixTree.p') as file:
+    with open(path + '/../out/fullPrefixTree.p', 'wb+') as file:
         pickle.dump(pt, file)
 
     print(f"Done!")
@@ -48,4 +48,4 @@ if __name__ == '__main__':
     total = get_peak_mem(snapshot)
     print(f"Peak memory usage: {bytes_tostring(total)}")
 
-    Visualizer(pt).visualize()
+    # Visualizer(pt).visualize()
