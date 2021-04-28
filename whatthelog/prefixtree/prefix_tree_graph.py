@@ -71,6 +71,37 @@ class PrefixTreeGraph(Graph):
         else:
             return parents[0]
 
+    def merge(self, other: PrefixTreeGraph):
+        """
+        Merges another tree into the current one.
+        The tree's children are appended to this one's, the tree's parent is discarded.
+        Requires the input tree to have the same root as this one.
+        Assumes the tree is coherent: there are no duplicated children in any node.
+
+        :param other: the tree to be merged into this one.
+        """
+
+        if not self.__root.is_equivalent(other.get_root()):
+            raise InvalidTreeException("Input tree does not have the same root!")
+
+        stack = [(self.__root, other.get_root())]
+        while True:
+
+            this_state, that_state = stack.pop()
+
+            for that_child in that_state.outgoing.keys():
+                conflict = False
+                for this_child in this_state.outgoing.keys():
+                    if that_child.is_equivalent(this_child):
+                        stack.append((this_child, that_child))
+                        conflict = True
+
+                if not conflict:
+                    self.add_child(that_child, this_state)
+
+            if not stack:
+                break
+
 
 class TreeIterator:
     """
