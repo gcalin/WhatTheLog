@@ -1,9 +1,6 @@
 import os
 from typing import List, Dict, Tuple
 
-from whatthelog.exceptions.unidentified_log_exception import \
-    UnidentifiedLogException
-from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.prefixtree.prefix_tree_graph import PrefixTreeGraph
 from whatthelog.prefixtree.state import State
 from whatthelog.syntaxtree.parser import Parser
@@ -16,13 +13,11 @@ class PrefixTreeFactory:
     """
     @staticmethod
     def get_prefix_tree(traces_dir: str, config_file_path: str) -> PrefixTreeGraph:
-        prefix_tree, log_templates = \
-            PrefixTreeFactory.__generate_prefix_tree(traces_dir, config_file_path)
+        prefix_tree = PrefixTreeFactory.__generate_prefix_tree(traces_dir, config_file_path)
         return prefix_tree
 
     @staticmethod
-    def __generate_prefix_tree(log_dir: str, config_file: str) -> \
-            Tuple[PrefixTreeGraph, Dict[str, int]]:
+    def __generate_prefix_tree(log_dir: str, config_file: str) -> PrefixTreeGraph:
         """
         Script to parse log file into prefix tree.
 
@@ -32,19 +27,17 @@ class PrefixTreeFactory:
          to unique ids.
         """
         syntax_tree = Parser().parse_file(config_file)
-        prefix_tree = PrefixTreeGraph(State([0]))
-        log_templates = {"": 0}
+        prefix_tree = PrefixTreeGraph(State([""]))
 
         for filename in os.listdir(log_dir):
             with open(log_dir + filename, 'r') as f:
                 logs = [log.strip() for log in f.readlines()]
 
-            PrefixTreeFactory.__parse_trace(logs, log_templates, syntax_tree, prefix_tree)
-        return prefix_tree, log_templates
+            PrefixTreeFactory.__parse_trace(logs, syntax_tree, prefix_tree)
+        return prefix_tree
 
     @staticmethod
     def __parse_trace(logs: List[str],
-                      log_templates: Dict[str, int],
                       syntax_tree: SyntaxTree,
                       prefix_tree: PrefixTreeGraph) -> PrefixTreeGraph:
         """
@@ -68,26 +61,24 @@ class PrefixTreeFactory:
                 raise UnidentifiedLogException(
                     log + " was not identified as a valid log.")
 
-            if template in log_templates:
-                log_id = log_templates[template]
-            else:
-                log_id = len(log_templates)
-                log_templates[template] = log_id
-
             exists = False
 
             for node in nodes:
-                if log_id in node.log_ids:
+                if template in node.log_templates:
                     parent = node
                     nodes = prefix_tree.get_children(parent)
                     exists = True
                     continue
 
             if not exists:
-                child = State([log_id])
+                child = State([template])
                 prefix_tree.add_child(child, parent)
 
                 parent = child
                 nodes = prefix_tree.get_children(child)
 
         return prefix_tree
+
+
+class UnidentifiedLogException(Exception):
+    pass
