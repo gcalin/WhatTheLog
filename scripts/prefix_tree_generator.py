@@ -8,6 +8,7 @@
 
 from datetime import timedelta
 import os
+import pickle
 from time import time
 import tracemalloc
 
@@ -36,6 +37,9 @@ if __name__ == '__main__':
 
     pt = PrefixTreeFactory.get_prefix_tree(path + '/../resources/traces/',
                                            path + '/../resources/config.json')
+
+    with open(path + '/../out/fullPrefixTree.p') as file:
+        pickle.dump(pt, file)
 
     print(f"Done!")
     print(f"Time elapsed: {timedelta(seconds=time() - start_time)}")
