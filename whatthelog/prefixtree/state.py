@@ -1,6 +1,10 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
 from typing import List, Dict
+from uuid import uuid1
 
-
+@dataclass
 class State:
     """
     Class representing a state. Holds a list of all log template ids
@@ -10,11 +14,22 @@ class State:
         """
         State constructor.
 
-        :param log_ids: The log template ids this state holds.
+        :param log_templates: The log template ids this state holds.
         """
+        self.__id = uuid1().int
         self.log_templates: List[str] = log_templates
-        self.outgoing: Dict['State', Edge] = {}
-        self.incoming: Dict['State', Edge] = {}
+        self.outgoing: Dict[State, Edge] = {}
+        self.incoming: Dict[State, Edge] = {}
+
+    def is_equivalent(self, other: State) -> bool:
+        """
+        Checks if the input state represents is equivalent to this one,
+        this property is defined as having the same log templates.
+        :param other: the state to check for equivalence with the current instance.
+        :return: True if the input state is equivalent to this one, False otherwise.
+        """
+
+        return set(self.log_templates) == set(other.log_templates)
 
     def __str__(self):
         if len(self.log_templates) == 1:
@@ -24,6 +39,12 @@ class State:
 
     def __repr__(self):
         return self.__str__()
+
+    def __hash__(self):
+        return self.__id
+
+    def __eq__(self, other: State):
+        return self.__id == other.__id
 
 
 class Edge:

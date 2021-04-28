@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import List, Union
 
 from whatthelog.prefixtree.graph import Graph
@@ -22,14 +23,6 @@ class PrefixTreeGraph(Graph):
         """
         return self.__root
 
-    def set_root(self, state: State):
-        """
-        Root setter.
-
-        :param state: State to set as tree's root
-        """
-        self.__root = state
-
     def get_children(self, state: State) -> List[State]:
         """
         Method to get children of a state.
@@ -46,6 +39,9 @@ class PrefixTreeGraph(Graph):
         :param state: State to add
         :param parent: Parent of state to link with
         """
+
+        assert len(state.incoming) == 0, "Edge already has a parent!"
+
         self.add_state(state)
         self.add_edge(Edge(parent, state))
 
@@ -56,11 +52,36 @@ class PrefixTreeGraph(Graph):
         :param state: State to get parent of
         :return: Parent of state. If None state is the root.
         """
-        parent = self.get_incoming_states(state)
-        if parent is None or len(parent) == 0:
+
+        parents = self.get_incoming_states(state)
+        assert len(parents) <= 1, "Edge has more than one parent!"
+
+        if parents is None or len(parents) == 0:
             return None
         else:
-            return parent[0]
+            return parents[0]
+
+
+class TreeIterator:
+    """
+    Iterator class for the tree.
+    Return states in a Breadth-First Search.
+    """
+
+    def __init__(self, tree: PrefixTreeGraph):
+        self.tree = tree
+        self.queue = [tree.get_root()]
+
+    def __next__(self):
+
+        if not self.queue:
+            raise StopIteration
+
+        current = self.queue.pop(0)
+        for child in list(current.outgoing.keys()):
+            self.queue.append(child)
+
+        return current
 
 
 class InvalidTreeException(Exception):

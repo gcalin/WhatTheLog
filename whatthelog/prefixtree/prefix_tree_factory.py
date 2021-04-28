@@ -1,13 +1,20 @@
 import os
-from typing import List, Dict, Tuple
+import sys
+from typing import List
+from tqdm import tqdm
 
 from whatthelog.prefixtree.prefix_tree_graph import PrefixTreeGraph
 from whatthelog.prefixtree.state import State
 from whatthelog.syntaxtree.parser import Parser
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
+from whatthelog.auto_printer import AutoPrinter
+
+pool_size_default = 8
+
+def print(msg): AutoPrinter.static_print(msg)
 
 
-class PrefixTreeFactory:
+class PrefixTreeFactory(AutoPrinter):
     """
     Prefix tree factory.
     """
@@ -29,7 +36,8 @@ class PrefixTreeFactory:
         syntax_tree = Parser().parse_file(config_file)
         prefix_tree = PrefixTreeGraph(State([""]))
 
-        for filename in os.listdir(log_dir):
+        pbar = tqdm(os.listdir(log_dir), file=sys.stdout)
+        for filename in pbar:
             with open(log_dir + filename, 'r') as f:
                 logs = [log.strip() for log in f.readlines()]
 
@@ -78,6 +86,65 @@ class PrefixTreeFactory:
                 nodes = prefix_tree.get_children(child)
 
         return prefix_tree
+
+    # @staticmethod
+    # def parse_trace_async(trace_file: str, syntax_tree: SyntaxTree) -> PrefixTreeGraph:
+    #
+    #     root = State([""])
+    #     tree = PrefixTreeGraph(root)
+    #
+    #     with open(trace_file, 'r') as f:
+    #         lines = [line.strip() for line in f.readlines()]
+    #
+    #     curr_state = root
+    #     for line in lines:
+    #
+    #         syntax_node = syntax_tree.search(line)
+    #         if syntax_node is None:
+    #             raise UnidentifiedLogException(line + " was not identified as a valid log.")
+    #
+    #         new_state = State([syntax_node.get_pattern()])
+    #         tree.add_child(new_state, curr_state)
+    #         curr_state = new_state
+    #
+    #     return tree
+    #
+    # @staticmethod
+    # def parse_tree(log_dir: str, config_file: str, pool_size: int = pool_size_default) -> PrefixTreeGraph:
+    #
+    #     assert os.path.isdir(log_dir), "Log directory not found!"
+    #     assert os.path.isfile(config_file), "Config file not found!"
+    #
+    #     print("Parsing syntax tree...")
+    #
+    #     syntax_tree = Parser().parse_file(config_file)
+    #     trace_files = [os.path.join(log_dir, tracefile) for tracefile in os.listdir(log_dir)]
+    #
+    #     # --- Parse individual traces into separate trees ---
+    #     print("Parsing individual log traces...")
+    #     inputs = list(zip(trace_files, [syntax_tree for _ in range(len(trace_files))]))
+    #     pbar = tqdm(inputs, total=len(inputs), file=sys.stdout, leave=False)
+    #     with Pool(pool_size) as p:
+    #         trees = p.starmap(PrefixTreeFactory.parse_trace_async, pbar, chunksize=2)
+    #
+    #     print("Merging trees...")
+    #
+    #     # --- Merge trees in parallel ---
+    #     total = len(trees)
+    #     pbar = tqdm(total=total, file=sys.stdout, leave=False)
+    #     while len(trees) > 1:
+    #
+    #         threads = max(floor(len(trees)/2), pool_size)
+    #         source_trees = [(trees.pop(0), trees.pop(0)) for _ in range(threads)]
+    #
+    #         with ThreadPoolExecutor(max_workers=threads) as executor:
+    #             trees += executor.map(lambda tup: tup[0].merge(tup[1]), source_trees)
+    #
+    #         pbar.update(total - len(trees))
+    #
+    #     assert len(trees) == 1, f"Something went wrong: {len(trees)} found after merging!"
+    #
+    #     return trees[0]
 
 
 class UnidentifiedLogException(Exception):

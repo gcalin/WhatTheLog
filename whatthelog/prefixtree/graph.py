@@ -1,14 +1,16 @@
-from typing import List, Union
+
+from typing import List, Union, Set
 
 from whatthelog.prefixtree.state import State, Edge
+from whatthelog.auto_printer import AutoPrinter
 
 
-class Graph:
+class Graph(AutoPrinter):
     """
     Class implementing a graph
     """
     def __init__(self):
-        self.states: List[State] = []
+        self.states: Set[State] = set()
 
     def add_state(self, state: State):
         """
@@ -19,7 +21,7 @@ class Graph:
         """
         if state in self.states:
             raise StateAlreadyExistsException()
-        self.states.append(state)
+        self.states.add(state)
 
     def add_edge(self, edge: Edge) -> bool:
         """
@@ -32,6 +34,8 @@ class Graph:
         start = edge.start
         end = edge.end
         if start not in self.states:
+            return False
+        elif end not in self.states:
             return False
         elif end in start.outgoing:
             return False
