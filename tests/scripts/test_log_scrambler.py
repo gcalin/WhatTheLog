@@ -3,20 +3,21 @@ import random
 import pytest
 
 from scripts import log_scrambler
-from whatthelog.prefixtree.prefix_tree import PrefixTree
 from typing import List
+
+from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 
 
 @pytest.fixture()
-def syntax_tree() -> PrefixTree:
-    t: PrefixTree = PrefixTree("root", "[root]", False)
-    t.insert(PrefixTree("p1", "[p1]", False))
-    t.insert(PrefixTree("p2", "[p2]", False))
-    t.insert(PrefixTree("p3", "[p3]", False))
+def syntax_tree() -> SyntaxTree:
+    t: SyntaxTree = SyntaxTree("root", "[root]", False)
+    t.insert(SyntaxTree("p1", "[p1]", False))
+    t.insert(SyntaxTree("p2", "[p2]", False))
+    t.insert(SyntaxTree("p3", "[p3]", False))
 
-    assert t.search("[root][p1]") == PrefixTree("p1", "[p1]", False), "Invalid Prefix Tree implementation"
-    assert t.search("[root][p2]") == PrefixTree("p2", "[p2]", False), "Invalid Prefix Tree implementation"
-    assert t.search("[root][p3]") == PrefixTree("p3", "[p3]", False), "Invalid Prefix Tree implementation"
+    assert t.search("[root][p1]") == SyntaxTree("p1", "[p1]", False), "Invalid Prefix Tree implementation"
+    assert t.search("[root][p2]") == SyntaxTree("p2", "[p2]", False), "Invalid Prefix Tree implementation"
+    assert t.search("[root][p3]") == SyntaxTree("p3", "[p3]", False), "Invalid Prefix Tree implementation"
 
     return t
 
@@ -46,8 +47,6 @@ def test_get_section_invalid(syntax_tree, lines):
     res2 = log_scrambler.get_section(lines, 42, syntax_tree)
 
     assert res2 == []
-
-
 
 
 def test_get_section_beginning(syntax_tree, lines):
@@ -255,6 +254,7 @@ def test_delete_mixed_1(syntax_tree, lines):
 
     assert len(lines) == 0, "Delete function failed: lines still remaining"
 
+
 def test_swap_invalid(syntax_tree, lines):
     """
     Tests the swap function on a one-line file
@@ -265,6 +265,7 @@ def test_swap_invalid(syntax_tree, lines):
     log_scrambler.swap(lines, syntax_tree)
 
     assert initial == lines
+
 
 def test_swap_single_line(syntax_tree, lines):
     """
@@ -352,6 +353,3 @@ def test_swap_multiple_times(syntax_tree, lines):
                           + ["[root][p2]"] * 2
     log_scrambler.swap(lines, syntax_tree)
     assert expected == lines
-
-
-
