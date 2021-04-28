@@ -112,7 +112,7 @@ class PrefixTree(AutoPrinter):
         :return: the resulting union tree.
         """
 
-        assert other.state == self.state, "Trees do not have the same root!"
+        assert self.state.is_equivalent(other.state), "Trees do not have the same root!"
 
         result = PrefixTree(self.state, self.__parent)
         children = { hash(child.state) : child for child in self.__children }

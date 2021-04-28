@@ -14,13 +14,15 @@ class Graph(AutoPrinter):
 
     def add_state(self, state: State):
         """
-        Method to add a new state to the graph
+        Method to add a new state to the graph.
 
         :param state: State to add
         :raises StateAlreadyExistsException: if state already exists
         """
+
         if state in self.states:
             raise StateAlreadyExistsException()
+
         self.states.add(state)
 
     def add_edge(self, edge: Edge) -> bool:

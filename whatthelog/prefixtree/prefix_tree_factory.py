@@ -53,9 +53,7 @@ class PrefixTreeFactory(AutoPrinter):
         prefix tree to include it.
 
         :param logs: A list of logs representing this trace
-        :param log_templates: The mapping between log templates and log ids
-        :param syntax_tree: The syntax tree used to get the log template from
-        the log
+        :param syntax_tree: The syntax tree used to get the log template from the log
         :param prefix_tree: The current prefix tree to be used
         :return: None
         """

@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from dataclasses import dataclass, field
 from typing import List, Union
 
 from whatthelog.prefixtree.graph import Graph
@@ -40,10 +42,33 @@ class PrefixTreeGraph(Graph):
         :param parent: Parent of state to link with
         """
 
-        assert len(state.incoming) == 0, "Edge already has a parent!"
+        assert parent in self.states, "Parent is not in the tree!"
+        assert len(state.incoming) == 0, "State already has a parent!"
+        assert len(state.outgoing) == 0, "State has existing children!"
 
         self.add_state(state)
         self.add_edge(Edge(parent, state))
+
+    def add_branch(self, state: State, parent: State):
+        """
+        Method to add a new branch from a node with existing children.
+
+        :param state: the root state of the new branch.
+        :param parent: the parent state in the existing tree.
+        """
+
+        queue = [state]
+        current = parent
+        while True:
+
+            if not queue:
+                break
+
+            child = queue.pop(0)
+            self.add_child(child, current)
+            queue += child.outgoing.keys()
+            current = child
+
 
     def get_parent(self, state: State) -> Union[State, None]:
         """
@@ -83,6 +108,6 @@ class TreeIterator:
 
         return current
 
-
+@dataclass(frozen=True)
 class InvalidTreeException(Exception):
-    pass
+    message: str = field(default="Tree is invalid")
