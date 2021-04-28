@@ -145,6 +145,7 @@ def test_delete_single_entry(syntax_tree, lines):
     line_number: int = 9
 
     # Set up mock
+    choice = random.choice
     random.choice = lambda _: line_number
 
     # Get initial line and size
@@ -152,6 +153,8 @@ def test_delete_single_entry(syntax_tree, lines):
     initial_size: int = len(lines)
 
     log_scrambler.delete_one(lines, syntax_tree)
+
+    random.choice = choice
 
     # Assert that the line was deleted and the size changed
     assert initial_size - 1 == len(lines), "Delete function failed: same number of lines before and after"
@@ -167,6 +170,8 @@ def test_delete_single_entry_multiple_times(syntax_tree, lines):
     first_line = lines[0]
     initial_size = len(lines)
 
+    choice = random.choice
+
     for count, line in enumerate([9, 0, len(lines) - 3]):
         # Set up mock
         random.choice = lambda _: line
@@ -176,6 +181,8 @@ def test_delete_single_entry_multiple_times(syntax_tree, lines):
 
         # Delete the line
         log_scrambler.delete_one(lines, syntax_tree)
+
+        random.choice = choice
 
         # Assert that the line was deleted and the size changed
         assert initial_size - count - 1 == len(lines), "Delete function failed: same number of lines before and after"
@@ -192,6 +199,7 @@ def test_delete_section_entry(syntax_tree, lines):
     line_number: int = 1
 
     # Set up mock
+    choice = random.choice
     random.choice = lambda _: line_number
 
     # Get initial line and size
@@ -200,15 +208,20 @@ def test_delete_section_entry(syntax_tree, lines):
 
     log_scrambler.delete_one(lines, syntax_tree)
 
+    random.choice = choice
+
     # Assert that the line was deleted and the size changed
     assert initial_size - 3 == len(lines), "Delete function failed: same number of lines before and after"
     assert lines[line_number] != line, "Delete function failed: line in section unchanged"
+
 
 
 def test_delete_section_multiple_times(syntax_tree, lines):
     """
     Tests the delete function on section entries multiple times
     """
+    choice = random.choice
+
     for line, size in [(1, 3), (1, 5), (2, 2)]:
         # Get initial size
         initial_size = len(lines)
@@ -222,6 +235,8 @@ def test_delete_section_multiple_times(syntax_tree, lines):
         # Delete the line
         log_scrambler.delete_one(lines, syntax_tree)
 
+        random.choice = choice
+
         # Assert that the line was deleted and the size changed
         assert initial_size - size == len(lines), "Delete function failed: same number of lines before and after"
         assert len(lines) == 0 or lines[
@@ -232,6 +247,7 @@ def test_delete_mixed_1(syntax_tree, lines):
     """
     Tests the delete function in a mixed scenario
     """
+    choice = random.choice
 
     for line in [1, 6, 3, 0]:
         # Get initial size
@@ -246,6 +262,8 @@ def test_delete_mixed_1(syntax_tree, lines):
 
         # Delete the line
         log_scrambler.delete_one(lines, syntax_tree)
+
+        random.choice = choice
 
         # Assert that the line was deleted and the size changed
         assert initial_size - size == len(lines), "Delete function failed: same number of lines before and after"
@@ -315,6 +333,8 @@ def test_swap_multiple_times(syntax_tree, lines):
     """
     initial = lines.copy()
 
+    choice = random.choice
+
     # First swap sections 2 and 3
     random.choice = lambda _: 3
     expected: List[str] = ["[root][p3]"] \
@@ -323,6 +343,7 @@ def test_swap_multiple_times(syntax_tree, lines):
                           + ["[root][p2]"] * 2 \
                           + ["[root][p3]"]
     log_scrambler.swap(lines, syntax_tree)
+    random.choice = choice
     assert expected == lines
 
     # Swap sections 4 and 5
@@ -333,6 +354,7 @@ def test_swap_multiple_times(syntax_tree, lines):
                           + ["[root][p3]"] \
                           + ["[root][p2]"] * 2
     log_scrambler.swap(lines, syntax_tree)
+    random.choice = choice
     assert expected == lines
 
     # Swap sections 3 and 4
@@ -343,6 +365,7 @@ def test_swap_multiple_times(syntax_tree, lines):
                           + ["[root][p1]"] * 4 \
                           + ["[root][p2]"] * 2
     log_scrambler.swap(lines, syntax_tree)
+    random.choice = choice
     assert expected == lines
 
     # Swap sections 1 and 2
@@ -352,4 +375,5 @@ def test_swap_multiple_times(syntax_tree, lines):
                           + ["[root][p1]"] * 4 \
                           + ["[root][p2]"] * 2
     log_scrambler.swap(lines, syntax_tree)
+    random.choice = choice
     assert expected == lines

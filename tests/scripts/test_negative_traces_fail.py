@@ -1,12 +1,14 @@
 import os
+from typing import Tuple, Dict, List
 
 from scripts.log_scrambler import process_file
 from scripts.match_trace import match_trace
 from scripts.prefix_tree_generator import generate_prefix_tree
+from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.syntaxtree.parser import Parser
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 
-test_logs_dir = '../resources/testlogs/'
+test_logs_dir = 'tests/resources/testlogs/'
 
 test_logs = [
     'xx1',
@@ -20,31 +22,51 @@ test_logs = [
 ]
 
 
-def prefix_tree():
-    return generate_prefix_tree(test_logs_dir, "../../resources/config.json")
+def prefix_tree() -> Tuple[PrefixTree, Dict[str, int]]:
+    """
+    Generates a prefix tree based on real log data.
+    :return: Tuple of a PrefixTree and a dictionary mapping log templates
+     to unique ids.
+    """
+    return generate_prefix_tree(test_logs_dir, "resources/config.json")
 
 
-def get_syntax_tree():
-    return Parser().parse_file("../../resources/config.json")
+def get_syntax_tree() -> SyntaxTree:
+    """
+    Gets the syntax tree with real configurations
+    :return: SyntaxTree
+    """
+    return Parser().parse_file("resources/config.json")
 
 
-def generate_negative_traces(filename):
+def generate_negative_traces(filename: str) -> List[str]:
+    """
+    Generate negative trace
+    :param filename: the filename which contains the log
+    :return: a list containing all log statements of a negative log trace.
+    """
     tree: SyntaxTree = get_syntax_tree()
     process_file(filename, filename + '_output', tree)
     with open(filename + '_output', 'r') as f:
         return f.read().splitlines()
 
 
-def delete_negative_traces(filename):
+def delete_negative_traces(filename) -> None:
+    """
+    Remove negative trace
+    :param filename: the filename which contains the negative trace
+    """
     os.remove(filename + '_output')
 
 
-def execute_test_on_trace(filename):
+def execute_test_on_trace(filename) -> None:
     """
     This function does three things.
         1. generate negative traces
         2. validate whether these traces are indeed invalid.
         3. clean up the traces.
+
+    :param filename: the filename which contains the log
     """
     # Generate wrong traces and retrieve them
     wrong_trace = generate_negative_traces(filename)
@@ -57,7 +79,10 @@ def execute_test_on_trace(filename):
     delete_negative_traces(filename)
 
 
-def test_negative_traces():
+def test_negative_traces() -> None:
+    """
+    Tests the functionality of negative traces on real data.
+    """
     for t in test_logs:
         # We try to make negative traces of every log file.
         for i in range(10):
