@@ -43,32 +43,17 @@ class PrefixTreeGraph(Graph):
         """
 
         assert parent in self.states, "Parent is not in the tree!"
-        assert len(state.incoming) == 0, "State already has a parent!"
-        assert len(state.outgoing) == 0, "State has existing children!"
 
+        state.incoming = {}
         self.add_state(state)
         self.add_edge(Edge(parent, state))
 
-    def add_branch(self, state: State, parent: State):
-        """
-        Method to add a new branch from a node with existing children.
-
-        :param state: the root state of the new branch.
-        :param parent: the parent state in the existing tree.
-        """
-
-        queue = [state]
-        current = parent
-        while True:
-
-            if not queue:
-                break
+        queue = list(state.outgoing.keys())
+        while queue:
 
             child = queue.pop(0)
-            self.add_child(child, current)
+            self.add_state(child)
             queue += child.outgoing.keys()
-            current = child
-
 
     def get_parent(self, state: State) -> Union[State, None]:
         """
