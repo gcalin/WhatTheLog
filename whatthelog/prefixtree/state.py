@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import List, Dict
-from uuid import uuid1
 
-@dataclass
 class State:
+
     """
     Class representing a state. Holds a list of all log template ids
     represented by this state.
@@ -16,7 +14,6 @@ class State:
 
         :param log_templates: The log template ids this state holds.
         """
-        self.__id = uuid1().int
         self.log_templates: List[str] = log_templates
         self.outgoing: Dict[State, Edge] = {}
         self.incoming: Dict[State, Edge] = {}
@@ -39,12 +36,6 @@ class State:
 
     def __repr__(self):
         return self.__str__()
-
-    def __hash__(self):
-        return self.__id
-
-    def __eq__(self, other: State):
-        return self.__id == other.__id
 
 
 class Edge:
