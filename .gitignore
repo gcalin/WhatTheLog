@@ -67,3 +67,7 @@ MANIFEST
 
 # Log files
 *.log
+
+# Resources
+resources/traces
+resources/prefixtree.png

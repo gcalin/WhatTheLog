@@ -1,91 +1,60 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tuesday 04/20/2021
-Author: Tommaso Brandirali
-Email: tommaso.brandirali@gmail.com
-"""
-
-#****************************************************************************************************
-# Imports
-#****************************************************************************************************
-
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# External
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-from __future__ import annotations
-from dataclasses import dataclass, field
 from typing import List, Union
-import re
 
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# Internal
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+from whatthelog.prefixtree.state import State
 
-from whatthelog.auto_printer import AutoPrinter
 
-#****************************************************************************************************
-# Prefix Tree
-#****************************************************************************************************
-
-@dataclass
-class PrefixTree(AutoPrinter):
+class PrefixTree:
     """
-    A data class representing the prefix tree for a system.
-    Instances of this class should be created using the
+    Class representing a recursive prefix tree data structure with
+     each node holding a State and a list of children.
     """
-
-    name: str
-    prefix: str
-    isRegex: bool
-    __children: List[PrefixTree] = field(default_factory=lambda: [])
-
-    def __post_init__(self):
-        try:
-            prefix = re.escape(self.prefix) if not self.isRegex else self.prefix
-            self.pattern = re.compile(prefix)
-        except re.error:
-            self.print(f"ERROR: Invalid pattern given for Node '{self.name}'")
-            raise ValueError
-
-    #================================================================================
-    # Class Methods
-    #================================================================================
-
-    def get_children(self):
+    def __init__(self, state: State, parent: Union['PrefixTree', None]):
         """
-        Prefix tree children getter.
+        Prefix tree node constructor. Holds the state it represents,
+        a reference to its parent and a list of children. If this node is the root,
+        the parent is set to None. If it is a leave the children list is empty.
+
+        :param state: The state this node represents
+        :param parent: A reference to the parent of this node
+        """
+        self.state: State = state
+        self.__parent: Union['PrefixTree', None] = parent
+        self.__children: List['PrefixTree'] = []
+
+    def set_state(self, state: State):
+        """
+        Method to set the state of the node.
+
+        :param state: State to be set
+        """
+        self.state = state
+
+    def get_children(self) -> List['PrefixTree']:
+        """
+        Method to get children of the node.
+
+        :return: This nodes children
         """
         return self.__children
 
-    def insert(self, child: PrefixTree) -> None:
+    def get_parent(self) -> 'PrefixTree':
         """
-        Add new child to tree.
-        """
+        Method to get the parent of the node.
 
+        :return: This node's parent.
+        """
+        return self.__parent
+
+    def add_child(self, child: 'PrefixTree'):
+        """
+        Method to add a child to the node.
+
+        :param child: Child to be added
+        """
         self.__children.append(child)
 
-    def search(self, input: str) -> Union[PrefixTree, None]:
-        """
-        Recursively search the prefix tree for Nodes matching the
-        :param input: the string to match
-        :return: the prefix tree node representing the best match, or None if no match found
-        """
+    def __str__(self):
+        return str(self.state)
 
-        stem = re.sub(self.pattern, '', input, 1)
-
-        # Prefix match found
-        if stem != input:
-
-            if len(self.__children) == 0:
-                return self
-
-            for child in self.__children:
-
-                result = child.search(stem)
-
-                # Child match found
-                if result:
-                    return result
-
-        return None
+    def __repr__(self):
+        return self.__str__()
