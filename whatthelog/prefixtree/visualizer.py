@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from networkx.drawing.nx_pydot import graphviz_layout
 
-from whatthelog.prefixtree.prefix_tree_graph import PrefixTreeGraph
+from whatthelog.prefixtree.prefix_tree import PrefixTree
 
 
 class Visualizer:
@@ -14,7 +14,7 @@ class Visualizer:
     Class to visualize Prefix Tree.
     """
 
-    def __init__(self, prefix_tree: PrefixTreeGraph):
+    def __init__(self, prefix_tree: PrefixTree):
         """
         Visualizer constructor.
 

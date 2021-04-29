@@ -1,16 +1,34 @@
+#****************************************************************************************************
+# Imports
+#****************************************************************************************************
 
-from typing import List, Union, Set
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# External
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-from whatthelog.prefixtree.state import State, Edge
+from typing import List, Union, Set, Dict, Tuple
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Internal
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+from whatthelog.prefixtree.state import State
+from whatthelog.prefixtree.edge import Edge
 from whatthelog.auto_printer import AutoPrinter
+from whatthelog.exceptions import StateAlreadyExistsException
 
+
+#****************************************************************************************************
+# Graph
+#****************************************************************************************************
 
 class Graph(AutoPrinter):
     """
     Class implementing a graph
     """
     def __init__(self):
-        self.states: Set[State] = set()
+        self.states: Dict[State, Tuple[Dict[State, Edge], Dict[State, Edge]]] = {}
+        self.edges: Set = set()
 
     def add_state(self, state: State):
         """
@@ -20,10 +38,10 @@ class Graph(AutoPrinter):
         :raises StateAlreadyExistsException: if state already exists
         """
 
-        if state in self.states:
+        if state in self:
             raise StateAlreadyExistsException()
 
-        self.states.add(state)
+        self.states[state] = ({}, {})
 
     def add_edge(self, edge: Edge) -> bool:
         """
@@ -35,15 +53,16 @@ class Graph(AutoPrinter):
         """
         start = edge.start
         end = edge.end
-        if start not in self.states:
+        if start not in self:
             return False
-        elif end not in self.states:
+        elif end not in self:
             return False
-        elif end in start.outgoing:
+        elif end in self.states[start][1]:
             return False
         else:
-            start.outgoing[end] = edge
-            end.incoming[start] = edge
+            self.states[start][1][end] = edge
+            self.states[end][0][start] = edge
+            self.edges.add(edge)
             return True
 
     def size(self):
@@ -62,8 +81,8 @@ class Graph(AutoPrinter):
         :return: List of outgoing edges from state.
         If state does not exist return None.
         """
-        if state in self.states:
-            return list(state.outgoing.values())
+        if state in self:
+            return list(self.states[state][1].values())
         else:
             return None
 
@@ -75,8 +94,8 @@ class Graph(AutoPrinter):
         :return: List of outgoing edges from state.
         If state does not exist return None.
         """
-        if state in self.states:
-            return list(state.outgoing.keys())
+        if state in self:
+            return list(self.states[state][1].keys())
         else:
             return None
 
@@ -88,8 +107,8 @@ class Graph(AutoPrinter):
         :return: List of incoming edges from state.
         If state does not exist return None.
         """
-        if state in self.states:
-            return list(state.incoming.values())
+        if state in self:
+            return list(self.states[state][0].values())
         else:
             return None
 
@@ -101,14 +120,13 @@ class Graph(AutoPrinter):
         :return: List of incoming edges from state.
         If state does not exist return None.
         """
-        if state in self.states:
-            return list(state.incoming.keys())
+        if state in self:
+            return list(self.states[state][0].keys())
         else:
             return None
 
     def __str__(self):
         return str(self.states)
 
-
-class StateAlreadyExistsException(Exception):
-    pass
+    def __contains__(self, item: State):
+        return item in self.states

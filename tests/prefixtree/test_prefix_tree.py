@@ -1,17 +1,18 @@
 import pytest
 
-from whatthelog.prefixtree.prefix_tree_graph import PrefixTreeGraph, InvalidTreeException
+from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.prefixtree.state import State
+from whatthelog.exceptions import InvalidTreeException
 
 @pytest.fixture()
 def tree():
-    return PrefixTreeGraph(State([""]))
+    return PrefixTree(State([""]))
 
 @pytest.fixture()
 def another_tree():
-    return PrefixTreeGraph(State([""]))
+    return PrefixTree(State([""]))
 
-def test_merge_same_tree(tree: PrefixTreeGraph, another_tree: PrefixTreeGraph):
+def test_merge_same_tree(tree: PrefixTree, another_tree: PrefixTree):
 
     root1 = tree.get_root()
     child1 = State(["A"])
@@ -33,7 +34,7 @@ def test_merge_same_tree(tree: PrefixTreeGraph, another_tree: PrefixTreeGraph):
 
     assert tree.size() == 4
 
-def test_merge_separate(tree: PrefixTreeGraph, another_tree: PrefixTreeGraph):
+def test_merge_separate(tree: PrefixTree, another_tree: PrefixTree):
 
     root1 = tree.get_root()
     child1 = State(["A"])
@@ -58,7 +59,7 @@ def test_merge_separate(tree: PrefixTreeGraph, another_tree: PrefixTreeGraph):
     for child in [child1, child2, child4, child5]:
         assert len(tree.get_children(child)) == 1
 
-def test_merge_split(tree: PrefixTreeGraph, another_tree: PrefixTreeGraph):
+def test_merge_split(tree: PrefixTree, another_tree: PrefixTree):
 
     root1 = tree.get_root()
     child1 = State(["A"])
@@ -82,9 +83,9 @@ def test_merge_split(tree: PrefixTreeGraph, another_tree: PrefixTreeGraph):
     assert len(tree.get_children(child2)) == 2
     assert tree.get_parent(child6) == child2
 
-def test_merge_different_roots(tree: PrefixTreeGraph):
+def test_merge_different_roots(tree: PrefixTree):
 
-    a_different_tree = PrefixTreeGraph(State(["not an empty string"]))
+    a_different_tree = PrefixTree(State(["not an empty string"]))
 
     with pytest.raises(InvalidTreeException):
         tree.merge(a_different_tree)

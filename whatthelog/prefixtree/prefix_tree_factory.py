@@ -1,34 +1,98 @@
+#****************************************************************************************************
+# Imports
+#****************************************************************************************************
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# External
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 import os
 import sys
 from concurrent.futures.thread import ThreadPoolExecutor
 from math import floor
 from multiprocessing import Pool
+import pickle
 from typing import List
 from tqdm import tqdm
 
-from whatthelog.prefixtree.prefix_tree_graph import PrefixTreeGraph
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Internal
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.prefixtree.state import State
 from whatthelog.syntaxtree.parser import Parser
+from whatthelog.exceptions import UnidentifiedLogException
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 from whatthelog.auto_printer import AutoPrinter
 
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Global Variables
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 pool_size_default = 8
+chunksize_default = 2
 
 def print(msg): AutoPrinter.static_print(msg)
 
 
+#****************************************************************************************************
+# Prefix Tree Factory
+#****************************************************************************************************
+
 class PrefixTreeFactory(AutoPrinter):
     """
-    Prefix tree factory.
+    Prefix tree factory class.
     """
-    @staticmethod
-    def get_prefix_tree(traces_dir: str, config_file_path: str) -> PrefixTreeGraph:
-        # prefix_tree = PrefixTreeFactory.__generate_prefix_tree(traces_dir, config_file_path)
-        prefix_tree = PrefixTreeFactory.parse_tree(traces_dir, config_file_path)
-        return prefix_tree
 
     @staticmethod
-    def __generate_prefix_tree(log_dir: str, config_file: str) -> PrefixTreeGraph:
+    def get_prefix_tree(traces_dir: str, config_file_path: str,
+                        pool_size: int = pool_size_default, chunk_size: int = chunksize_default) -> PrefixTree:
+        """
+        Parses a full tree from a set of log traces in a common directory,
+        using a user-supplied syntax tree from an input configuration file.
+        Assumes that all log traces are linear.
+        :param traces_dir: the directory containing the log files to be parsed
+        :param config_file_path: the configuration file describing the syntax tree
+        :param pool_size: the maximum number of subprocesses and threads to use for processing,
+                          default is 8
+        :param chunk_size: the chunk size setting for the multiprocessed map,
+                           default is 2
+        :return: the full prefix tree
+        """
+
+        return PrefixTreeFactory.__parse_tree(traces_dir, config_file_path, pool_size, chunk_size)
+
+    @staticmethod
+    def pickle_tree(tree: PrefixTree, file: str) -> None:
+        """
+        Pickles and dumps the given tree instance into a given file.
+        If the file does not exist it will be created.
+        :param tree: the tree instance to pickle
+        :param file: the file to dump the pickled tree to
+        """
+
+        with open(file, 'wb+') as f:
+            pickle.dump(tree, f)
+
+    @staticmethod
+    def unpickle_tree(file: str) -> PrefixTree:
+        """
+        Parses a pickled tree instance from a file.
+        :param file: the pickle file representing the instance
+        :return: the parsed PrefixTree instance
+        """
+
+        if not os.path.isfile(file):
+            raise FileNotFoundError("Pickle file not found!")
+
+        with open(file, 'rb') as f:
+            tree = pickle.load(f)
+
+        return tree
+
+    @staticmethod
+    def __generate_prefix_tree(log_dir: str, config_file: str) -> PrefixTree:
         """
         Script to parse log file into prefix tree.
 
@@ -38,7 +102,7 @@ class PrefixTreeFactory(AutoPrinter):
          to unique ids.
         """
         syntax_tree = Parser().parse_file(config_file)
-        prefix_tree = PrefixTreeGraph(State([""]))
+        prefix_tree = PrefixTree(State([""]))
 
         pbar = tqdm(os.listdir(log_dir), file=sys.stdout)
         for filename in pbar:
@@ -51,7 +115,7 @@ class PrefixTreeFactory(AutoPrinter):
     @staticmethod
     def __parse_trace(logs: List[str],
                       syntax_tree: SyntaxTree,
-                      prefix_tree: PrefixTreeGraph) -> PrefixTreeGraph:
+                      prefix_tree: PrefixTree) -> PrefixTree:
         """
         Function that parses a trace file and modifies the given
         prefix tree to include it.
@@ -61,6 +125,7 @@ class PrefixTreeFactory(AutoPrinter):
         :param prefix_tree: The current prefix tree to be used
         :return: None
         """
+
         parent = prefix_tree.get_root()
         nodes = prefix_tree.get_children(parent)
 
@@ -90,44 +155,48 @@ class PrefixTreeFactory(AutoPrinter):
         return prefix_tree
 
     @staticmethod
-    def parse_trace_async(trace_file: str, syntax_tree: SyntaxTree) -> PrefixTreeGraph:
+    def __parse_trace_async(trace_file: str, syntax_tree: SyntaxTree) -> PrefixTree:
 
         root = State([""])
-        tree = PrefixTreeGraph(root)
+        tree = PrefixTree(root)
 
         with open(trace_file, 'r') as f:
-            lines = [line.strip() for line in f.readlines()]
 
-        curr_state = root
-        for line in lines:
+            curr_state = root
+            for line in f:
 
-            syntax_node = syntax_tree.search(line)
-            if syntax_node is None:
-                raise UnidentifiedLogException(line + " was not identified as a valid log.")
+                line = line.strip()
+                syntax_node = syntax_tree.search(line)
+                if syntax_node is None:
+                    raise UnidentifiedLogException(line + " was not identified as a valid log.")
 
-            new_state = State([syntax_node.get_pattern()])
-            tree.add_child(new_state, curr_state)
-            curr_state = new_state
+                new_state = State([syntax_node.get_pattern()])
+                tree.add_child(new_state, curr_state)
+                curr_state = new_state
 
         return tree
 
     @staticmethod
-    def parse_tree(log_dir: str, config_file: str, pool_size: int = pool_size_default) -> PrefixTreeGraph:
+    def __parse_tree(log_dir: str, config_file: str, pool_size: int, chunk_size: int) -> PrefixTree:
 
-        assert os.path.isdir(log_dir), "Log directory not found!"
-        assert os.path.isfile(config_file), "Config file not found!"
+        if not os.path.isdir(log_dir):
+            raise NotADirectoryError("Log directory not found!")
+        if not os.path.isfile(config_file):
+            raise FileNotFoundError("Config file not found!")
 
         print("Parsing syntax tree...")
 
         syntax_tree = Parser().parse_file(config_file)
-        trace_files = [os.path.join(log_dir, tracefile) for tracefile in os.listdir(log_dir)]
+        trace_files = [os.path.join(log_dir, tracefile)
+                       for tracefile in os.listdir(log_dir)
+                       if os.path.isfile(os.path.join(log_dir, tracefile))]
 
         # --- Parse individual traces into separate trees ---
         print("Parsing individual log traces...")
         inputs = list(zip(trace_files, [syntax_tree for _ in range(len(trace_files))]))
-        pbar = tqdm(inputs, total=len(inputs), file=sys.stdout, leave=False)
+        pbar = tqdm(inputs, total=len(inputs), file=sys.stdout)
         with Pool(pool_size) as p:
-            trees = p.starmap(PrefixTreeFactory.parse_trace_async, pbar, chunksize=2)
+            trees = p.starmap(PrefixTreeFactory.__parse_trace_async, pbar, chunksize=chunk_size)
 
         print("Merging trees...")
 
@@ -148,7 +217,3 @@ class PrefixTreeFactory(AutoPrinter):
         assert len(trees) == 1, f"Something went wrong: {len(trees)} found after merging!"
 
         return trees[0]
-
-
-class UnidentifiedLogException(Exception):
-    pass

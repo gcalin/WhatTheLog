@@ -3,5 +3,5 @@ coverage>=5.5
 tqdm>=4.60.0
 networkx~=2.5.1
 matplotlib~=3.4.1
-pydot
-graphviz
+pydot~=1.4.2
+graphviz~=0.16

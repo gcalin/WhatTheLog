@@ -13,117 +13,149 @@ from typing import List, Union
 # Internal
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+from whatthelog.prefixtree.graph import Graph
 from whatthelog.prefixtree.state import State
-from whatthelog.auto_printer import AutoPrinter
+from whatthelog.prefixtree.edge import Edge
+from whatthelog.exceptions import InvalidTreeException
 
 
 #****************************************************************************************************
-# Syntax Tree
+# Prefix Tree
 #****************************************************************************************************
 
-class PrefixTree(AutoPrinter):
-
+class PrefixTree(Graph):
     """
-    Class representing a recursive prefix tree data structure with
-    each node holding a State and a list of children.
+    Prefix tree implemented using an adjacency map-based graph.
     """
-    def __init__(self, state: State, parent: Union[PrefixTree, None], children: Union[List[PrefixTree], None] = None):
-        """
-        Prefix tree node constructor. Holds the state it represents,
-        a reference to its parent and a list of children. If this node is the root,
-        the parent is set to None. If it is a leave the children list is empty.
 
-        :param state: The state this node represents
-        :param parent: A reference to the parent of this node
-        """
-        if children is None:
-            children = []
-        self.state: State = state
-        self.__parent: Union[PrefixTree, None] = parent
-        self.__children: List[PrefixTree] = children
+    def __init__(self, root: State):
+        super().__init__()
+        self.__root = root
+        self.add_state(root)
 
-    def set_state(self, state: State):
+    def get_root(self) -> State:
         """
-        Method to set the state of the node.
+        Root getter.
 
-        :param state: State to be set
+        :return: the root of the tree
         """
-        self.state = state
+        return self.__root
 
-    def get_children(self) -> List[PrefixTree]:
+    def get_children(self, state: State) -> List[State]:
         """
-        Method to get children of the node.
+        Method to get children of a state.
 
-        :return: This nodes children
+        :param state: State to get children of
+        :return: List of children. If empty this state is a leaf.
         """
-        return self.__children
+        return self.get_outgoing_states(state)
 
-    def get_parent(self) -> PrefixTree:
+    def add_child(self, state: State, parent: State):
         """
-        Method to get the parent of the node.
+        Method to add a child in the tree.
+        Requires that the parent be in the current tree.
 
-        :return: This node's parent.
-        """
-        return self.__parent
-
-    def add_child(self, child: PrefixTree):
-        """
-        Method to add a child to the node.
-
-        :param child: Child to be added
-        """
-        self.__children.append(child)
-
-    def copy(self):
-        """
-        Returns a shallow copy of this tree.
-        :return: the copy tree
+        :param state: State to add
+        :param parent: Parent of state to link with
         """
 
-        return PrefixTree(self.state, self.__parent, self.__children)
+        assert parent in self, "Parent is not in the tree!"
 
-    def __str__(self):
-        return str(self.state)
+        self.add_state(state)
+        self.add_edge(Edge(parent, state))
 
-    def __repr__(self):
-        return self.__str__()
-
-    def depth(self) -> int:
+    def add_branch(self, state: State, tree: PrefixTree, parent: State):
         """
-        Recursively calculates the depth of this tree.
-        The runtime is O(n) where n is the number of nodes in this tree.
-        :return: the depth as an int
+        Appends a branch from the input tree starting at the given state
+        to the current tree under the given parent.
+        Requires that the parent be in the current tree,
+        and that the branch must not contain nodes already in the current tree.
+        :param state: the root of the branch to add
+        :param tree: the tree where the branch originates from
+        :param parent: the node in the current tree to append the branch to
         """
 
-        return 1 + max([child.depth() for child in self.__children]) if self.__children else 1
+        assert parent in self, "Parent is not in the tree!"
+
+        queue = [(state, parent)]
+        while queue:
+
+            current, parent = queue.pop(0)
+            assert current not in self, "Branch child is already in current tree!"
+            self.add_child(current, parent)
+
+            for child in tree.get_children(current):
+                queue.append((child, current))
+
+    def get_parent(self, state: State) -> Union[State, None]:
+        """
+        Method to get the parent of a state.
+
+        :param state: State to get parent of
+        :return: Parent of state. If None state is the root.
+        """
+
+        parents = self.get_incoming_states(state)
+        assert len(parents) <= 1, "Edge has more than one parent!"
+
+        if parents is None or len(parents) == 0:
+            return None
+        else:
+            return parents[0]
 
     def merge(self, other: PrefixTree):
         """
-        Merges a tree recursively into this instance from the root and returns the union tree.
+        Merges another tree into the current one.
         The tree's children are appended to this one's, the tree's parent is discarded.
         Requires the input tree to have the same root as this one.
         Assumes the tree is coherent: there are no duplicated children in any node.
 
-        If the input tree is linear (every node has only 1 child) then the worst-case time complexity is O(n*m),
-        where n is the maximum number of children of any node in this tree
-        and m is the depth of the other tree.
-
         :param other: the tree to be merged into this one.
-        :return: the resulting union tree.
         """
 
-        assert self.state.is_equivalent(other.state), "Trees do not have the same root!"
+        if not self.__root.is_equivalent(other.get_root()):
+            raise InvalidTreeException("Merge failed: source tree does not have same root as destination tree!")
 
-        result = PrefixTree(self.state, self.__parent)
-        children = { hash(child.state) : child for child in self.__children }
+        stack = [(self.__root, other.get_root())]
+        while True:
 
-        for child in other.get_children():
-            child_hash = hash(child.state)
-            if child_hash in children:
-                children[child_hash] = children[child_hash].merge(child)
-            else:
-                children[child_hash] = child
+            this_state, that_state = stack.pop()
 
-        [result.add_child(child) for child in list(children.values())]
+            for that_child in other.get_children(that_state):
+                conflict = False
+                for this_child in self.get_children(this_state):
+                    if that_child.is_equivalent(this_child):
+                        stack.append((this_child, that_child))
+                        conflict = True
 
-        return result
+                if not conflict:
+                    self.add_branch(that_child, other, this_state)
+
+            if not stack:
+                break
+
+
+#****************************************************************************************************
+# Prefix Tree Iterator
+#****************************************************************************************************
+
+class TreeIterator:
+    """
+    Iterator class for the tree.
+    Return states in a Breadth-First Search.
+    """
+
+    def __init__(self, tree: PrefixTree):
+        self.tree = tree
+        self.queue = [tree.get_root()]
+
+    def __next__(self):
+
+        if not self.queue:
+            raise StopIteration
+
+        current = self.queue.pop(0)
+        for child in self.tree.get_children(current):
+            self.queue.append(child)
+
+        return current
