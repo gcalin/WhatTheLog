@@ -9,24 +9,32 @@
 from __future__ import annotations
 from typing import List
 
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Internal
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+from whatthelog.prefixtree.state_properties import StateProperties
+
 
 #****************************************************************************************************
 # State
 #****************************************************************************************************
 
 class State:
-
     """
     Class representing a state. Holds a list of all log template ids
     represented by this state.
     """
+
+    __slots__ = ['properties']
+
     def __init__(self, log_templates: List[str]):
         """
         State constructor.
 
         :param log_templates: The log template ids this state holds.
         """
-        self.log_templates: List[str] = log_templates
+        self.properties = StateProperties(log_templates)
 
     def is_equivalent(self, other: State) -> bool:
         """
@@ -36,13 +44,16 @@ class State:
         :return: True if the input state is equivalent to this one, False otherwise.
         """
 
-        return set(self.log_templates) == set(other.log_templates)
+        return self.properties == other.properties
+
+    def get_properties(self):
+        return self.properties
 
     def __str__(self):
-        if len(self.log_templates) == 1:
-            return str(self.log_templates[0])
+        if len(self.properties) == 1:
+            return str(self.properties.log_templates[0])
 
-        return str(self.log_templates)
+        return str(self.properties)
 
     def __repr__(self):
         return self.__str__()

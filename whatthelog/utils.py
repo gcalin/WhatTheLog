@@ -17,6 +17,8 @@ import linecache
 import os
 import tracemalloc
 
+from itertools import zip_longest
+
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Internal
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -78,3 +80,8 @@ def blocks(files, size=65536):
         b = files.read(size)
         if not b: break
         yield b
+
+# --- Groups list in groups of n and fills any holes in the end with the fillvalue ---
+def group(iterable, n, fillvalue = None):
+    args = [iter(iterable)] * n
+    return list(zip_longest(fillvalue=fillvalue, *args))

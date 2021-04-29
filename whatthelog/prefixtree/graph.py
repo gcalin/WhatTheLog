@@ -26,8 +26,12 @@ class Graph(AutoPrinter):
     """
     Class implementing a graph
     """
+
+    __slots__ = ['states', 'states_by_prop', 'edges']
+
     def __init__(self):
         self.states: Dict[State, Tuple[Dict[State, Edge], Dict[State, Edge]]] = {}
+        self.states_by_prop: Dict[str, State] = {}
         self.edges: Set = set()
 
     def add_state(self, state: State):
@@ -42,6 +46,7 @@ class Graph(AutoPrinter):
             raise StateAlreadyExistsException()
 
         self.states[state] = ({}, {})
+        self.states_by_prop[state.properties.get_prop_hash()] = state
 
     def add_edge(self, edge: Edge) -> bool:
         """

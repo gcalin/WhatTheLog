@@ -40,3 +40,7 @@ class AutoPrinter:
         frame = inspect.stack()[1]
         filename = frame[0].f_code.co_filename
         print(f"[ {os.path.basename(filename)} ] - {text}")
+
+    @staticmethod
+    def static_prefix():
+        return f"[ {os.path.basename(inspect.stack()[1][0].f_code.co_filename)} ] - "

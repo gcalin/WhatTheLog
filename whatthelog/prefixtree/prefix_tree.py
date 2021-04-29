@@ -28,6 +28,8 @@ class PrefixTree(Graph):
     Prefix tree implemented using an adjacency map-based graph.
     """
 
+    __slots__ = ['__root']
+
     def __init__(self, root: State):
         super().__init__()
         self.__root = root
@@ -81,7 +83,10 @@ class PrefixTree(Graph):
         while queue:
 
             current, parent = queue.pop(0)
-            assert current not in self, "Branch child is already in current tree!"
+            assert current not in self, "Branch state is already in current tree!"
+
+            if current in self.states_by_prop:
+                current.properties = self.states_by_prop[current].properties
             self.add_child(current, parent)
 
             for child in tree.get_children(current):

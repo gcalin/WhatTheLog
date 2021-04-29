@@ -71,3 +71,6 @@ MANIFEST
 # Resources
 resources/traces*
 resources/prefixtree.png
+
+# Temporary Files
+temp/
