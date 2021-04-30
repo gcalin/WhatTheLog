@@ -41,6 +41,9 @@ class StateProperties(AutoPrinter):
     def get_prop_hash(self):
         return hash(tuple(self.log_templates))
 
+    def __hash__(self):
+        return self.get_prop_hash()
+
     def __eq__(self, other):
         return set(self.log_templates) == set(other.log_templates)
 

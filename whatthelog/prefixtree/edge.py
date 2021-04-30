@@ -14,23 +14,21 @@ from whatthelog.prefixtree.state import State
 
 class Edge:
 
-    __slots__ = ['start', 'end']
+    __slots__ = ['end']
 
     """
     Class representing an edge in a graph of states.
     """
-    def __init__(self, start: State, end: State):
+    def __init__(self, end: State):
         """
         Edge constructor.
 
-        :param start: Start state.
         :param end: End state.
         """
-        self.start = start
-        self.end = end
+        self.end = hash(end)
 
     def __str__(self):
-        return str(self.start) + " -> " + str(self.end)
+        return " -> " + str(self.end)
 
     def __repr__(self):
         return self.__str__()

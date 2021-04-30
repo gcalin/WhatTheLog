@@ -64,7 +64,7 @@ class PrefixTree(Graph):
         assert parent in self, "Parent is not in the tree!"
 
         self.add_state(state)
-        self.add_edge(Edge(parent, state))
+        self.add_edge(parent, Edge(state))
 
     def add_branch(self, state: State, tree: PrefixTree, parent: State):
         """
@@ -93,12 +93,16 @@ class PrefixTree(Graph):
     def get_parent(self, state: State) -> Union[State, None]:
         """
         Method to get the parent of a state.
+        WARNING: This method is O(n) were n is the number of edges in the tree!
 
         :param state: State to get parent of
         :return: Parent of state. If None state is the root.
         """
 
-        parents = self.get_incoming_states(state)
+        parents = [self.get_state_by_hash(key)
+                   for key in self.edges
+                   if len([edge for edge in self.edges[key]
+                           if edge.end == hash(state)]) == 1]
         assert len(parents) <= 1, "Edge has more than one parent!"
 
         if parents is None or len(parents) == 0:
