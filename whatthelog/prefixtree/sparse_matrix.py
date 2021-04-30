@@ -60,19 +60,28 @@ class SparseMatrix:
         """
         return self.__binary_search(self.list, item)
 
-    def __binary_search_partial(self, search_list: List[str], item: int) -> Union[Tuple[int, str], None]:
+    def __binary_search_partial(self, search_list: List[str], item: int) -> Union[List[Tuple[int, str]], None]:
         """
-        Use binary search to search for a partial entry in the given list.
+        Use binary search to search for partial entries in the given list.
         """
         index: int = self.bisearch(search_list, str(item) + self.separator)
         if index != self.size:
-            return index, self.get_value(index)
+            result = [(index, self.get_value(index))]
+            idx = index - 1
+            while idx > 0 and self.list[idx].startswith(str(item) + self.separator):
+                result.append((idx, self.get_value(idx)))
+                idx -= 1
+            idx = index + 1
+            while idx < self.size and self.list[idx].startswith(str(item) + self.separator):
+                result.append((idx, self.get_value(idx)))
+                idx += 1
+            return result
         else:
             return None
 
-    def binary_search_partial(self, item: int) -> Union[Tuple[int, str], None]:
+    def binary_search_partial(self, item: int) -> Union[List[Tuple[int, str]], None]:
         """
-        Use binary search to search for a partial entry in the list of the SparseMatrix.
+        Use binary search to search for partial entries in the list of the SparseMatrix.
         """
         return self.__binary_search_partial(self.list, item)
 
