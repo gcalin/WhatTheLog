@@ -36,12 +36,6 @@ def main():
     tree = PrefixTreeFactory.unpickle_tree(tree_file)
     print(f"Unpickled tree weighs: {bytes_tostring(asizeof(tree))}")
 
-    edge_list = tree.edges
-    edges_size = sum([asizeof(edge) for edge in edge_list])
-    print(f"Tree has {len(edge_list)} edges "
-          f"with total size {bytes_tostring(edges_size)} "
-          f"(average {bytes_tostring(edges_size/len(edge_list))})")
-
     states = tree.states
     states_size = sum([sys.getsizeof(state) for state in states])
     print(f"Tree has {len(states)} states "
@@ -54,15 +48,9 @@ def main():
           f"with total size {bytes_tostring(props_size)} "
           f"(average {bytes_tostring(props_size/len(properties))})")
 
+    print(f"The edges matrix weighs: {bytes_tostring(asizeof(tree.matrix))}")
     print(f"The list of states weighs: {bytes_tostring(asizeof(tree.states))}")
-    print(f"The list of edges weighs: {bytes_tostring(asizeof(tree.edges))}")
     print(f"The state hash index map weighs: {bytes_tostring(asizeof(tree.state_indices_by_hash))}")
-    print(f"The state children map weighs: {bytes_tostring(asizeof(tree.children))}")
-
-    key = list(tree.children.keys())[0]
-    value = tree.children[key]
-    print(f"One dict key weighs: {bytes_tostring(sys.getsizeof(key))}")
-    print(f"One dict array value weighs: {bytes_tostring(sys.getsizeof(value))}")
 
 if __name__ == "__main__":
     main()

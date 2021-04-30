@@ -13,9 +13,9 @@ from typing import List, Union
 # Internal
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+from prefixtree.edge_properties import EdgeProperties
 from whatthelog.prefixtree.graph import Graph
 from whatthelog.prefixtree.state import State
-from whatthelog.prefixtree.edge import Edge
 from whatthelog.exceptions import InvalidTreeException
 
 
@@ -52,19 +52,20 @@ class PrefixTree(Graph):
         """
         return self.get_outgoing_states(state)
 
-    def add_child(self, state: State, parent: State):
+    def add_child(self, state: State, parent: State, props: EdgeProperties = EdgeProperties([])):
         """
         Method to add a child in the tree.
         Requires that the parent be in the current tree.
 
         :param state: State to add
         :param parent: Parent of state to link with
+        :param props: the edge properties object
         """
 
         assert parent in self, "Parent is not in the tree!"
 
         self.add_state(state)
-        self.add_edge(parent, Edge(state))
+        self.add_edge(parent, state, props)
 
     def add_branch(self, state: State, tree: PrefixTree, parent: State):
         """
@@ -99,16 +100,13 @@ class PrefixTree(Graph):
         :return: Parent of state. If None state is the root.
         """
 
-        parents = [self.get_state_by_hash(key)
-                   for key in self.edges
-                   if len([edge for edge in self.edges[key]
-                           if edge.end == hash(state)]) == 1]
+        parents = self.matrix.get_parents(self.state_indices_by_hash[hash(state)])
         assert len(parents) <= 1, "Edge has more than one parent!"
 
         if parents is None or len(parents) == 0:
             return None
         else:
-            return parents[0]
+            return self.states[parents[0]]
 
     def merge(self, other: PrefixTree):
         """

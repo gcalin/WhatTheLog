@@ -113,3 +113,17 @@ class SparseMatrix:
                 return value[j + 1:]
             if value[j] == self.separator:
                 first = True
+
+    def get_parents(self, i: int) -> List[int]:
+        """
+        Return all the entries which are linked to the input entry.
+        :param i: the input entry
+        :return: the list of parent entries
+        """
+
+        copy = self.list.copy()
+        reverse = []
+        for item in copy:
+            parent, child, props = item.split('.', 2)
+            reverse.append(f"{child}.{parent}.{props}")
+        return [tup[0] for tup in self.__binary_search_partial(reverse, i)]

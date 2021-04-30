@@ -3,32 +3,32 @@
 #****************************************************************************************************
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# External
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+from __future__ import annotations
+from ast import literal_eval
+from dataclasses import dataclass, field
+from typing import List
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Internal
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-from whatthelog.prefixtree.state import State
 
 #****************************************************************************************************
-# Edge
+# Edge Properties
 #****************************************************************************************************
 
-class Edge:
 
-    __slots__ = ['end']
+@dataclass
+class EdgeProperties:
 
-    """
-    Class representing an edge in a graph of states.
-    """
-    def __init__(self, end: State):
-        """
-        Edge constructor.
-
-        :param end: End state.
-        """
-        self.end = hash(end)
+    props: List[str] = field(default_factory=lambda: [])
 
     def __str__(self):
-        return " -> " + str(self.end)
+        return str(self.props)
 
-    def __repr__(self):
-        return self.__str__()
+    @staticmethod
+    def parse(string: str):
+        return EdgeProperties(literal_eval(string))

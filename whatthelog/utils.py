@@ -64,7 +64,7 @@ def profile_mem(snapshot, key_type='lineno', limit=3):
         size = sum(stat.size for stat in other)
         print("%s other: %.1f KiB" % (len(other), size / 1024))
     total = sum(stat.size for stat in top_stats)
-    print("Total allocated size: %.1f KiB" % (total / 1024))
+    print(f"Total allocated size: {bytes_tostring(total)}")
 
 # --- Parser for human-readable file sizes ---
 # Source: https://web.archive.org/web/20111010015624/http://blogmag.net/blog/read/38/Print_human_readable_file_size

@@ -7,16 +7,16 @@
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 from typing import List, Union, Dict
-from array import array
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Internal
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 from whatthelog.prefixtree.state import State
-from whatthelog.prefixtree.edge import Edge
 from whatthelog.auto_printer import AutoPrinter
 from whatthelog.exceptions import StateAlreadyExistsException
+from whatthelog.prefixtree.sparse_matrix import SparseMatrix
+from whatthelog.prefixtree.edge_properties import EdgeProperties
 
 
 #****************************************************************************************************
@@ -28,14 +28,13 @@ class Graph(AutoPrinter):
     Class implementing a graph
     """
 
-    __slots__ = ['states', 'edges', 'state_indices_by_hash', 'states_by_prop', 'children']
+    __slots__ = ['matrix', 'states', 'state_indices_by_hash', 'states_by_prop']
 
     def __init__(self):
+        self.matrix = SparseMatrix()
         self.states: List[State] = []
-        self.edges: List[Edge] = []
         self.state_indices_by_hash: Dict[int, int] = {}
         self.states_by_prop: Dict[str, int] = {}
-        self.children: Dict[int, array[int]] = {}
 
     def get_state_by_hash(self, state_hash: int):
         """
@@ -59,38 +58,33 @@ class Graph(AutoPrinter):
         curr_index = len(self.states)
         self.states.append(state)
         self.state_indices_by_hash[hash(state)] = curr_index
+
         if state.properties.get_prop_hash() in self.states_by_prop:
             state.properties = self.get_state_by_hash(
                 self.states_by_prop[state.properties.get_prop_hash()]).properties
         else:
             self.states_by_prop[state.properties.get_prop_hash()] = hash(state)
 
-    def add_edge(self, state: State, edge: Edge) -> bool:
+    def add_edge(self, start: State, end: State, props: EdgeProperties) -> bool:
         """
         Method to add an edge to the graph
 
-        :param state: Origin state of the edge
-        :param edge: Edge to be added
+        :param start: Origin state of the edge
+        :param end: Destination state of the edge
+        :param props: the edge properties object
         :return: Whether adding the edge was successful. If one of the nodes in
         edge does not exist or edge already exists returns False else True.
         """
-        start = hash(state)
-        end = edge.end
-        if start not in self.state_indices_by_hash:
+
+        if hash(start) not in self.state_indices_by_hash or hash(end) not in self.state_indices_by_hash:
             return False
-        elif end not in self.state_indices_by_hash:
-            return False
-        elif start in self.children and end in \
-                [self.edges[index].end for index in self.children[start]]:
-            return False
-        else:
-            curr_edge = len(self.edges)
-            self.edges.append(edge)
-            if start in self.children:
-                self.children[start].append(curr_edge)
-            else:
-                self.children[start] = array('l', [curr_edge])
-        return True
+
+        start_index = self.state_indices_by_hash[hash(start)]
+        end_index = self.state_indices_by_hash[hash(end)]
+        if not (start_index, end_index) in self.matrix:
+            self.matrix[start_index, end_index] = str(props)
+            return True
+        return False
 
     def size(self):
         """
@@ -100,7 +94,7 @@ class Graph(AutoPrinter):
         """
         return len(self.states)
 
-    def get_outgoing_edges(self, state: State) -> Union[List[Edge], None]:
+    def get_outgoing_props(self, state: State) -> Union[List[EdgeProperties], None]:
         """
         Method to get outgoing edges of a state.
 
@@ -109,10 +103,8 @@ class Graph(AutoPrinter):
         If state does not exist return None.
         """
         if state in self:
-            if hash(state) in self.children:
-                return [self.edges[index] for index in self.children[hash(state)]]
-            else:
-                return []
+            results = self.matrix.binary_search_partial(self.state_indices_by_hash[hash(state)])
+            return [EdgeProperties.parse(result[1]) for result in results]
         else:
             return None
 
@@ -125,39 +117,10 @@ class Graph(AutoPrinter):
         If state does not exist return None.
         """
         if state in self:
-            if hash(state) in self.children:
-                return [self.get_state_by_hash(edge.end) for edge in
-                        [self.edges[index] for index in self.children[hash(state)]]]
-            else:
-                return []
+            results = self.matrix.binary_search_partial(self.state_indices_by_hash[hash(state)])
+            return [self.states[result[0]] for result in results] if results else []
         else:
             return None
-
-    # def get_incoming_edges(self, state: State) -> Union[List[Edge], None]:
-    #     """
-    #     Method to get incoming edges of a state.
-    #
-    #     :param state: State to get incoming edges for
-    #     :return: List of incoming edges from state.
-    #     If state does not exist return None.
-    #     """
-    #     if state in self:
-    #         return list(self.states[state][0])
-    #     else:
-    #         return None
-
-    # def get_incoming_states(self, state: State) -> Union[List[State], None]:
-    #     """
-    #     Method to get incoming states of a state.
-    #
-    #     :param state: State to get incoming states for
-    #     :return: List of incoming edges from state.
-    #     If state does not exist return None.
-    #     """
-    #     if state in self:
-    #         return list([edge.end for edge in self.states[state][0]])
-    #     else:
-    #         return None
 
     def __str__(self):
         return str(self.states)
