@@ -63,6 +63,8 @@ class PrefixTree(Graph):
 
         assert parent in self, "Parent is not in the tree!"
 
+        if state.properties.get_prop_hash() in self.states_by_prop:
+            state.properties = self.states_by_prop[state.properties.get_prop_hash()].properties
         self.add_state(state)
         self.add_edge(Edge(parent, state))
 
@@ -85,8 +87,6 @@ class PrefixTree(Graph):
             current, parent = queue.pop(0)
             assert current not in self, "Branch state is already in current tree!"
 
-            if current in self.states_by_prop:
-                current.properties = self.states_by_prop[current].properties
             self.add_child(current, parent)
 
             for child in tree.get_children(current):

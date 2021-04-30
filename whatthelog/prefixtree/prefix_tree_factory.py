@@ -105,7 +105,8 @@ class PrefixTreeFactory(AutoPrinter):
 
         pbar = tqdm(os.listdir(log_dir), file=sys.stdout, leave=False)
         for filename in pbar:
-            PrefixTreeFactory.__parse_trace(Path(log_dir).joinpath(filename).strip(), syntax_tree, prefix_tree)
+            filepath = str(Path(log_dir).joinpath(filename)).strip()
+            PrefixTreeFactory.__parse_trace(filepath, syntax_tree, prefix_tree)
 
         return prefix_tree
 
