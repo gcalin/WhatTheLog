@@ -40,7 +40,7 @@ class SparseMatrix:
         Checks if an edge exists.
         """
         index: int = self.bisearch(self.list, str(item[0]) + self.separator + str(item[1]))
-        if index != self.size and self.get_value(index, True) == str(item[0]) + self.separator + str(item[1]):
+        if index != self.size:
             return True
         return False
 
@@ -93,7 +93,7 @@ class SparseMatrix:
 
         return self.size
 
-    def get_value(self, index: int, key: bool = False) -> str:
+    def get_value(self, index: int) -> str:
         """
         Retrieves the value part of the SparseMatrix entry (or the key if key is True).
         """
@@ -101,9 +101,6 @@ class SparseMatrix:
         value: str = self.list[index]
         for j in range(len(value)):
             if first and value[j] == self.separator:
-                if key:
-                    return value[:j]
-                else:
-                    return value[j + 1:]
+                return value[j + 1:]
             if value[j] == self.separator:
                 first = True
