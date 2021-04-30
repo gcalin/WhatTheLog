@@ -13,6 +13,9 @@ from whatthelog.prefixtree.state import State
 #****************************************************************************************************
 
 class Edge:
+
+    __slots__ = ['start', 'end']
+
     """
     Class representing an edge in a graph of states.
     """

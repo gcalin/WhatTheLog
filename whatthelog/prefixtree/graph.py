@@ -46,7 +46,10 @@ class Graph(AutoPrinter):
             raise StateAlreadyExistsException()
 
         self.states[state] = ({}, {})
-        self.states_by_prop[state.properties.get_prop_hash()] = state
+        if state.properties.get_prop_hash() in self.states_by_prop:
+            state.properties = self.states_by_prop[state.properties.get_prop_hash()].properties
+        else:
+            self.states_by_prop[state.properties.get_prop_hash()] = state
 
     def add_edge(self, edge: Edge) -> bool:
         """

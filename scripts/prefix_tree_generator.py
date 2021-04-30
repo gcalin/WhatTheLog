@@ -46,6 +46,6 @@ if __name__ == '__main__':
     print(f"Time elapsed: {timedelta(seconds=time() - start_time)}")
 
     snapshot = tracemalloc.take_snapshot()
-    # profile_mem(snapshot)
+    profile_mem(snapshot)
     total = get_peak_mem(snapshot)
     print(f"Peak memory usage: {bytes_tostring(total)}")

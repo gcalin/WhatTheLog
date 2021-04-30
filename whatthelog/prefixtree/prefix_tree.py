@@ -63,8 +63,6 @@ class PrefixTree(Graph):
 
         assert parent in self, "Parent is not in the tree!"
 
-        if state.properties.get_prop_hash() in self.states_by_prop:
-            state.properties = self.states_by_prop[state.properties.get_prop_hash()].properties
         self.add_state(state)
         self.add_edge(Edge(parent, state))
 
