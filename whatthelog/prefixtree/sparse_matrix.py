@@ -68,7 +68,7 @@ class SparseMatrix:
         if index != self.size:
             result = [(index, self.get_value(index))]
             idx = index - 1
-            while idx > 0 and self.list[idx].startswith(str(item) + self.separator):
+            while idx >= 0 and self.list[idx].startswith(str(item) + self.separator):
                 result.append((idx, self.get_value(idx)))
                 idx -= 1
             idx = index + 1
