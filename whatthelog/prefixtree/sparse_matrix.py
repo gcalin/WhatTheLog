@@ -19,21 +19,21 @@ class SparseMatrix:
         """
         Set item in SparseMatrix using insertion sort.
         """
-        tup = self.binary_search(key)
-        if tup is None:
+        index = self.find_index(key)
+        if index is None:
             bisect.insort_right(self.list, str(key[0]) + self.separator + str(key[1]) + self.separator + str(value))
             self.size += 1
         else:
-            self.list[tup[0]] = str(key[0]) + self.separator + str(key[1]) + self.separator + str(value)
+            self.list[index] = str(key[0]) + self.separator + str(key[1]) + self.separator + str(value)
 
     def __getitem__(self, key: Tuple[int, int]) -> str:
         """
         Get item from SparseMatrix using binary search.
         """
-        index: Union[Tuple[int, str], None] = self.binary_search(key)
-        if index is None:
+        value: str = self.find_edge(key)
+        if value is None:
             raise KeyError
-        return index[1]
+        return value
 
     def __contains__(self, item: Tuple[int, int]) -> bool:
         """
@@ -44,46 +44,68 @@ class SparseMatrix:
             return True
         return False
 
-    def __binary_search(self, search_list: List[str], item: Tuple[int, int]) -> Union[Tuple[int, str], None]:
+    def __find_index(self, search_list: List[str], item: Tuple[int, int]) -> Union[int, None]:
         """
         Use binary search to search for a specific entry in the list of the SparseMatrix.
         """
         index: int = self.bisearch(search_list, str(item[0]) + self.separator + str(item[1]) + self.separator)
         if index != self.size:
-            return index, self.get_value(index)
+            return index
         else:
             return None
 
-    def binary_search(self, item: Tuple[int, int]) -> Union[Tuple[int, str], None]:
+    def find_index(self, coordinates: Tuple[int, int]) -> Union[int, None]:
         """
         Use binary search to search for a specific entry in the given list.
+        Return the index of the entry in the entry list, or None if no entry found.
+        :param coordinates: the coordinates of the entry to find.
+        :return the index of the input entry, or None if no entry found.
         """
-        return self.__binary_search(self.list, item)
+        return self.__find_index(self.list, coordinates)
 
-    def __binary_search_partial(self, search_list: List[str], item: int) -> Union[List[Tuple[int, str]], None]:
+    def find_edge(self, coordinates: Tuple[int, int]) -> Union[str, None]:
         """
-        Use binary search to search for partial entries in the given list.
+        Use binary search to search for a specific entry value in the given list.
+        Return the value of the entry, or None if no entry found.
+        :param coordinates: the coordinates of the entry to find.
+        :return the value of the input entry, or None if no entry found.
+        """
+        return self.get_values(self.find_index(coordinates))[2]
+
+    def __find_children(self, search_list: List[str], item: int) -> Union[List[Tuple[int, str]], None]:
+        """
+        Use binary search to search for all children of the given entry in an input list.
+        Return a list of tuples in the form (child_number, value), or None if no child found.
+        :param search_list: the list of entries to search for matches.
+        :param item: the item to match on.
+        :return a list of tuples (child_number, value), or None if no child found.
         """
         index: int = self.bisearch(search_list, str(item) + self.separator)
         if index != self.size:
-            result = [(index, self.get_value(index))]
+            current = self.get_values(index)
+            result = [(current[1], current[2])]
             idx = index - 1
             while idx >= 0 and self.list[idx].startswith(str(item) + self.separator):
-                result.append((idx, self.get_value(idx)))
+                current = self.get_values(idx)
+                result.append((current[1], current[2]))
                 idx -= 1
             idx = index + 1
             while idx < self.size and self.list[idx].startswith(str(item) + self.separator):
-                result.append((idx, self.get_value(idx)))
+                current = self.get_values(idx)
+                result.append((current[1], current[2]))
                 idx += 1
             return result
         else:
             return None
 
-    def binary_search_partial(self, item: int) -> Union[List[Tuple[int, str]], None]:
+    def find_children(self, item: int) -> Union[List[Tuple[int, str]], None]:
         """
-        Use binary search to search for partial entries in the list of the SparseMatrix.
+        Use binary search to search for all children of the given entry in the main list.
+        Return a list of tuples in the form (child_number, value), or None if no child found.
+        :param item: the item to match on.
+        :return a list of tuples (child_number, value), or None if no child found.
         """
-        return self.__binary_search_partial(self.list, item)
+        return self.__find_children(self.list, item)
 
     def bisearch(self, arr: List[str], target: str) -> int:
         """
@@ -102,17 +124,19 @@ class SparseMatrix:
 
         return self.size
 
-    def get_value(self, index: int) -> str:
+    def get_values(self, index: int) -> Tuple[int, int, str]:
         """
-        Retrieves the value part of the SparseMatrix entry (or the key if key is True).
+        Retrieves the tuple of coordinates and value for the given index.
+        Raises an exception if the index is out of bounds.
+        :param index: the index of the tuple to fetch.
+        :return a tuple in the form(start_node, end_node, edge_value)
         """
-        first: bool = False
+        if index < 0 or index >= len(self.list):
+            raise IndexError
+
         value: str = self.list[index]
-        for j in range(len(value)):
-            if first and value[j] == self.separator:
-                return value[j + 1:]
-            if value[j] == self.separator:
-                first = True
+        strings = value.split('.', 2)
+        return int(strings[0]), int(strings[1]), strings[2]
 
     def get_parents(self, i: int) -> List[int]:
         """
@@ -126,4 +150,7 @@ class SparseMatrix:
         for item in copy:
             parent, child, props = item.split('.', 2)
             reverse.append(f"{child}.{parent}.{props}")
-        return [tup[0] for tup in self.__binary_search_partial(reverse, i)]
+        return [tup[0] for tup in self.__find_children(reverse, i)]
+
+    def __len__(self):
+        return len(self.list)

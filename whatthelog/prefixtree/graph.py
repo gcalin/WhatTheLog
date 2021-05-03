@@ -103,7 +103,7 @@ class Graph(AutoPrinter):
         If state does not exist return None.
         """
         if state in self:
-            results = self.matrix.binary_search_partial(self.state_indices_by_hash[hash(state)])
+            results = self.matrix.find_children(self.state_indices_by_hash[hash(state)])
             return [EdgeProperties.parse(result[1]) for result in results]
         else:
             return None
@@ -117,7 +117,7 @@ class Graph(AutoPrinter):
         If state does not exist return None.
         """
         if state in self:
-            results = self.matrix.binary_search_partial(self.state_indices_by_hash[hash(state)])
+            results = self.matrix.find_children(self.state_indices_by_hash[hash(state)])
             return [self.states[result[0]] for result in results] if results else []
         else:
             return None
@@ -127,3 +127,6 @@ class Graph(AutoPrinter):
 
     def __contains__(self, item: State):
         return hash(item) in self.state_indices_by_hash
+
+    def __len__(self):
+        return len(self.states)
