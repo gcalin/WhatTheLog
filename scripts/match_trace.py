@@ -3,13 +3,14 @@ from typing import List, Union, Dict
 
 from whatthelog.prefixtree.prefix_tree import PrefixTree, State
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
-from whatthelog.exceptions.unidentified_log_exception import \
-    UnidentifiedLogException
+
+
+def template_matches_state(template: str, state: State) -> bool:
+    return template in state.properties.log_templates
 
 
 def match_trace(
         prefix_tree: PrefixTree,
-        log_templates: Dict[str, int],
         trace: List[str],
         syntax_tree: SyntaxTree) -> Union[List[State], None]:
     """
@@ -34,16 +35,18 @@ def match_trace(
     # Check which state the current line belongs to
     template = syntax_tree.search(trace[0])
 
-    # If no state is found, raise an exception
+    # If no state is found, return None
     if template is None:
-        raise UnidentifiedLogException(trace[0] + " was not identified as a valid log.")
+        return None
+
+    current_state: State = prefix_tree.get_root()
 
     # Check if the template matches the root of the state tree
-    if log_templates[template.name] in prefix_tree.state.log_ids:
+    if template_matches_state(template.name, current_state):
 
         # If the trace is exactly one line long, return the root state
         if len(trace) == 1:
-            return [prefix_tree.state]
+            return [current_state]
 
         # Remove the checked line from trace
         trace[:] = trace[1:]
@@ -53,12 +56,11 @@ def match_trace(
 
         # If no state is found, raise an exception
         if template is None:
-            raise UnidentifiedLogException(trace[0] + " was not identified as a valid log.")
+            return None
 
         # Check if any of the children of current node contain the template in their state
-        children: List[PrefixTree] = prefix_tree.get_children()
-        successor = list(filter(lambda next_tree: log_templates[template.name] in next_tree.state.log_ids,
-                                children))
+        children: List[State] = prefix_tree.get_children(current_state)
+        successor: List[State] = list(filter(lambda next_state: template_matches_state(template.name, next_state), children))
 
         if len(successor) == 0:
             # If none found, the trace cannot be matched
@@ -66,23 +68,23 @@ def match_trace(
         else:
             # Pick a random suitable next node
             # TODO: Should this be removed through an invariant in the prefix tree?
-            next_node = random.choice(successor)
+            next_node: State = random.choice(successor)
 
             # Continue the search recursively
-            tail = match_trace_rec(next_node, log_templates, trace[1:], syntax_tree)
+            tail: List[State] = match_trace_rec(next_node, prefix_tree, trace[1:], syntax_tree)
 
             if tail is None:
                 # If the search failed, return none
                 return None
             else:
                 # If it was successful, prepend the current state
-                tail.insert(0, prefix_tree.state)
+                tail.insert(0, current_state)
                 return tail
 
 
 def match_trace_rec(
+        current_state: State,
         prefix_tree: PrefixTree,
-        log_templates: Dict[str, int],
         trace: List[str],
         syntax_tree: SyntaxTree) -> Union[List[State], None]:
     """
@@ -90,6 +92,7 @@ def match_trace_rec(
     finds the next state in the prefix tree for a the first line in the trace
     if any exists.
 
+    :param current_state: The current state of the prefix tree
     :param prefix_tree: The prefix tree in which states need to be matched.
     :param log_templates: A dictionary in which each template name is mapped to the id of
                           its corresponding prefix tree node.
@@ -101,19 +104,18 @@ def match_trace_rec(
 
     if len(trace) == 0:
         # If the trace is empty, then it has been fully parsed
-        return [prefix_tree.state]
+        return [current_state]
 
     # Find the template of the first line in the syntax tree
     template = syntax_tree.search(trace[0])
 
     # If no state is found, raise an exception
     if template is None:
-        raise UnidentifiedLogException(trace[0] + " was not identified as a valid log.")
+        return None
 
     # Check if any of the children of current node contain the template in their state
-    children: List[PrefixTree] = prefix_tree.get_children()
-    successor = list(filter(lambda next_tree: log_templates[template.name] in next_tree.state.log_ids,
-                            children))
+    children: List[State] = prefix_tree.get_children(current_state)
+    successor: List[State] = list(filter(lambda next_state: template_matches_state(template.name, next_state), children))
 
     if len(successor) == 0:
         # If none found, the trace cannot be matched
@@ -123,12 +125,12 @@ def match_trace_rec(
         next_node = random.choice(successor)
 
         # Continue the search starting at the next node in the prefix tree and the next line in the trace
-        tail = match_trace_rec(next_node, log_templates, trace[1:], syntax_tree)
+        tail = match_trace_rec(next_node, prefix_tree, trace[1:], syntax_tree)
 
         if tail is None:
             # If the search failed, return none
             return None
         else:
             # If it was successful, prepend the current state
-            tail.insert(0, prefix_tree.state)
+            tail.insert(0, current_state)
             return tail
