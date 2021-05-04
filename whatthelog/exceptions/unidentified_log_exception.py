@@ -1,2 +1,0 @@
-class UnidentifiedLogException(Exception):
-    pass
