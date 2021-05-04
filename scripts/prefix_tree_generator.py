@@ -13,6 +13,9 @@ import sys
 from time import time
 import tracemalloc
 
+from whatthelog.prefixtree.visualizer import Visualizer
+
+
 sys.path.insert(0, "./../")
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -37,7 +40,7 @@ if __name__ == '__main__':
     start_time = time()
     # tracemalloc.start()
 
-    pt = PrefixTreeFactory.get_prefix_tree(str(project_root.joinpath('out/traces')),
+    pt = PrefixTreeFactory.get_prefix_tree(str(project_root.joinpath('resources/traces')),
                                            str(project_root.joinpath('resources/config.json')))
 
     PrefixTreeFactory.pickle_tree(pt, project_root.joinpath('out/fullPrefixTree.p'))

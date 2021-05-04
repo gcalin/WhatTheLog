@@ -72,5 +72,8 @@ MANIFEST
 resources/traces*
 resources/prefixtree.png
 
+# Test resources
+tests/resources/traces*
+
 # Temporary Files
 temp/

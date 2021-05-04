@@ -81,17 +81,18 @@ class SparseMatrix:
         :return a list of tuples (child_number, value), or None if no child found.
         """
         index: int = self.bisearch(search_list, str(item) + self.separator)
-        if index != self.size:
-            current = self.get_values(index)
+
+        if index != len(search_list):
+            current = self.get_values(search_list, index)
             result = [(current[1], current[2])]
             idx = index - 1
-            while idx >= 0 and self.list[idx].startswith(str(item) + self.separator):
-                current = self.get_values(idx)
+            while idx >= 0 and search_list[idx].startswith(str(item) + self.separator):
+                current = self.get_values(search_list, idx)
                 result.append((current[1], current[2]))
                 idx -= 1
             idx = index + 1
-            while idx < self.size and self.list[idx].startswith(str(item) + self.separator):
-                current = self.get_values(idx)
+            while idx < self.size and search_list[idx].startswith(str(item) + self.separator):
+                current = self.get_values(search_list, idx)
                 result.append((current[1], current[2]))
                 idx += 1
             return result
@@ -107,12 +108,13 @@ class SparseMatrix:
         """
         return self.__find_children(self.list, item)
 
-    def bisearch(self, arr: List[str], target: str) -> int:
+    @staticmethod
+    def bisearch(arr: List[str], target: str) -> int:
         """
         Perform a binary search on the prefix (of unspecified length) of the elements
         """
         low: int = 0
-        high: int = self.size - 1
+        high: int = len(arr) - 1
         while high >= low:
             ix = (low + high) // 2
             if arr[ix].startswith(target):  # todo make this more efficient maybe?
@@ -122,19 +124,20 @@ class SparseMatrix:
             else:
                 low = ix + 1
 
-        return self.size
+        return len(arr)
 
-    def get_values(self, index: int) -> Tuple[int, int, str]:
+    @staticmethod
+    def get_values(array: List[str],  index: int) -> Tuple[int, int, str]:
         """
         Retrieves the tuple of coordinates and value for the given index.
         Raises an exception if the index is out of bounds.
         :param index: the index of the tuple to fetch.
         :return a tuple in the form(start_node, end_node, edge_value)
         """
-        if index < 0 or index >= self.size:
+        if index < 0 or index >= len(array):
             raise IndexError
 
-        value: str = self.list[index]
+        value: str = array[index]
         strings = value.split('.', 2)
         return int(strings[0]), int(strings[1]), strings[2]
 
@@ -149,8 +152,16 @@ class SparseMatrix:
         reverse = []
         for item in copy:
             parent, child, props = item.split('.', 2)
-            reverse.append(f"{child}.{parent}.{props}")
-        return [tup[0] for tup in self.__find_children(reverse, i)]
+            bisect.insort_right(reverse, f"{child}.{parent}.{props}")
+        print("list: ", self.list)
+        print("reverse: ", reverse)
+        children = self.__find_children(reverse, i)
+        print(f"children of {i}: ", children)
+
+        return [tup[0] for tup in self.__find_children(reverse, i)] if children is not None else []
 
     def __len__(self):
         return self.size
+
+    def __str__(self):
+        return str(self.list)
