@@ -28,19 +28,6 @@ def syntax_tree() -> SyntaxTree:
 
 
 @pytest.fixture()
-def template() -> Dict[str, int]:
-    return {
-        "p0p1": 0,
-        "p0p2": 1,
-        "p0p3": 2,
-        "p0p4p1": 3,
-        "p0p4p2": 4,
-        "p0p4p3": 5,
-        "p0p4p0": 6
-    }
-
-
-@pytest.fixture()
 def state_tree() -> PrefixTree:
     t0: State = State(["p0p1"])
     t1: State = State(["p0p2", "p0p3"])
