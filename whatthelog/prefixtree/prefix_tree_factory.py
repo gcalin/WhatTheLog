@@ -121,7 +121,7 @@ class PrefixTreeFactory(AutoPrinter):
         :param tracepath: The path to the trace file to parse
         :param syntax_tree: The syntax tree used to get the log template from the log
         :param prefix_tree: The current prefix tree to be used
-        :return: None
+        :return: PrefixTree
         """
 
         parent = prefix_tree.get_root()
