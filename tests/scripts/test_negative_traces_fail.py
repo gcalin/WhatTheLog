@@ -3,8 +3,8 @@ from typing import Tuple, Dict, List
 
 from scripts.log_scrambler import process_file
 from scripts.match_trace import match_trace
-from scripts.prefix_tree_generator import generate_prefix_tree
 from whatthelog.prefixtree.prefix_tree import PrefixTree
+from whatthelog.prefixtree.prefix_tree_factory import PrefixTreeFactory
 from whatthelog.syntaxtree.parser import Parser
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 
@@ -22,13 +22,13 @@ test_logs = [
 ]
 
 
-def prefix_tree() -> Tuple[PrefixTree, Dict[str, int]]:
+def prefix_tree() -> PrefixTree:
     """
     Generates a prefix tree based on real log data.
     :return: Tuple of a PrefixTree and a dictionary mapping log templates
      to unique ids.
     """
-    return generate_prefix_tree(test_logs_dir, "resources/config.json")
+    return PrefixTreeFactory.get_prefix_tree(test_logs_dir, "resources/config.json")
 
 
 def get_syntax_tree() -> SyntaxTree:
@@ -72,7 +72,7 @@ def execute_test_on_trace(filename) -> None:
     wrong_trace = generate_negative_traces(filename)
 
     # Check whether this trace is invalid
-    result = match_trace(*prefix_tree(), wrong_trace, get_syntax_tree())
+    result = match_trace(prefix_tree(), wrong_trace, get_syntax_tree())
     assert result is None, 'Negative trace not identified as invalid'
 
     # Clean up
