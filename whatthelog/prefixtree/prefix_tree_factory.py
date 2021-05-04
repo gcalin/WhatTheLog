@@ -142,7 +142,7 @@ class PrefixTreeFactory(AutoPrinter):
                         parent = node
                         nodes = prefix_tree.get_children(parent)
                         exists = True
-                        continue
+                        break
 
                 if not exists:
                     child = State([template])

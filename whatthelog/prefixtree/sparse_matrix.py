@@ -131,7 +131,7 @@ class SparseMatrix:
         :param index: the index of the tuple to fetch.
         :return a tuple in the form(start_node, end_node, edge_value)
         """
-        if index < 0 or index >= len(self.list):
+        if index < 0 or index >= self.size:
             raise IndexError
 
         value: str = self.list[index]
@@ -153,4 +153,4 @@ class SparseMatrix:
         return [tup[0] for tup in self.__find_children(reverse, i)]
 
     def __len__(self):
-        return len(self.list)
+        return self.size
