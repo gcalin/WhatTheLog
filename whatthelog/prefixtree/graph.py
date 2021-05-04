@@ -59,7 +59,7 @@ class Graph(AutoPrinter):
         self.states.append(state)
         self.state_indices_by_hash[hash(state)] = curr_index
 
-        if state.properties.get_prop_hash() in self.states_by_prop:
+        if self.states_by_prop.get(state.properties.get_prop_hash()) is not None:
             state.properties = self.get_state_by_hash(
                 self.states_by_prop[state.properties.get_prop_hash()]).properties
         else:
@@ -76,7 +76,7 @@ class Graph(AutoPrinter):
         edge does not exist or edge already exists returns False else True.
         """
 
-        if hash(start) not in self.state_indices_by_hash or hash(end) not in self.state_indices_by_hash:
+        if self.state_indices_by_hash.get(hash(start)) is None or self.state_indices_by_hash.get(hash(end)) is None:
             return False
 
         start_index = self.state_indices_by_hash[hash(start)]
@@ -126,7 +126,7 @@ class Graph(AutoPrinter):
         return str(self.states)
 
     def __contains__(self, item: State):
-        return hash(item) in self.state_indices_by_hash
+        return self.state_indices_by_hash.get(hash(item)) is not None
 
     def __len__(self):
         return len(self.states)
