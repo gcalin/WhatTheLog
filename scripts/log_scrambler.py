@@ -24,12 +24,16 @@ from typing import List
 import tracemalloc
 from tqdm import tqdm
 
+sys.path.insert(0, "./../")
+
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Internal
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-from whatthelog.prefixtree.parser import Parser
-from whatthelog.prefixtree.prefix_tree import PrefixTree
+from whatthelog.syntaxtree.parser import Parser
+from whatthelog.syntaxtree.syntax_tree import SyntaxTree
+from whatthelog.auto_printer import AutoPrinter
+from whatthelog.utils import get_peak_mem, bytes_tostring
 
 #****************************************************************************************************
 # Global Variables
@@ -38,26 +42,14 @@ from whatthelog.prefixtree.prefix_tree import PrefixTree
 pool_size_default = 8
 config_default = os.path.join(pathlib.Path(__file__).parent.absolute(), "../resources/config.json")
 
+def print(msg): AutoPrinter.static_print(msg)
+
 #****************************************************************************************************
 # Utility Functions
 #****************************************************************************************************
 
-def get_peak_mem(snapshot, key_type='lineno') -> int:
-    snapshot = snapshot.filter_traces((
-        tracemalloc.Filter(False, "<frozen importlib._bootstrap>"),
-        tracemalloc.Filter(False, "<unknown>"),
-    ))
-    return sum(stat.size for stat in snapshot.statistics(key_type))
-
-# --- Parser for human-readable file sizes ---
-def bytes_tostring(num): # Source: https://web.archive.org/web/20111010015624/http://blogmag.net/blog/read/38/Print_human_readable_file_size
-    for x in ['bytes','KB','MB','GB','TB']:
-        if num < 1024.0:
-            return "%3.1f%s" % (num, x)
-        num /= 1024.0
-
 # --- Parses a section of lines adjacent to the input line which have the same log format ---
-def get_section(lines: List[str], line: int, tree: PrefixTree) -> List[int]:
+def get_section(lines: List[str], line: int, tree: SyntaxTree) -> List[int]:
 
     node = tree.search(lines[line])
     section = [line]
@@ -74,11 +66,12 @@ def get_section(lines: List[str], line: int, tree: PrefixTree) -> List[int]:
 
     return section
 
+
 #****************************************************************************************************
 # Main Code
 #****************************************************************************************************
 
-def delete_one(lines: List[str], tree: PrefixTree):
+def delete_one(lines: List[str], tree: SyntaxTree):
 
     line = random.choice(range(len(lines)))
     section = get_section(lines, line, tree)
@@ -87,7 +80,7 @@ def delete_one(lines: List[str], tree: PrefixTree):
     for l in section:
         del lines[l]
 
-def swap(lines: List[str], tree: PrefixTree):
+def swap(lines: List[str], tree: SyntaxTree):
 
     elem = random.choice(range(len(lines)-1))
     section1 = get_section(lines, elem, tree)
@@ -98,7 +91,7 @@ def swap(lines: List[str], tree: PrefixTree):
     lines[section1[0]:section1[-1]+1], lines[section2[0]:section2[-1]+1] = \
         lines[section2[0]:section2[-1]+1], lines[section1[0]:section1[-1]+1]
 
-def r_swap(lines: List[str], tree: PrefixTree):
+def r_swap(lines: List[str], tree: SyntaxTree):
 
     elem1 = random.choice(range(len(lines)))
     section1 = get_section(lines, elem1, tree)
@@ -111,7 +104,7 @@ def r_swap(lines: List[str], tree: PrefixTree):
     lines[section1[0]:section1[-1]+1], lines[section2[0]:section2[-1]+1] = \
         lines[section2[0]:section2[-1]+1], lines[section1[0]:section1[-1]+1]
 
-def process_file(input_file: str, output_file: str, tree: PrefixTree) -> None:
+def process_file(input_file: str, output_file: str, tree: SyntaxTree) -> None:
 
     with open(input_file, 'r') as f:
 
@@ -141,7 +134,9 @@ def main(argv):
     assert os.path.isdir(output_dir), "Cannot find output directory!"
     assert os.path.isfile(config_file), "Cannot find config file!"
 
-    files = [os.path.join(input_dir, name) for name in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, name))]
+    files = [os.path.join(input_dir, name)
+             for name in os.listdir(input_dir)
+             if os.path.isfile(os.path.join(input_dir, name))]
 
     # --- Parse prefix tree ---
     print("[ Log Filter ] - Parsing configuration file...")
