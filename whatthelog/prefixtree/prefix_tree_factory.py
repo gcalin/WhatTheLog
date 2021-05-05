@@ -18,6 +18,7 @@ from tqdm import tqdm
 
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.prefixtree.state import State
+from whatthelog.prefixtree.visualizer import Visualizer
 from whatthelog.syntaxtree.parser import Parser
 from whatthelog.exceptions import UnidentifiedLogException
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
@@ -107,7 +108,6 @@ class PrefixTreeFactory(AutoPrinter):
         for filename in pbar:
             filepath = str(Path(log_dir).joinpath(filename)).strip()
             PrefixTreeFactory.__parse_trace(filepath, syntax_tree, prefix_tree)
-
         return prefix_tree
 
     @staticmethod

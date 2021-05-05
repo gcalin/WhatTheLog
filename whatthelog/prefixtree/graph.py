@@ -14,7 +14,7 @@ from typing import List, Union, Dict
 
 from whatthelog.prefixtree.state import State
 from whatthelog.auto_printer import AutoPrinter
-from whatthelog.exceptions import StateAlreadyExistsException
+from whatthelog.exceptions import StateAlreadyExistsException, StateDoesNotExistException
 from whatthelog.prefixtree.sparse_matrix import SparseMatrix
 from whatthelog.prefixtree.edge_properties import EdgeProperties
 
@@ -42,6 +42,9 @@ class Graph(AutoPrinter):
         :param state_hash: the hash of the state to fetch
         :return: the state object
         """
+        if state_hash not in self.state_indices_by_hash:
+            raise StateDoesNotExistException()
+
         return self.states[self.state_indices_by_hash[state_hash]]
 
     def add_state(self, state: State):
