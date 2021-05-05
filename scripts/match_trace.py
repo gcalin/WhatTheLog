@@ -37,9 +37,17 @@ def match_trace(
     if template is None:
         return None
 
-    current_state: State = random.choice(list(
+    # Get the root's children
+    root_children = list(
         filter(lambda s: template_matches_state(template.name, s),
-               prefix_tree.get_children(prefix_tree.get_root()))))
+               prefix_tree.get_children(prefix_tree.get_root())))
+
+    # If no suitable option, return
+    if len(root_children) == 0:
+        return None
+
+    # Randomly pick first suitable state
+    current_state: State = random.choice(root_children)
 
     # Check if the template matches the root of the state tree
     if template_matches_state(template.name, current_state):
@@ -99,36 +107,32 @@ def match_trace_rec(
     :return: If the trace corresponds to a sequence of states in the prefix tree,
              those states are returned in order. If no match is found, None is returned.
     """
+    res = [current_state]
 
-    if len(trace) == 0:
-        # If the trace is empty, then it has been fully parsed
-        return [current_state]
+    while len(trace) != 0:
+        # Find the template of the first line in the syntax tree
+        template = syntax_tree.search(trace[0])
 
-    # Find the template of the first line in the syntax tree
-    template = syntax_tree.search(trace[0])
+        # If no state is found, raise an exception
+        if template is None:
+            return None
 
-    # If no state is found, raise an exception
-    if template is None:
-        return None
+        # Check if any of the children of current node contain the template in their state
+        children: List[State] = prefix_tree.get_children(current_state)
+        successor: List[State] = list(
+            filter(lambda next_state: template_matches_state(template.name, next_state), children))
 
-    # Check if any of the children of current node contain the template in their state
-    children: List[State] = prefix_tree.get_children(current_state)
-    successor: List[State] = list(filter(lambda next_state: template_matches_state(template.name, next_state), children))
-
-    if len(successor) == 0:
-        # If none found, the trace cannot be matched
-        return None
-    else:
-        # Pick a random suitable next node
-        next_node = random.choice(successor)
-
-        # Continue the search starting at the next node in the prefix tree and the next line in the trace
-        tail = match_trace_rec(next_node, prefix_tree, trace[1:], syntax_tree)
-
-        if tail is None:
-            # If the search failed, return none
+        if len(successor) == 0:
+            # If none found, the trace cannot be matched
             return None
         else:
-            # If it was successful, prepend the current state
-            tail.insert(0, current_state)
-            return tail
+            # Pick a random suitable next node
+            current_state = random.choice(successor)
+
+            # Append result to the list of states
+            res.append(current_state)
+
+            # Remove first trace
+            trace = trace[1:]
+
+    return res
