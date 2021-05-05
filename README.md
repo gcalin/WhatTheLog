@@ -123,7 +123,7 @@ This prefix tree is defined in the [`PrefixTree`](watthelog/prefixtree/prefix_tr
    /     \
   C       E
  /         \
-B	  		E
+B           E
 ```
 
 ***Note***: the current prefix tree implementation adds placeholder root and termination nodes for internal handling, so the tree from the initial example would be internally stored as:
@@ -136,7 +136,7 @@ B	  		E
       B   F
      / \   \
     C   D   G
-   /  	 \	 \
+   /  	 \   \
   D       E   T
  /         \
 T           T
