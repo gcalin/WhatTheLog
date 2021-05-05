@@ -147,12 +147,12 @@ def calc_recall(syntax_tree: SyntaxTree,
 
     return res
 
-
+# Example usage
 if __name__ == '__main__':
     project_root = Path(os.path.abspath(os.path.dirname(__file__))).parent
 
     cfg_file = str(project_root.joinpath('resources/config.json'))
-    true_traces = str(project_root.joinpath('tests/resources/true_logs'))
+    true_traces = str(project_root.joinpath('tests/resources/truelogs'))
     false_traces = str(project_root.joinpath('tests/resources/testlogs'))
 
     st = Parser().parse_file(cfg_file)
