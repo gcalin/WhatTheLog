@@ -99,13 +99,13 @@ G
 These can be represented by the following prefix tree:
 
 ```
-		A
-	   / \
-	  B   F
-	 / \   \
-	C 	D   G
-   /  	 \
-  D  	  E
+      A
+     / \
+    B   F
+   / \   \
+  C   D   G
+ /     \
+D       E
 ```
 
 This tree can be viewed as the most naive state machine representing the system under analysis. Here every valid execution path is represented by a separate branch, and every log statement is a separate state.
@@ -115,31 +115,31 @@ This prefix tree is defined in the [`PrefixTree`](watthelog/prefixtree/prefix_tr
 ***Note*** that at this stage the model must be a valid tree, therefore loops and recursion are parsed linearly. This can generate valid trees like this one:
 
 ```
-			A
-		   / \
-		  B   F
-		 / \   \
-		B 	D   G
-	   /  	 \
-	  C		  E
-	 /   	   \
-	B	  		E
+        A
+       / \
+      B   F
+     / \   \
+    B   D   G
+   /     \
+  C       E
+ /         \
+B	  		E
 ```
 
 ***Note***: the current prefix tree implementation adds placeholder root and termination nodes for internal handling, so the tree from the initial example would be internally stored as:
 
 ```
-			R
-			|
-			A
-		   / \
-		  B   F
-		 / \   \
-		C 	D   G
-	   /  	 \	 \
-	  D  	  E   T
-	 /		   \
-	T 			T
+        R
+        |
+        A
+       / \
+      B   F
+     / \   \
+    C   D   G
+   /  	 \	 \
+  D       E   T
+ /         \
+T           T
 ```
 
 Where `R` is the placeholder root and `T` are the placeholder termination nodes.
@@ -195,3 +195,11 @@ This script is used to filter a log dataset for lines that do not match a provid
 ## Running the tests
 
 A small test suite is provided in the `tests` directory. It uses the `pytest` framework and can be ran by simply running `pytest` as a command in the project's root directory.
+
+
+## Contributors
+
+- Calin Georgescu (C.A.Georgescu@student.tudelft.nl)
+- Pandelis Symeonidis (P.L.Symeonidis@student.tudelft.nl)
+- Thomas Werthenbach (t.a.k.werthenbach@student.tudelft.nl)
+- Tommaso Brandirali (tommaso.brandirali@gmail.com)
