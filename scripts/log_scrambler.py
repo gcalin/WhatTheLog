@@ -27,7 +27,8 @@ from tqdm import tqdm
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Internal
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
+from scripts.match_trace import match_trace
+from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.syntaxtree.parser import Parser
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 
@@ -194,6 +195,27 @@ def process_file(input_file: str, output_file: str, tree: SyntaxTree) -> None:
 
         for func in mutations:
             func(lines, tree)
+
+    with open(output_file, 'w+') as f:
+        f.writelines(lines)
+
+
+def produce_false_trace(input_file: str, output_file: str, syntax_tree: SyntaxTree, state_model: PrefixTree) -> None:
+    with open(input_file, 'r') as f:
+        lines = f.readlines()
+        n_mutations = random.randint(1, 3)
+        mutations = [random.choice([delete_one, swap, r_swap]) for _ in range(n_mutations)]
+
+        for func in mutations:
+            func(lines, syntax_tree)
+
+        # While the produced log is still accepted, continue scrambling it
+        while match_trace(state_model, lines, syntax_tree):
+            n_mutations = random.randint(1, 3)
+            mutations = [random.choice([delete_one, swap, r_swap]) for _ in range(n_mutations)]
+
+            for func in mutations:
+                func(lines, syntax_tree)
 
     with open(output_file, 'w+') as f:
         f.writelines(lines)
