@@ -30,7 +30,7 @@ sys.path.insert(0, "./../")
 # Internal
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-from whatthelog.syntaxtree.parser import Parser
+from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 from whatthelog.auto_printer import AutoPrinter
 from whatthelog.utils import get_peak_mem, bytes_tostring
@@ -140,7 +140,7 @@ def main(argv):
 
     # --- Parse prefix tree ---
     print("[ Log Filter ] - Parsing configuration file...")
-    parser = Parser()
+    parser = SyntaxTreeFactory()
     tree = parser.parse_file(config_file)
 
     # --- Run filtering ---

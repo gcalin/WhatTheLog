@@ -28,13 +28,13 @@ class Graph(AutoPrinter):
     Class implementing a graph
     """
 
-    __slots__ = ['matrix', 'states', 'state_indices_by_hash', 'states_by_prop']
+    __slots__ = ['edges', 'states', 'state_indices_by_hash', 'states_by_prop']
 
     def __init__(self):
-        self.matrix = SparseMatrix()
+        self.edges = SparseMatrix()
         self.states: List[State] = []
         self.state_indices_by_hash: Dict[int, int] = {}
-        self.states_by_prop: Dict[str, int] = {}
+        self.states_by_prop: Dict[int, int] = {}
 
     def get_state_by_hash(self, state_hash: int):
         """
@@ -81,8 +81,8 @@ class Graph(AutoPrinter):
 
         start_index = self.state_indices_by_hash[hash(start)]
         end_index = self.state_indices_by_hash[hash(end)]
-        if not (start_index, end_index) in self.matrix:
-            self.matrix[start_index, end_index] = str(props)
+        if not (start_index, end_index) in self.edges:
+            self.edges[start_index, end_index] = str(props)
             return True
         return False
 
@@ -103,7 +103,7 @@ class Graph(AutoPrinter):
         If state does not exist return None.
         """
         if state in self:
-            results = self.matrix.find_children(self.state_indices_by_hash[hash(state)])
+            results = self.edges.find_children(self.state_indices_by_hash[hash(state)])
             return [EdgeProperties.parse(result[1]) for result in results]
         else:
             return None
@@ -117,7 +117,7 @@ class Graph(AutoPrinter):
         If state does not exist return None.
         """
         if state in self:
-            results = self.matrix.find_children(self.state_indices_by_hash[hash(state)])
+            results = self.edges.find_children(self.state_indices_by_hash[hash(state)])
             return [self.states[result[0]] for result in results] if results else []
         else:
             return None

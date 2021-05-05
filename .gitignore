@@ -74,3 +74,4 @@ resources/prefixtree.png
 
 # Temporary Files
 temp/
+*.backup
