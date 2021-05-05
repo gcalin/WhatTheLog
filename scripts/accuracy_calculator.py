@@ -85,7 +85,7 @@ def k_fold_cross_validation(syntax_tree: SyntaxTree,
             produce_false_trace(os.path.join(temp_dir_name_recall, trace_name), new_name_specificity, syntax_tree, model)
 
         # Evaluate the model and append the results
-        s, r = evaluate_accuracy(syntax_tree, model, str(logs_dir), str(temp_dir_name_specificity))
+        s, r = evaluate_accuracy(syntax_tree, model, str(temp_dir_name_recall), str(temp_dir_name_specificity))
         specificity.append(s)
         recall.append(r)
 
@@ -270,7 +270,7 @@ if __name__ == '__main__':
     k_fold_cross_validation(
         Parser().parse_file(cfg_file),
         false_traces,
-        8,
+        4,
         debug=True
     )
 
