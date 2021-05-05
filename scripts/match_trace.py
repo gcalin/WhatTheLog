@@ -135,4 +135,6 @@ def match_trace_rec(
             # Remove first trace
             trace = trace[1:]
 
-    return res
+    if [state.is_terminal for state in prefix_tree.get_children(current_state) if state.is_terminal]:
+        return res
+    return None

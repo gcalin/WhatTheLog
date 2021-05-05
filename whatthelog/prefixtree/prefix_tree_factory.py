@@ -151,4 +151,6 @@ class PrefixTreeFactory(AutoPrinter):
                     parent = child
                     nodes = prefix_tree.get_children(child)
 
+        prefix_tree.add_child(State(["terminal"], True), parent)
+
         return prefix_tree
