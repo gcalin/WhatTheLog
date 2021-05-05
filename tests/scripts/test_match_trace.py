@@ -34,7 +34,8 @@ def state_tree() -> PrefixTree:
     t2: State = State(["p0p4p1"])
     t3: State = State(["p0p4p2", "p0p4p3", "p0p4p0"])
 
-    p_tree: PrefixTree = PrefixTree(t0)
+    p_tree: PrefixTree = PrefixTree(State([]))
+    p_tree.add_child(t0, p_tree.get_root())
     p_tree.add_child(t2, t0)
     p_tree.add_child(t1, t0)
     p_tree.add_child(t3, t2)
@@ -49,6 +50,9 @@ def state_tree() -> PrefixTree:
 
     """
             Graph structure:
+          root (empty)
+              |
+              |
             t0 (0)
             /    \
            /      \
@@ -122,7 +126,7 @@ def test_match_trace_root(state_tree, traces_t0, syntax_tree):
     """
     Tests the match_trace function on a trace that succeeds with exactly 1 line
     """
-    expected_path = [[state_tree.get_root()]]
+    expected_path = [[state_tree.get_children(state_tree.get_root())[0]]]
     for count, t in enumerate(traces_t0):
         res = match_trace(state_tree, t, syntax_tree)
         assert expected_path[count - 1] == res, "Failed to match the first line to the root"
@@ -132,8 +136,9 @@ def test_match_trace_traversal_1(state_tree, traces_t1, syntax_tree):
     """
     Tests the match_trace function on an accepted longer trace
     """
-    expected_path = [[state_tree.get_root(),
-                      state_tree.get_children(state_tree.get_root())[0]]] * 2
+    t0 = state_tree.get_children(state_tree.get_root())[0]
+    t1 = state_tree.get_children(t0)[1]
+    expected_path = [[t0, t1]] * 2
     for count, t in enumerate(traces_t1):
         res = match_trace(state_tree, t, syntax_tree)
         assert expected_path[count - 1] == res, "Failed multi-state traversal"
@@ -155,8 +160,9 @@ def test_match_trace_single_traversal_2(state_tree, traces_t2, syntax_tree):
     """
     Tests the match_trace function on an accepted longer trace
     """
-    expected_path = [[state_tree.get_root(),
-                      state_tree.get_children(state_tree.get_root())[1]]]
+    t0 = state_tree.get_children(state_tree.get_root())[0]
+    t2 = state_tree.get_children(t0)[0]
+    expected_path = [[t0, t2]]
     for count, t in enumerate(traces_t2):
         res = match_trace(state_tree, t, syntax_tree)
         assert expected_path[count - 1] == res, "Failed multi-state traversal"
@@ -179,10 +185,11 @@ def test_match_trace_traversal_3(state_tree, traces_t3, syntax_tree):
     Tests the match_trace function on an accepted longer trace
     """
     root: State = state_tree.get_root()
-    t2 = state_tree.get_children(root)[1]
+    t0 = state_tree.get_children(root)[0]
+    t2 = state_tree.get_children(t0)[0]
     t3 = state_tree.get_children(t2)[0]
 
-    expected_path = [[root, t2, t3]] * 3
+    expected_path = [[t0, t2, t3]] * 3
     for count, t in enumerate(traces_t3):
         res = match_trace(state_tree, t, syntax_tree)
         assert expected_path[count - 1] == res, "Failed multi-state traversal"
@@ -215,7 +222,8 @@ def test_match_trace_no_successor_rec_2(state_tree, syntax_tree):
     Tests the match_trace function on a trace that has no successor state after a later line
     """
     root: State = state_tree.get_root()
-    t2: State = state_tree.get_children(root)[1]
+    t0 = state_tree.get_children(root)[0]
+    t2: State = state_tree.get_children(t0)[0]
     t3: State = state_tree.get_children(t2)[0]
     t4: State = State(["p0p1"])
     state_tree.add_child(t4, t3)

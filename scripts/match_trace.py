@@ -20,8 +20,6 @@ def match_trace(
     is traversed recursively.
 
     :param prefix_tree: The prefix tree in which states need to be matched.
-    :param log_templates: A dictionary in which each template name is mapped to the id of
-                          its corresponding prefix tree node.
     :param trace: The lines to be matched against the tree.
     :param syntax_tree: The syntax tree used to validate the lines.
     :return: If the trace corresponds to a sequence of states in the prefix tree,
@@ -39,7 +37,9 @@ def match_trace(
     if template is None:
         return None
 
-    current_state: State = prefix_tree.get_root()
+    current_state: State = random.choice(list(
+        filter(lambda s: template_matches_state(template.name, s),
+               prefix_tree.get_children(prefix_tree.get_root()))))
 
     # Check if the template matches the root of the state tree
     if template_matches_state(template.name, current_state):
@@ -94,8 +94,6 @@ def match_trace_rec(
 
     :param current_state: The current state of the prefix tree
     :param prefix_tree: The prefix tree in which states need to be matched.
-    :param log_templates: A dictionary in which each template name is mapped to the id of
-                          its corresponding prefix tree node.
     :param trace: The lines to be matched against the tree.
     :param syntax_tree: The syntax tree used to validate the lines.
     :return: If the trace corresponds to a sequence of states in the prefix tree,
