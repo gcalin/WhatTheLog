@@ -68,8 +68,7 @@ class Visualizer:
 
             while level_size > 0:
                 state = queue.pop(0)
-                print("state:", state)
-                print(self.prefix_tree.get_parent(state))
+
                 self.G.add_edge(id(self.prefix_tree.get_parent(state)),
                                 id(state))
 

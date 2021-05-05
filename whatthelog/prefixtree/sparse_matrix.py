@@ -153,10 +153,8 @@ class SparseMatrix:
         for item in copy:
             parent, child, props = item.split('.', 2)
             bisect.insort_right(reverse, f"{child}.{parent}.{props}")
-        print("list: ", self.list)
-        print("reverse: ", reverse)
+
         children = self.__find_children(reverse, i)
-        print(f"children of {i}: ", children)
 
         return [tup[0] for tup in self.__find_children(reverse, i)] if children is not None else []
 
