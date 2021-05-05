@@ -52,9 +52,9 @@ def match_trace(
     # Check if the template matches the root of the state tree
     if template_matches_state(template.name, current_state):
 
-        # If the trace is exactly one line long, return the root state
+        # If the trace is exactly one line long, return the root state if it is terminal
         if len(trace) == 1:
-            return [current_state]
+            return [current_state] if [s for s in prefix_tree.get_children(current_state) if s.is_terminal] else None
 
         # Remove the checked line from trace
         trace[:] = trace[1:]
@@ -135,6 +135,7 @@ def match_trace_rec(
             # Remove first trace
             trace = trace[1:]
 
+    children = prefix_tree.get_children(current_state)
     if [state.is_terminal for state in prefix_tree.get_children(current_state) if state.is_terminal]:
         return res
     return None
