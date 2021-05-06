@@ -201,11 +201,19 @@ def process_file(input_file: str, output_file: str, tree: SyntaxTree) -> None:
 
 
 def produce_false_trace(input_file: str, output_file: str, syntax_tree: SyntaxTree, state_model: PrefixTree) -> None:
+    """
+    Produces a log that guarantees a false trace will be created.
+    :param input_file: The file containing the trace.
+    :param output_file: The file in which the false trace should be written.
+    :param syntax_tree: The syntax tree used to match an individual log entry.
+    :param state_model: The state model used to validate a trace.
+    """
     with open(input_file, 'r') as f:
         lines = f.readlines()
         n_mutations = random.randint(1, 3)
         mutations = [random.choice([delete_one, swap, r_swap]) for _ in range(n_mutations)]
 
+        # Apply random mutations
         for func in mutations:
             func(lines, syntax_tree)
 
@@ -214,9 +222,11 @@ def produce_false_trace(input_file: str, output_file: str, syntax_tree: SyntaxTr
             n_mutations = random.randint(1, 3)
             mutations = [random.choice([delete_one, swap, r_swap]) for _ in range(n_mutations)]
 
+            # Apply random mutations
             for func in mutations:
                 func(lines, syntax_tree)
 
+    # Write to the output file
     with open(output_file, 'w+') as f:
         f.writelines(lines)
 
