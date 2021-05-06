@@ -1,6 +1,7 @@
 import os
 from numpy import array_split, mean, std
 from pathlib import Path
+from random import shuffle
 from typing import Tuple, List
 
 from scripts.log_scrambler import produce_false_trace
@@ -32,8 +33,12 @@ def k_fold_cross_validation(syntax_tree: SyntaxTree,
     if not os.path.isdir(logs_dir):
         raise NotADirectoryError("Log directory not found!")
 
+    # Get all traces and randomize their order
+    traces: List[str] = os.listdir(logs_dir)
+    shuffle(traces)
+
     # Split the trace names into equally sized chunks
-    folds: List[List[str]] = array_split(os.listdir(logs_dir), k)
+    folds: List[List[str]] = array_split(traces, k)
 
     if debug:
         print(f"Entering k-fold cross validation, with {len(os.listdir(logs_dir))} "
@@ -270,7 +275,7 @@ if __name__ == '__main__':
     k_fold_cross_validation(
         Parser().parse_file(cfg_file),
         false_traces,
-        4,
+        8,
         debug=True
     )
 
