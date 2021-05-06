@@ -185,7 +185,15 @@ This script is used to generate invalid log traces from a set of valid ones for 
 - **Adjacent Swap**: swap the selected lines with the next adjacent selection
 - **Random Swap**: swap the selected lines with a different random selection from the same file
 
-This algorithm does not guarantee the invalidity of the selected traces, however testing shows an average of illegal traces between 90% and 95% of the total.
+This implementation provided through `process_file(...)` does not guarantee the invalidity of the selected traces, however testing shows an average of illegal traces between 90% and 95% of the total. An alternative that applies mutations until a false trace is produced is implemented in `produce_false_trace(...)`, which applies random mutations to a trace and verifies its validity against a state model until the trace is rejected.
+
+### `match_trace.py`
+
+This scripts checks if a state model accepts a given trace. It uses two pointers, one pointing at the a state in the state model and one pointing at a line in the log trace. Initially, the state pointer is at the start state, and the log pointer is at the first line of trace. If the first line of the trace matches the initial state, the line pointer is moved to the second and the the state pointer is moved to any state that has an incoming edge from the current one that matches the log pointer. If no such state exists, the search fails and `None` is returned. If a state that matches the log exists, the procedure continues iteratively until either no matching state is found for the log entry or until all log entries have been exhausted. If all entries have been matched, this means there is a path in the state graph that corresponds to the log trace. If this is the case, and if the last state in the path points to a terminal state, that path is returned as a list of states.
+
+### `accuracy_calculator.py`
+
+This script is used to quantitatively evaluate the accuracy of a state model given a list of log traces, using k-fold cross-validation (KFCV). It takes in a directory of traces, and randomly partitions it into `k` roughly equally sized chunks that are used for the KFCV algorithm. It performs `k` iterations, where the traces corresponding to fold `i` are moved to a new directory and left unchanged. Each trace of the moved traces is then used to produce a negative trace in a third directory, using the `log_scrambler` script. After this separation has been made, the state model is produced using the untouched `k-1` traces. The model's recall (<img src="https://render.githubusercontent.com/render/math?math=\color{red}\frac{|TP|}{|TP|%2B|FN|}">) is then evaluated using the true logs in the current fold, and its specificity (<img src="https://render.githubusercontent.com/render/math?math=\color{red}\frac{|TN|}{|TN|%2B|FP|}">) is computed using the false traces generated from the current fold. When the current interation is finished, the positive traces of the current fold are moved back to the original directory, and the false traces and the additional directories are removed. The prodcedure is repeated for each fold, and the results are collected and returned at the end of the procedure, where the means and standard deviations for both accuracy and recall across all iterations are also computed.
 
 ### `log_filter.py`
 
