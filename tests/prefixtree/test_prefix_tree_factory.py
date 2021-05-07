@@ -24,7 +24,7 @@ def test_one_trace(tree: PrefixTree):
     with open(PROJECT_ROOT.joinpath(traces_path).joinpath("xx1"), 'r') as file:
         lines = len(file.readlines())
 
-    assert tree.size() == lines + 1
+    assert tree.size() == lines + 2
 
     root = tree.get_root()
     assert root.properties.log_templates == [""]

@@ -1,0 +1,43 @@
+2020-Mar-01 17:38:06.298793099 LedgerConsensus:NFO Entering consensus process, validating, synced=yes
+2020-Mar-01 17:38:06.299531559 LedgerConsensus:NFO Consensus mode change before=proposing, after=proposing
+2020-Mar-01 17:38:09.145316271 LedgerConsensus:NFO No change (NO) : weight 2, percent 40
+2020-Mar-01 17:38:09.145401616 LedgerConsensus:NFO No change (NO) : weight 25, percent 40
+2020-Mar-01 17:38:09.145414432 LedgerConsensus:NFO No change (NO) : weight 27, percent 40
+2020-Mar-01 17:38:09.145424422 LedgerConsensus:NFO No change (NO) : weight 2, percent 40
+2020-Mar-01 17:38:09.145433202 LedgerConsensus:NFO No change (NO) : weight 25, percent 40
+2020-Mar-01 17:38:09.145441832 LedgerConsensus:NFO No change (NO) : weight 27, percent 40
+2020-Mar-01 17:38:09.145450243 LedgerConsensus:NFO No change (NO) : weight 41, percent 40
+2020-Mar-01 17:38:09.145458817 LedgerConsensus:NFO No change (NO) : weight 25, percent 40
+2020-Mar-01 17:38:09.145467415 LedgerConsensus:NFO No change (NO) : weight 2, percent 40
+2020-Mar-01 17:38:09.145475971 LedgerConsensus:NFO No change (NO) : weight 2, percent 40
+2020-Mar-01 17:38:09.145484550 LedgerConsensus:NFO No change (NO) : weight 2, percent 40
+2020-Mar-01 17:38:09.145493197 LedgerConsensus:NFO No change (NO) : weight 2, percent 40
+2020-Mar-01 17:38:09.145501630 LedgerConsensus:NFO No change (NO) : weight 2, percent 40
+2020-Mar-01 17:38:09.145510228 LedgerConsensus:NFO No change (NO) : weight 2, percent 40
+2020-Mar-01 17:38:09.145519176 LedgerConsensus:NFO No change (NO) : weight 2, percent 40
+2020-Mar-01 17:38:09.145553436 LedgerConsensus:NFO No change (NO) : weight 2, percent 40
+2020-Mar-01 17:38:09.145564358 LedgerConsensus:NFO Proposers:35 nw:50 thrV:18 thrC:27
+2020-Mar-01 17:38:10.146203017 LedgerConsensus:NFO No change (NO) : weight 2, percent 60
+2020-Mar-01 17:38:10.146302562 LedgerConsensus:NFO No change (NO) : weight 2, percent 60
+2020-Mar-01 17:38:10.146316394 LedgerConsensus:NFO No change (NO) : weight 2, percent 60
+2020-Mar-01 17:38:10.146326403 LedgerConsensus:NFO No change (NO) : weight 2, percent 60
+2020-Mar-01 17:38:10.146335498 LedgerConsensus:NFO No change (NO) : weight 2, percent 60
+2020-Mar-01 17:38:10.146344025 LedgerConsensus:NFO No change (NO) : weight 2, percent 60
+2020-Mar-01 17:38:10.146352579 LedgerConsensus:NFO No change (NO) : weight 2, percent 60
+2020-Mar-01 17:38:10.146361091 LedgerConsensus:NFO No change (NO) : weight 2, percent 60
+2020-Mar-01 17:38:10.146369608 LedgerConsensus:NFO No change (NO) : weight 2, percent 60
+2020-Mar-01 17:38:10.146591112 LedgerConsensus:NFO No change (NO) : weight 2, percent 60
+2020-Mar-01 17:38:10.146603302 LedgerConsensus:NFO No change (NO) : weight 2, percent 60
+2020-Mar-01 17:38:10.146628864 LedgerConsensus:NFO No change (NO) : weight 2, percent 60
+2020-Mar-01 17:38:10.146638294 LedgerConsensus:NFO No change (NO) : weight 2, percent 60
+2020-Mar-01 17:38:10.146653567 LedgerConsensus:NFO No change (NO) : weight 2, percent 60
+2020-Mar-01 17:38:10.146693983 LedgerConsensus:NFO No change (NO) : weight 2, percent 60
+2020-Mar-01 17:38:10.146707087 LedgerConsensus:NFO No change (NO) : weight 2, percent 60
+2020-Mar-01 17:38:10.146783997 LedgerConsensus:NFO Proposers:35 nw:65 thrV:23 thrC:27
+2020-Mar-01 17:38:10.147072948 LedgerConsensus:NFO Converge cutoff (35 participants)
+2020-Mar-01 17:38:10.281039135 LedgerConsensus:NFO CNF Val 0DD45D005521C0894976BA41814B34AACBA1D1E317BC027EB6C0B2425A09B8D2
+2020-Mar-01 17:38:10.319872048 LedgerConsensus:NFO We closed at 636399487
+2020-Mar-01 17:38:10.320252270 LedgerConsensus:NFO 9 time votes for 636399486
+2020-Mar-01 17:38:10.320269212 LedgerConsensus:NFO 25 time votes for 636399487
+2020-Mar-01 17:38:10.320278764 LedgerConsensus:NFO 1 time votes for 636399488
+2020-Mar-01 17:38:10.320288029 LedgerConsensus:NFO Our close offset is estimated at 0 (36)

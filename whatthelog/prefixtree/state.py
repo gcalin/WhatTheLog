@@ -1,3 +1,4 @@
+
 #****************************************************************************************************
 # Imports
 #****************************************************************************************************
@@ -26,15 +27,16 @@ class State:
     represented by this state.
     """
 
-    __slots__ = ['properties']
+    __slots__ = ['properties', 'is_terminal']
 
-    def __init__(self, log_templates: List[str]):
+    def __init__(self, log_templates: List[str], is_terminal: bool = False):
         """
         State constructor.
 
         :param log_templates: The log template ids this state holds.
         """
         self.properties = StateProperties(log_templates)
+        self.is_terminal = is_terminal
 
     def is_equivalent(self, other: State) -> bool:
         """

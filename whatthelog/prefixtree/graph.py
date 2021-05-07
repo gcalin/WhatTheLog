@@ -18,7 +18,6 @@ from whatthelog.exceptions import StateAlreadyExistsException, StateDoesNotExist
 from whatthelog.prefixtree.sparse_matrix import SparseMatrix
 from whatthelog.prefixtree.edge_properties import EdgeProperties
 
-
 #****************************************************************************************************
 # Graph
 #****************************************************************************************************
@@ -44,7 +43,6 @@ class Graph(AutoPrinter):
         """
         if state_hash not in self.state_indices_by_hash:
             raise StateDoesNotExistException()
-
         return self.states[self.state_indices_by_hash[state_hash]]
 
     def add_state(self, state: State):

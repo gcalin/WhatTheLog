@@ -67,6 +67,7 @@ MANIFEST
 
 # Log files
 *.log
+!tests/resources/testlogs/xx*
 
 # Resources
 resources/traces*

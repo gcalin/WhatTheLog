@@ -1,0 +1,13 @@
+2020-Mar-01 17:16:38.223550560 LedgerConsensus:NFO Entering consensus process, validating, synced=yes
+2020-Mar-01 17:16:38.224620495 LedgerConsensus:NFO Consensus mode change before=proposing, after=proposing
+2020-Mar-01 17:16:41.131861960 LedgerConsensus:NFO No change (NO) : weight 8, percent 40
+2020-Mar-01 17:16:41.132025635 LedgerConsensus:NFO No change (NO) : weight 19, percent 40
+2020-Mar-01 17:16:41.132112379 LedgerConsensus:NFO No change (NO) : weight 8, percent 40
+2020-Mar-01 17:16:41.132193744 LedgerConsensus:NFO No change (NO) : weight 5, percent 40
+2020-Mar-01 17:16:41.132343941 LedgerConsensus:NFO Proposers:35 nw:50 thrV:18 thrC:27
+2020-Mar-01 17:16:41.132685364 LedgerConsensus:NFO Converge cutoff (35 participants)
+2020-Mar-01 17:16:41.183006101 LedgerConsensus:NFO CNF Val 08678332D684A900C8853D585854053C17A4847966C4B6049E2341D50D1A4A94
+2020-Mar-01 17:16:41.202933067 LedgerConsensus:NFO We closed at 636398199
+2020-Mar-01 17:16:41.202975861 LedgerConsensus:NFO 22 time votes for 636398198
+2020-Mar-01 17:16:41.202987334 LedgerConsensus:NFO 13 time votes for 636398199
+2020-Mar-01 17:16:41.202996718 LedgerConsensus:NFO Our close offset is estimated at -1 (36)

@@ -207,7 +207,7 @@ A small test suite is provided in the `tests` directory. It uses the `pytest` fr
 
 ## Contributors
 
+- Tommaso Brandirali (tommaso.brandirali@gmail.com)
 - Calin Georgescu (C.A.Georgescu@student.tudelft.nl)
 - Pandelis Symeonidis (P.L.Symeonidis@student.tudelft.nl)
 - Thomas Werthenbach (t.a.k.werthenbach@student.tudelft.nl)
-- Tommaso Brandirali (tommaso.brandirali@gmail.com)

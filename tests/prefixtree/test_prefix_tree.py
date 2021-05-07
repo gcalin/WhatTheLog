@@ -4,7 +4,6 @@ from whatthelog.exceptions import InvalidTreeException
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.prefixtree.state import State
 
-
 @pytest.fixture()
 def tree():
     return PrefixTree(State(["root"]))

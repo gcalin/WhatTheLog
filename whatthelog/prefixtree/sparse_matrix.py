@@ -12,8 +12,6 @@ class SparseMatrix:
     def __init__(self):
         # The list in which the sparse matrix is stored
         self.list: List[str] = list()
-        # For time efficiency purposes, we keep track of our own size
-        self.size: int = 0
 
     def __setitem__(self, key: Tuple[int, int], value: Any) -> None:
         """
@@ -22,7 +20,6 @@ class SparseMatrix:
         index = self.find_index(key)
         if index is None:
             bisect.insort_right(self.list, str(key[0]) + self.separator + str(key[1]) + self.separator + str(value))
-            self.size += 1
         else:
             self.list[index] = str(key[0]) + self.separator + str(key[1]) + self.separator + str(value)
 
@@ -40,7 +37,7 @@ class SparseMatrix:
         Checks if an edge exists.
         """
         index: int = self.bisearch(self.list, str(item[0]) + self.separator + str(item[1]))
-        if index != self.size:
+        if index != len(self.list):
             return True
         return False
 
@@ -49,7 +46,7 @@ class SparseMatrix:
         Use binary search to search for a specific entry in the list of the SparseMatrix.
         """
         index: int = self.bisearch(search_list, str(item[0]) + self.separator + str(item[1]) + self.separator)
-        if index != self.size:
+        if index != len(self.list):
             return index
         else:
             return None
@@ -91,7 +88,7 @@ class SparseMatrix:
                 result.append((current[1], current[2]))
                 idx -= 1
             idx = index + 1
-            while idx < self.size and search_list[idx].startswith(str(item) + self.separator):
+            while idx < len(search_list) and search_list[idx].startswith(str(item) + self.separator):
                 current = self.get_values(search_list, idx)
                 result.append((current[1], current[2]))
                 idx += 1
@@ -123,14 +120,14 @@ class SparseMatrix:
                 high = ix - 1
             else:
                 low = ix + 1
-
         return len(arr)
 
     @staticmethod
-    def get_values(array: List[str],  index: int) -> Tuple[int, int, str]:
+    def get_values(array: List[str], index: int) -> Tuple[int, int, str]:
         """
         Retrieves the tuple of coordinates and value for the given index.
         Raises an exception if the index is out of bounds.
+        :param array: The sparse matrix list
         :param index: the index of the tuple to fetch.
         :return a tuple in the form(start_node, end_node, edge_value)
         """
@@ -159,7 +156,7 @@ class SparseMatrix:
         return [tup[0] for tup in self.__find_children(reverse, i)] if children is not None else []
 
     def __len__(self):
-        return self.size
+        return len(self.list)
 
     def __str__(self):
         return str(self.list)
