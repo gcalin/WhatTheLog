@@ -13,6 +13,9 @@ import sys
 from time import time
 import tracemalloc
 
+from whatthelog.prefixtree.visualizer import Visualizer
+
+
 sys.path.insert(0, "./../")
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

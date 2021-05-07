@@ -107,7 +107,6 @@ class PrefixTreeFactory(AutoPrinter):
         for filename in pbar:
             filepath = str(Path(log_dir).joinpath(filename)).strip()
             PrefixTreeFactory.__parse_trace(filepath, syntax_tree, prefix_tree)
-
         return prefix_tree
 
     @staticmethod
