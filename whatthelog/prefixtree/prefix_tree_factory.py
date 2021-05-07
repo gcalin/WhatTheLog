@@ -18,7 +18,7 @@ from tqdm import tqdm
 
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.prefixtree.state import State
-from whatthelog.syntaxtree.parser import Parser
+from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 from whatthelog.exceptions import UnidentifiedLogException
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 from whatthelog.auto_printer import AutoPrinter
@@ -98,7 +98,7 @@ class PrefixTreeFactory(AutoPrinter):
 
         print("Parsing syntax tree...")
 
-        syntax_tree = Parser().parse_file(config_file)
+        syntax_tree = SyntaxTreeFactory().parse_file(config_file)
         prefix_tree = PrefixTree(State([""]))
 
         print("Parsing traces...")
@@ -152,5 +152,4 @@ class PrefixTreeFactory(AutoPrinter):
                     nodes = prefix_tree.get_children(child)
 
         prefix_tree.add_child(State(["terminal"], True), parent)
-
         return prefix_tree

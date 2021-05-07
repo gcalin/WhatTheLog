@@ -24,12 +24,12 @@ from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 
 
 #****************************************************************************************************
-# Parser
+# Syntax Tree Factory
 #****************************************************************************************************
 
-class Parser(AutoPrinter):
+class SyntaxTreeFactory(AutoPrinter):
     """
-    A tool for parsing a configuration file into a compiled Prefix Tree.
+    A factory class for parsing a configuration file into a compiled Prefix Tree.
     """
 
     #================================================================================

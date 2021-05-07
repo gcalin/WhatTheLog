@@ -26,7 +26,7 @@ from typing import Union
 # Internal
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-from whatthelog.syntaxtree.parser import Parser
+from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 from whatthelog.auto_printer import AutoPrinter
 from whatthelog.utils import get_peak_mem, bytes_tostring, blocks
@@ -72,7 +72,7 @@ def main(argv):
 
     # --- Parse prefix tree ---
     print("Parsing configuration file...")
-    parser = Parser()
+    parser = SyntaxTreeFactory()
     tree = parser.parse_file(config_filename)
 
     # --- Count lines in file ---

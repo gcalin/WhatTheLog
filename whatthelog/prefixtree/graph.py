@@ -14,10 +14,9 @@ from typing import List, Union, Dict
 
 from whatthelog.prefixtree.state import State
 from whatthelog.auto_printer import AutoPrinter
-from whatthelog.exceptions import StateAlreadyExistsException
+from whatthelog.exceptions import StateAlreadyExistsException, StateDoesNotExistException
 from whatthelog.prefixtree.sparse_matrix import SparseMatrix
 from whatthelog.prefixtree.edge_properties import EdgeProperties
-
 
 #****************************************************************************************************
 # Graph
@@ -28,13 +27,13 @@ class Graph(AutoPrinter):
     Class implementing a graph
     """
 
-    __slots__ = ['matrix', 'states', 'state_indices_by_hash', 'states_by_prop']
+    __slots__ = ['edges', 'states', 'state_indices_by_hash', 'states_by_prop']
 
     def __init__(self):
-        self.matrix = SparseMatrix()
+        self.edges = SparseMatrix()
         self.states: List[State] = []
         self.state_indices_by_hash: Dict[int, int] = {}
-        self.states_by_prop: Dict[str, int] = {}
+        self.states_by_prop: Dict[int, int] = {}
 
     def get_state_by_hash(self, state_hash: int):
         """
@@ -42,6 +41,8 @@ class Graph(AutoPrinter):
         :param state_hash: the hash of the state to fetch
         :return: the state object
         """
+        if state_hash not in self.state_indices_by_hash:
+            raise StateDoesNotExistException()
         return self.states[self.state_indices_by_hash[state_hash]]
 
     def add_state(self, state: State):
@@ -59,7 +60,7 @@ class Graph(AutoPrinter):
         self.states.append(state)
         self.state_indices_by_hash[hash(state)] = curr_index
 
-        if self.states_by_prop.get(state.properties.get_prop_hash()) is not None:
+        if state.properties.get_prop_hash() in self.states_by_prop:
             state.properties = self.get_state_by_hash(
                 self.states_by_prop[state.properties.get_prop_hash()]).properties
         else:
@@ -76,13 +77,13 @@ class Graph(AutoPrinter):
         edge does not exist or edge already exists returns False else True.
         """
 
-        if self.state_indices_by_hash.get(hash(start)) is None or self.state_indices_by_hash.get(hash(end)) is None:
+        if hash(start) not in self.state_indices_by_hash or hash(end) not in self.state_indices_by_hash:
             return False
 
         start_index = self.state_indices_by_hash[hash(start)]
         end_index = self.state_indices_by_hash[hash(end)]
-        if not (start_index, end_index) in self.matrix:
-            self.matrix[start_index, end_index] = str(props)
+        if not (start_index, end_index) in self.edges:
+            self.edges[start_index, end_index] = str(props)
             return True
         return False
 
@@ -103,7 +104,7 @@ class Graph(AutoPrinter):
         If state does not exist return None.
         """
         if state in self:
-            results = self.matrix.find_children(self.state_indices_by_hash[hash(state)])
+            results = self.edges.find_children(self.state_indices_by_hash[hash(state)])
             return [EdgeProperties.parse(result[1]) for result in results]
         else:
             return None
@@ -117,7 +118,7 @@ class Graph(AutoPrinter):
         If state does not exist return None.
         """
         if state in self:
-            results = self.matrix.find_children(self.state_indices_by_hash[hash(state)])
+            results = self.edges.find_children(self.state_indices_by_hash[hash(state)])
             return [self.states[result[0]] for result in results] if results else []
         else:
             return None
@@ -126,7 +127,7 @@ class Graph(AutoPrinter):
         return str(self.states)
 
     def __contains__(self, item: State):
-        return self.state_indices_by_hash.get(hash(item)) is not None
+        return hash(item) in self.state_indices_by_hash
 
     def __len__(self):
         return len(self.states)

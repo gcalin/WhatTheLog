@@ -2,3 +2,5 @@ pytest>=6.2.3
 coverage>=5.5
 tqdm>=4.60.0
 Pympler~=0.9
+networkx~=2.5.1
+matplotlib~=3.4.1

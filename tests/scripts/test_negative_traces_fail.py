@@ -5,8 +5,8 @@ from scripts.log_scrambler import process_file
 from scripts.match_trace import match_trace
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.prefixtree.prefix_tree_factory import PrefixTreeFactory
-from whatthelog.syntaxtree.parser import Parser
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
+from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 
 test_logs_dir = 'tests/resources/testlogs/'
 
@@ -36,7 +36,7 @@ def get_syntax_tree() -> SyntaxTree:
     Gets the syntax tree with real configurations
     :return: SyntaxTree
     """
-    return Parser().parse_file("resources/config.json")
+    return SyntaxTreeFactory().parse_file("resources/config.json")
 
 
 def generate_negative_traces(filename: str) -> List[str]:

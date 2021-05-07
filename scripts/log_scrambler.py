@@ -24,13 +24,19 @@ from typing import List
 import tracemalloc
 from tqdm import tqdm
 
+from scripts.match_trace import match_trace
+from whatthelog.prefixtree.prefix_tree import PrefixTree
+
+sys.path.insert(0, "./../")
+
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Internal
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-from scripts.match_trace import match_trace
-from whatthelog.prefixtree.prefix_tree import PrefixTree
-from whatthelog.syntaxtree.parser import Parser
+
+from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
+from whatthelog.auto_printer import AutoPrinter
+from whatthelog.utils import get_peak_mem, bytes_tostring
 
 # ****************************************************************************************************
 # Global Variables
@@ -40,33 +46,18 @@ pool_size_default = 8
 config_default = os.path.join(pathlib.Path(__file__).parent.absolute(), "../resources/config.json")
 
 
+def print(msg): AutoPrinter.static_print(msg)
+
+
 # ****************************************************************************************************
 # Utility Functions
 # ****************************************************************************************************
 
-def get_peak_mem(snapshot, key_type='lineno') -> int:
-    snapshot = snapshot.filter_traces((
-        tracemalloc.Filter(False, "<frozen importlib._bootstrap>"),
-        tracemalloc.Filter(False, "<unknown>"),
-    ))
-    return sum(stat.size for stat in snapshot.statistics(key_type))
-
-
-# --- Parser for human-readable file sizes ---
-def bytes_tostring(
-        num):  # Source: https://web.archive.org/web/20111010015624/http://blogmag.net/blog/read/38/Print_human_readable_file_size
-    for x in ['bytes', 'KB', 'MB', 'GB', 'TB']:
-        if num < 1024.0:
-            return "%3.1f%s" % (num, x)
-        num /= 1024.0
-
-
 # --- Parses a section of lines adjacent to the input line which have the same log format ---
 def get_section(lines: List[str], line: int, tree: SyntaxTree) -> List[int]:
     # If the line is not in the a valid index, no section to find
-    if line > len(lines) or line < 0:
+    if line < 0 or line >= len(lines):
         return []
-
     # TODO: Not in tree?
     # Find the corresponding leaf in the prefix tree
     node = tree.search(lines[line])
@@ -246,12 +237,13 @@ def main(argv):
     assert os.path.isdir(output_dir), "Cannot find output directory!"
     assert os.path.isfile(config_file), "Cannot find config file!"
 
-    files = [os.path.join(input_dir, name) for name in os.listdir(input_dir) if
-             os.path.isfile(os.path.join(input_dir, name))]
+    files = [os.path.join(input_dir, name)
+             for name in os.listdir(input_dir)
+             if os.path.isfile(os.path.join(input_dir, name))]
 
     # --- Parse prefix tree ---
     print("[ Log Filter ] - Parsing configuration file...")
-    parser = Parser()
+    parser = SyntaxTreeFactory()
     tree = parser.parse_file(config_file)
 
     # --- Run filtering ---
