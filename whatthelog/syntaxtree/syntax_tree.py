@@ -25,13 +25,13 @@ import re
 from whatthelog.auto_printer import AutoPrinter
 
 #****************************************************************************************************
-# Prefix Tree
+# Syntax Tree
 #****************************************************************************************************
 
 @dataclass
 class SyntaxTree(AutoPrinter):
     """
-    A data class representing the prefix tree for a system.
+    A data class representing the syntax tree for a system.
     Instances of this class should be created using the
     """
 
@@ -43,7 +43,7 @@ class SyntaxTree(AutoPrinter):
     def __post_init__(self):
         try:
             prefix = re.escape(self.prefix) if not self.isRegex else self.prefix
-            self.pattern = re.compile(prefix)
+            self.__pattern = re.compile(prefix)
         except re.error:
             self.print(f"ERROR: Invalid pattern given for Node '{self.name}'")
             raise ValueError
@@ -54,9 +54,15 @@ class SyntaxTree(AutoPrinter):
 
     def get_children(self):
         """
-        Prefix tree children getter.
+        Syntax tree children getter.
         """
         return self.__children
+
+    def get_pattern(self):
+        """
+        Syntax tree pattern getter.
+        """
+        return self.__pattern
 
     def insert(self, child: SyntaxTree) -> None:
         """
@@ -73,10 +79,10 @@ class SyntaxTree(AutoPrinter):
         """
 
         # Prefix match found at the beginning of the string
-        position = re.search(self.pattern, input)
+        position = re.search(self.__pattern, input)
         if position and position.start() == 0:
 
-            stem = re.sub(self.pattern, '', input, 1)
+            stem = re.sub(self.__pattern, '', input, 1)
 
             if len(self.__children) == 0:
                 return self

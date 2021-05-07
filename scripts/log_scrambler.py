@@ -27,9 +27,10 @@ from tqdm import tqdm
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Internal
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-from whatthelog.prefixtree.parser import Parser
+from scripts.match_trace import match_trace
 from whatthelog.prefixtree.prefix_tree import PrefixTree
+from whatthelog.syntaxtree.parser import Parser
+from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 
 # ****************************************************************************************************
 # Global Variables
@@ -61,7 +62,7 @@ def bytes_tostring(
 
 
 # --- Parses a section of lines adjacent to the input line which have the same log format ---
-def get_section(lines: List[str], line: int, tree: PrefixTree) -> List[int]:
+def get_section(lines: List[str], line: int, tree: SyntaxTree) -> List[int]:
     # If the line is not in the a valid index, no section to find
     if line > len(lines) or line < 0:
         return []
@@ -93,7 +94,7 @@ def get_section(lines: List[str], line: int, tree: PrefixTree) -> List[int]:
 # Main Code
 # ****************************************************************************************************
 
-def delete_one(lines: List[str], tree: PrefixTree):
+def delete_one(lines: List[str], tree: SyntaxTree):
     """
     Deletes the section corresponding to a random line in a list.
     :param lines: the list of lines to delete from.
@@ -121,7 +122,7 @@ def delete_one(lines: List[str], tree: PrefixTree):
         del lines[l]
 
 
-def swap(lines: List[str], tree: PrefixTree):
+def swap(lines: List[str], tree: SyntaxTree):
     """
     Swaps two adjacent sections corresponding to a random line in a list and its neighbour.
     :param lines: the list of lines to delete from.
@@ -156,7 +157,7 @@ def swap(lines: List[str], tree: PrefixTree):
                + lines[section2[-1] + 1:]
 
 
-def r_swap(lines: List[str], tree: PrefixTree):
+def r_swap(lines: List[str], tree: SyntaxTree):
     """
     Swaps two disjoint sections corresponding to two random lines in a list.
     TODO: Inject mocks for testing?
@@ -186,7 +187,7 @@ def r_swap(lines: List[str], tree: PrefixTree):
                + lines[section2[-1] + 1:]
 
 
-def process_file(input_file: str, output_file: str, tree: PrefixTree) -> None:
+def process_file(input_file: str, output_file: str, tree: SyntaxTree) -> None:
     with open(input_file, 'r') as f:
         lines = f.readlines()
         n_mutations = random.randint(1, 3)
@@ -195,6 +196,37 @@ def process_file(input_file: str, output_file: str, tree: PrefixTree) -> None:
         for func in mutations:
             func(lines, tree)
 
+    with open(output_file, 'w+') as f:
+        f.writelines(lines)
+
+
+def produce_false_trace(input_file: str, output_file: str, syntax_tree: SyntaxTree, state_model: PrefixTree) -> None:
+    """
+    Produces a log that guarantees a false trace will be created.
+    :param input_file: The file containing the trace.
+    :param output_file: The file in which the false trace should be written.
+    :param syntax_tree: The syntax tree used to match an individual log entry.
+    :param state_model: The state model used to validate a trace.
+    """
+    with open(input_file, 'r') as f:
+        lines = f.readlines()
+        n_mutations = random.randint(1, 3)
+        mutations = [random.choice([delete_one, swap, r_swap]) for _ in range(n_mutations)]
+
+        # Apply random mutations
+        for func in mutations:
+            func(lines, syntax_tree)
+
+        # While the produced log is still accepted, continue scrambling it
+        while match_trace(state_model, lines, syntax_tree):
+            n_mutations = random.randint(1, 3)
+            mutations = [random.choice([delete_one, swap, r_swap]) for _ in range(n_mutations)]
+
+            # Apply random mutations
+            for func in mutations:
+                func(lines, syntax_tree)
+
+    # Write to the output file
     with open(output_file, 'w+') as f:
         f.writelines(lines)
 

@@ -14,6 +14,7 @@ Email: tommaso.brandirali@gmail.com
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 import inspect
+import os
 
 
 #****************************************************************************************************
@@ -33,3 +34,13 @@ class AutoPrinter:
             print("[ %s ][ %s() ] - %s" % (str(self.__class__.__name__), str(inspect.stack()[level][3]), text), flush=True)
         except:
             print("ERROR: Failed to print '%s'" % str(text), flush=True)
+
+    @staticmethod
+    def static_print(text):
+        frame = inspect.stack()[1]
+        filename = frame[0].f_code.co_filename
+        print(f"[ {os.path.basename(filename)} ] - {text}")
+
+    @staticmethod
+    def static_prefix():
+        return f"[ {os.path.basename(inspect.stack()[1][0].f_code.co_filename)} ] - "

@@ -67,7 +67,11 @@ MANIFEST
 
 # Log files
 *.log
+!tests/resources/testlogs/xx*
 
 # Resources
-resources/traces
+resources/traces*
 resources/prefixtree.png
+
+# Temporary Files
+temp/
