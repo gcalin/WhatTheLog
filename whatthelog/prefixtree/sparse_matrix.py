@@ -1,4 +1,5 @@
 import bisect
+from whatthelog.exceptions import StateDoesNotExistException
 from typing import Union, Tuple, Any, List
 
 
@@ -69,7 +70,8 @@ class SparseMatrix:
         """
         return self.get_values(self.find_index(coordinates))[2]
 
-    def __find_children(self, search_list: List[str], item: int) -> Union[List[Tuple[int, str]], None]:
+    def __find_children(self, search_list: List[str], item: int, new_parent: int = -1) -> Union[
+        List[Tuple[int, str]], None]:
         """
         Use binary search to search for all children of the given entry in an input list.
         Return a list of tuples in the form (child_number, value), or None if no child found.
@@ -78,20 +80,43 @@ class SparseMatrix:
         :return a list of tuples (child_number, value), or None if no child found.
         """
         index: int = self.bisearch(search_list, str(item) + self.separator)
+        to_delete: List[int] = []
 
         if index != len(search_list):
             current = self.get_values(search_list, index)
+
+            if new_parent >= 0:
+                if (new_parent, current[1]) in self:
+                    to_delete.append(index)
+                else:
+                    search_list[index] = str(new_parent) + self.separator + str(current[1]) + self.separator + current[2]
+
             result = [(current[1], current[2])]
             idx = index - 1
             while idx >= 0 and search_list[idx].startswith(str(item) + self.separator):
                 current = self.get_values(search_list, idx)
+                if new_parent >= 0:
+                    if (new_parent, current[1]) in self:
+                        to_delete.append(idx)
+                    else:
+                        search_list[idx] = str(new_parent) + self.separator + str(current[1]) + self.separator + current[
+                        2]
                 result.append((current[1], current[2]))
                 idx -= 1
             idx = index + 1
             while idx < len(search_list) and search_list[idx].startswith(str(item) + self.separator):
                 current = self.get_values(search_list, idx)
+                if new_parent >= 0:
+                    if (new_parent, current[1]) in self:
+                        to_delete.append(idx)
+                    else:
+                        search_list[idx] = str(new_parent) + self.separator + str(current[1]) + self.separator + current[2]
                 result.append((current[1], current[2]))
                 idx += 1
+
+            for i in to_delete:
+                del self.list[i]
+
             return result
         else:
             return None
@@ -138,22 +163,41 @@ class SparseMatrix:
         strings = value.split('.', 2)
         return int(strings[0]), int(strings[1]), strings[2]
 
-    def get_parents(self, i: int) -> List[int]:
+    def __get_parents(self, i: int, new_child: int=-1) -> List[int]:
         """
         Return all the entries which are linked to the input entry.
         :param i: the input entry
         :return: the list of parent entries
         """
 
-        copy = self.list.copy()
-        reverse = []
-        for item in copy:
-            parent, child, props = item.split('.', 2)
-            bisect.insort_right(reverse, f"{child}.{parent}.{props}")
+        result: List[int] = []
+        to_delete: List[int] = []
+        for index, item in enumerate(self.list):
+            keys = item.split('.', 2)
 
-        children = self.__find_children(reverse, i)
+            if int(keys[1]) is i:
+                if new_child >= 0:
+                    if (int(keys[0]), new_child) in self:
+                        to_delete.append(index)
+                    else:
+                        self.list[index] = keys[0] + self.separator + str(new_child) + self.separator + keys[2]
+                result.append(int(keys[0]))
 
-        return [tup[0] for tup in self.__find_children(reverse, i)] if children is not None else []
+        for i in to_delete:
+            del self.list[i]
+
+        return result
+
+    def get_parents(self, i: int):
+        return self.__get_parents(i)
+
+    def change_children_of_parents(self, i: int, new_child: int):
+        self.__get_parents(i, new_child)
+        self.list.sort()
+
+    def change_parent_of_children(self, new_parent: int, parent_old: int):
+        self.__find_children(self.list, parent_old, new_parent)
+        self.list.sort()
 
     def __len__(self):
         return len(self.list)

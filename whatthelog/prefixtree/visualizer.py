@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 from networkx.drawing.nx_pydot import graphviz_layout
 
+from whatthelog.prefixtree.graph import Graph
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 
 
@@ -14,12 +15,12 @@ class Visualizer:
     Class to visualize Prefix Tree.
     """
 
-    def __init__(self, prefix_tree: PrefixTree):
+    def __init__(self, graph: Graph):
         """
         Visualizer constructor.
-        :param prefix_tree: Prefix tree to visualize
+        :param graph: Graph to visualize
         """
-        self.prefix_tree = prefix_tree
+        self.graph = graph
         self.G = nx.DiGraph()
         self.label_mapping = {"": 0}
 
@@ -51,36 +52,40 @@ class Visualizer:
          using breadth first.
         While traversing also keep track of number of branches
          and maximum depth.
+         !WORKS ONLY FOR GRAPHS WITH START NODES CURRENTLY
         :return: 3Tuple containing
                 a dictionary mapping unique node ids to labels (log ids),
                 number of branches,
                 maximum depth of tree
         """
 
-        labels = {id(self.prefix_tree.get_root()): self.get_label(self.prefix_tree.get_root().properties.log_templates)}
+        labels = {id(self.graph.start_node): self.get_label(self.graph.start_node.properties.log_templates)}
 
-        queue = self.prefix_tree.get_children(self.prefix_tree.get_root())
+        queue = self.graph.get_outgoing_states(self.graph.start_node)
         branches = 1
         depth = 1
 
+        visited = {self.graph.start_node}
+
         while len(queue) != 0:
             level_size = len(queue)
-
             while level_size > 0:
                 state = queue.pop(0)
+                if state not in visited:
+                    for parent in self.graph.get_incoming_states(state):
 
-                self.G.add_edge(id(self.prefix_tree.get_parent(state)),
-                                id(state))
+                        self.G.add_edge(id(parent),
+                                    id(state))
+                    visited.add(state)
+                    labels[id(state)] = self.get_label(state.properties.log_templates)
 
-                labels[id(state)] = self.get_label(state.properties.log_templates)
+                    children = self.graph.get_outgoing_states(state)
 
-                children = self.prefix_tree.get_children(state)
+                    if len(children) > 1:
+                        branches += len(children) - 1
 
-                if len(children) > 1:
-                    branches += len(children) - 1
-
-                queue += children
-                level_size -= 1
+                    queue += children
+                    level_size -= 1
             depth += 1
 
         return labels, branches, depth

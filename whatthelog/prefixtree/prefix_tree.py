@@ -31,7 +31,7 @@ class PrefixTree(Graph):
     __slots__ = ['__root']
 
     def __init__(self, root: State):
-        super().__init__()
+        super().__init__(root)
         self.__root = root
         self.add_state(root)
 
