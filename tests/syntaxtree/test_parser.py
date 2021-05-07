@@ -1,20 +1,21 @@
+from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 import os
 from pathlib import Path
 
-from whatthelog.syntaxtree.parser import Parser
+from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 
 PROJECT_ROOT = Path(os.path.abspath(os.path.dirname(__file__))).parent.parent
 
 def test_parse_file_simple():
-    tree = Parser().parse_file(PROJECT_ROOT.joinpath("tests/resources/test_simple.json"))
+    tree = SyntaxTreeFactory().parse_file("tests/resources/test_simple.json")
     expected = SyntaxTree("node", "[node]", False)
 
     assert tree == expected
 
 
 def test_parse_file_complex():
-    tree = Parser().parse_file(PROJECT_ROOT.joinpath("tests/resources/test.json"))
+    tree = SyntaxTreeFactory().parse_file("tests/resources/test.json")
 
     expected = SyntaxTree("root", "[root]", False)
     node1 = SyntaxTree("node1", "[node1]", False)

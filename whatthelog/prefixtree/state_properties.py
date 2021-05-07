@@ -38,7 +38,7 @@ class StateProperties(AutoPrinter):
 
     log_templates: List[str]
 
-    def get_prop_hash(self):
+    def get_prop_hash(self) -> int:
         return hash(tuple(self.log_templates))
 
     def __hash__(self):

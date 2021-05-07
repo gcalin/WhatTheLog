@@ -40,7 +40,7 @@ if __name__ == '__main__':
     start_time = time()
     # tracemalloc.start()
 
-    pt = PrefixTreeFactory.get_prefix_tree(str(project_root.joinpath('resources/traces_800')),
+    pt = PrefixTreeFactory.get_prefix_tree(str(project_root.joinpath('resources/traces')),
                                            str(project_root.joinpath('resources/config.json')))
 
     PrefixTreeFactory.pickle_tree(pt, project_root.joinpath('out/fullPrefixTree.p'))

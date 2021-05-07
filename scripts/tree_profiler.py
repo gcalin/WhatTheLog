@@ -48,7 +48,7 @@ def main():
           f"with total size {bytes_tostring(props_size)} "
           f"(average {bytes_tostring(props_size/len(properties))})")
 
-    print(f"The edges matrix weighs: {bytes_tostring(asizeof(tree.matrix))}")
+    print(f"The edges matrix weighs: {bytes_tostring(asizeof(tree.edges))}")
     print(f"The list of states weighs: {bytes_tostring(asizeof(tree.states))}")
     print(f"The state hash index map weighs: {bytes_tostring(asizeof(tree.state_indices_by_hash))}")
 
