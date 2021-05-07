@@ -100,6 +100,7 @@ class PrefixTree(Graph):
         :return: Parent of state. If None state is the root.
         """
 
+        assert state in self
         parents = self.edges.get_parents(self.state_indices_by_hash[hash(state)])
         assert len(parents) <= 1, "Edge has more than one parent!"
 
