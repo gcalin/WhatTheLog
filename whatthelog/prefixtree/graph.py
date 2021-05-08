@@ -53,7 +53,7 @@ class Graph(AutoPrinter):
         """
         Main method to remove loops.
         These can be recurring depending on the 'recurring' variable.
-        Please view the submethods for further explanation
+        Please view the sub-methods for further explanation
         :param recurring: determines whether recurring loops should be merged, or only singular loops
                           (equivalent subsequent states).
         """
@@ -123,18 +123,14 @@ class Graph(AutoPrinter):
         """
         assert self.start_node is not None
         stack: List[Tuple[State, List]] = [(self.start_node, [])]
-        visited = set()
-
-        current_unique = []
 
         while len(stack) != 0:
-            state, unique = stack.pop()
-            if len(unique) is not 0:
-                current_unique = unique
-            if state in visited:
+            state, current_unique = stack.pop()
+            if state in current_unique:  # Should not occur, but does not hurt.
                 continue
             else:
-                # logic if unique
+                outgoing = [x for x in self.get_outgoing_states(state) if x not in current_unique]
+
                 arr = list(filter(lambda x: state.is_equivalent(x), current_unique))
 
                 if len(arr) > 0:
@@ -143,13 +139,8 @@ class Graph(AutoPrinter):
                 else:
                     current_unique.append(state)
 
-                outgoing = [x for x in self.get_outgoing_states(state) if x not in visited]
                 for s in outgoing:
-                    if len(outgoing) > 1:
-                        stack.append((s, current_unique.copy()))
-                    else:
-                        stack.append((s, []))
-                visited.add(state)
+                    stack.append((s, current_unique.copy()))
 
     def merge_states(self, state1: State, state2: State) -> None:
         """
@@ -185,7 +176,6 @@ class Graph(AutoPrinter):
         del self.states[self.state_indices_by_hash[hash(state2)]]
         del self.state_indices_by_hash[hash(state2)]
         del state2
-
 
     def add_state(self, state: State):
         """

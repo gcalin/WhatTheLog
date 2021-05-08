@@ -185,7 +185,7 @@ def get_graph_to_find_loops() -> Graph:
     graph.add_edge(state2, state3, EdgeProperties())
     graph.add_edge(state3, state4, EdgeProperties())
     graph.add_edge(state4, state5, EdgeProperties())
-    graph.add_edge(state0, state6, EdgeProperties())
+    graph.add_edge(state2, state6, EdgeProperties())
     graph.add_edge(state6, state7, EdgeProperties())
     graph.add_edge(state7, state8, EdgeProperties())
     graph.add_edge(state8, state9, EdgeProperties())
@@ -198,11 +198,10 @@ def test_merge_loops_recurring():
 
     assert len(graph.states) == 10
     graph.remove_loops(True)
-    assert len(graph.states) == 5
-    assert graph.get_outgoing_states(graph.states[1]) == [graph.states[4], graph.states[1]]
+    assert len(graph.states) == 4
+    assert graph.get_outgoing_states(graph.states[1]) == [graph.states[6], graph.states[4], graph.states[1]]
     assert graph.get_outgoing_states(graph.states[4]) == [graph.states[1]]
-    assert graph.get_outgoing_states(graph.states[6]) == [graph.states[6], graph.states[9]]
-    assert graph.get_outgoing_states(graph.states[9]) == []
+    assert graph.get_outgoing_states(graph.states[6]) == [graph.states[1], graph.states[6]]
 
 
 def test_merge_loops_singular():
@@ -210,8 +209,8 @@ def test_merge_loops_singular():
 
     assert len(graph.states) == 10
     graph.remove_loops()
-    assert len(graph.states) == 6
-    assert graph.get_outgoing_states(graph.states[1]) == [graph.states[4], graph.states[1]]
+    assert len(graph.states) == 7
+    assert graph.get_outgoing_states(graph.states[1]) == [graph.states[6], graph.states[3], graph.states[1]]
     assert graph.get_outgoing_states(graph.states[4]) == [graph.states[5]]
     assert graph.get_outgoing_states(graph.states[6]) == [graph.states[6], graph.states[9]]
     assert graph.get_outgoing_states(graph.states[9]) == []
