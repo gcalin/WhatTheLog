@@ -129,7 +129,7 @@ class Graph(AutoPrinter):
 
         while len(stack) != 0:
             state, unique = stack.pop()
-            if len(unique) is not 0:
+            if len(unique) != 0:
                 current_unique = unique
             if state in visited:
                 continue
