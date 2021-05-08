@@ -135,7 +135,6 @@ class Graph(AutoPrinter):
 
                 if len(arr) > 0:
                     self.merge_states(arr[0], state)
-                    state = arr[0]
                 else:
                     current_unique.append(state)
 
