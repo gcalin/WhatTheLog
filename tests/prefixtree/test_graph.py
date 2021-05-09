@@ -33,17 +33,17 @@ def graph():
     return graph
 
 
-def test_get_state_by_hash(graph: Graph):
+def test_get_state_by_id(graph: Graph):
     state = graph.states[0]
 
-    assert graph.get_state_by_hash(hash(state)) == state
+    assert graph.get_state_by_id(id(state)) == state
 
 
 def test_get_state_by_hash_incorrect(graph: Graph):
     state = State(["other"])
 
     with pytest.raises(StateDoesNotExistException):
-        graph.get_state_by_hash(hash(state))
+        graph.get_state_by_id(id(state))
 
 
 def test_add_state(graph: Graph):
@@ -54,7 +54,7 @@ def test_add_state(graph: Graph):
 
     assert len(graph.states) == 6
     assert new_state in graph.states.values()
-    assert graph.get_state_by_hash(hash(new_state)) == new_state
+    assert graph.get_state_by_id(id(new_state)) == new_state
 
 
 def test_add_state_properties_pointers():
@@ -67,7 +67,7 @@ def test_add_state_properties_pointers():
 
     assert graph.size() == 2
     assert id(state1.properties) == id(state2.properties)
-    assert hash(state1) != hash(state2)
+    assert id(state1) != id(state2)
 
 
 def test_add_edge(graph: Graph):
@@ -119,8 +119,8 @@ def test_merge_states(graph: Graph):
 
     assert len(graph.states) == 4
     assert state1.properties.log_templates == ["1", "3"]
-    assert graph.state_indices_by_hash[hash(state1)] == 1
-    assert hash(state3) not in graph.state_indices_by_hash.keys()
+    assert graph.state_indices_by_id[id(state1)] == 1
+    assert id(state3) not in graph.state_indices_by_id.keys()
     assert graph.get_outgoing_states(state1)[0] == state1
 
 
@@ -133,8 +133,8 @@ def test_merge_states2(graph: Graph):
 
     assert len(graph.states) == 4
     assert state3.properties.log_templates == ["3", "0"]
-    assert graph.state_indices_by_hash[hash(state3)] == 3
-    assert hash(state0) not in graph.state_indices_by_hash.keys()
+    assert graph.state_indices_by_id[id(state3)] == 3
+    assert id(state0) not in graph.state_indices_by_id.keys()
     assert graph.states[1] in graph.get_outgoing_states(state3)
     assert state3 not in graph.get_outgoing_states(state3)
     assert graph.get_outgoing_states(graph.states[1])[0] == state3
@@ -150,8 +150,8 @@ def test_merge_states3(graph: Graph):
 
     assert len(graph.states) == 4
     assert state2.properties.log_templates == ["2", "4"]
-    assert graph.state_indices_by_hash[hash(state2)] == 2
-    assert hash(state4) not in graph.state_indices_by_hash.keys()
+    assert graph.state_indices_by_id[id(state2)] == 2
+    assert id(state4) not in graph.state_indices_by_id.keys()
     assert state2 in graph.get_outgoing_states(graph.states[0])
 
 
@@ -209,8 +209,86 @@ def test_merge_loops_singular():
 
     assert len(graph.states) == 10
     graph.remove_loops()
-    assert len(graph.states) == 7
-    assert graph.get_outgoing_states(graph.states[1]) == [graph.states[6], graph.states[3], graph.states[1]]
+    assert len(graph.states) == 6
+    assert graph.get_outgoing_states(graph.states[1]) == [graph.states[6], graph.states[4], graph.states[1]]
     assert graph.get_outgoing_states(graph.states[4]) == [graph.states[5]]
     assert graph.get_outgoing_states(graph.states[6]) == [graph.states[6], graph.states[9]]
     assert graph.get_outgoing_states(graph.states[9]) == []
+
+
+def test_merge_children_to_maintain_determinism():
+    state0 = State(["1"])
+    state1 = State(["1"])
+    state2 = State(["1"])
+    state3 = State(["2"])
+    state4 = State(["2"])
+    state5 = State(["2"])
+    state6 = State(["3"])
+
+    graph = Graph(state0)
+
+    graph.add_state(state0)
+    graph.add_state(state1)
+    graph.add_state(state2)
+    graph.add_state(state3)
+    graph.add_state(state4)
+    graph.add_state(state5)
+    graph.add_state(state6)
+
+    graph.add_edge(state0, state1, EdgeProperties())
+    graph.add_edge(state1, state2, EdgeProperties())
+    graph.add_edge(state0, state3, EdgeProperties())
+    graph.add_edge(state1, state4, EdgeProperties())
+    graph.add_edge(state2, state5, EdgeProperties())
+    graph.add_edge(state2, state6, EdgeProperties())
+
+    assert len(graph.states) == 7
+    graph.remove_loops()
+    print(graph.edges.list)
+    assert len(graph.states) == 3
+
+
+def graph_merge_children():
+    state0 = State(["1"])
+    state1 = State(["1"])
+    state2 = State(["1"])
+    state3 = State(["1"])
+    state4 = State(["2"])
+    state5 = State(["2"])
+    state6 = State(["2"])
+    state7 = State(["2"])
+
+    graph = Graph(state0)
+
+    graph.add_state(state0)
+    graph.add_state(state1)
+    graph.add_state(state2)
+    graph.add_state(state3)
+    graph.add_state(state4)
+    graph.add_state(state5)
+    graph.add_state(state6)
+    graph.add_state(state7)
+
+    graph.add_edge(state0, state1, EdgeProperties())
+    graph.add_edge(state1, state2, EdgeProperties())
+    graph.add_edge(state2, state3, EdgeProperties())
+    graph.add_edge(state0, state4, EdgeProperties())
+    graph.add_edge(state1, state5, EdgeProperties())
+    graph.add_edge(state2, state6, EdgeProperties())
+    graph.add_edge(state3, state7, EdgeProperties())
+
+    return graph
+
+
+def test_merge_children_to_maintain_determinism2():
+    graph = graph_merge_children()
+    assert len(graph.states) == 8
+    graph.remove_loops()
+    assert len(graph.states) == 2
+
+
+def test_merge_children_to_maintain_determinism3():
+    graph = graph_merge_children()
+    assert len(graph.states) == 8
+    graph.remove_loops(True)
+    assert len(graph.states) == 2
