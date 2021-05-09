@@ -84,20 +84,34 @@ class Graph(AutoPrinter):
 
           ⊂ indicates a self-loop.
         """
+
+        # Initialize traversal variables
         assert self.start_node is not None
         current = self.start_node
         been = set()
         stack = [(current, been)]
+
+        # While there are still unreached nodes
         while len(stack) > 0:
+
+            # Get the first node and its neighbours
             current, been = stack.pop()
             outgoing = self.get_outgoing_states(current)
+
+            # Merge all states directly linked to and equivalent to the current state
             while len(outgoing) == 1:
                 if current.is_equivalent(outgoing[0]):
                     self.merge_states(current, outgoing[0])
                 else:
                     current = outgoing[0]
+
+                # Get all outgoing edges except self loops
                 outgoing = [x for x in self.get_outgoing_states(current) if x is not current]
+
+            # Mark current state as visited
             been.add(current)
+
+            # Continue traversal with all unvisited neighbouring nodes
             for node in [n for n in outgoing if n not in been]:
                 stack.append((node, been.copy()))
 
@@ -121,23 +135,34 @@ class Graph(AutoPrinter):
 
           ⊂ indicates a self-loop and 2 has a edge from 1 to 2 and from 2 to 1.
         """
+
+        # Initialize traversal variables
         assert self.start_node is not None
         stack: List[Tuple[State, List]] = [(self.start_node, [])]
 
+        # While there are still unreached nodes
         while len(stack) != 0:
+
+            # Get current state and visited list
             state, current_unique = stack.pop()
             if state in current_unique:  # Should not occur, but does not hurt.
                 continue
             else:
+
+                # Get all unvisited neighbours
                 outgoing = [x for x in self.get_outgoing_states(state) if x not in current_unique]
 
+                # Get all equivalent states from the unique list
                 arr = list(filter(lambda x: state.is_equivalent(x), current_unique))
 
                 if len(arr) > 0:
+                    # If any are equivalent, merge the first one?
                     self.merge_states(arr[0], state)
                 else:
+                    # If none are equivalent, mark the current state as unique
                     current_unique.append(state)
 
+                # Continue the traversal for all neighbours of current node
                 for s in outgoing:
                     stack.append((s, current_unique.copy()))
 
