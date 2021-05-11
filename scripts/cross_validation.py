@@ -5,11 +5,11 @@ from random import shuffle
 from typing import Tuple, List
 
 from scripts.log_scrambler import produce_false_trace
-from scripts.match_trace import match_trace
+from whatthelog.prefixtree.evaluator import Evaluator
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.prefixtree.prefix_tree_factory import PrefixTreeFactory
-from whatthelog.syntaxtree.parser import Parser
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
+from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 
 
 def k_fold_cross_validation(syntax_tree: SyntaxTree,
@@ -23,7 +23,7 @@ def k_fold_cross_validation(syntax_tree: SyntaxTree,
     :param logs_dir: The directory containing the traces.
     :param k: The number of folds.
     :param config_location: The location of the configuration used to build the syntax tree.
-    :param debug: Whether or not to print debug infomation to the console.
+    :param debug: Whether or not to print debug information to the console.
     """
 
     # Arrays used to collect specificity and recall
@@ -86,11 +86,13 @@ def k_fold_cross_validation(syntax_tree: SyntaxTree,
 
         # Create false traces based on the current fold
         for trace_name in os.listdir(temp_dir_name_recall):
-            new_name_specificity = os.path.join(temp_dir_name_specificity, trace_name)
+            new_name_specificity = os.path.join(temp_dir_name_specificity, trace_name + "_false")
             produce_false_trace(os.path.join(temp_dir_name_recall, trace_name), new_name_specificity, syntax_tree, model)
 
         # Evaluate the model and append the results
-        s, r = evaluate_accuracy(syntax_tree, model, str(temp_dir_name_recall), str(temp_dir_name_specificity))
+        evaluator: Evaluator = Evaluator(model, syntax_tree, str(temp_dir_name_recall), str(temp_dir_name_specificity))
+        s = evaluator.calc_specificity(debug=debug)
+        r = evaluator.calc_recall(debug=debug)
         specificity.append(s)
         recall.append(r)
 
@@ -102,7 +104,7 @@ def k_fold_cross_validation(syntax_tree: SyntaxTree,
         for trace_name in fold:
             old_name = os.path.join(logs_dir, trace_name)
             new_name_recall = os.path.join(temp_dir_name_recall, trace_name)
-            new_name_specificity = os.path.join(temp_dir_name_specificity, trace_name)
+            new_name_specificity = os.path.join(temp_dir_name_specificity, trace_name + "_false")
 
             # Move the trace back to the main directory from the recall directory
             os.rename(new_name_recall, old_name)
@@ -124,145 +126,6 @@ def k_fold_cross_validation(syntax_tree: SyntaxTree,
     return specificity, recall
 
 
-def evaluate_accuracy(syntax_tree: SyntaxTree,
-                      state_model: PrefixTree,
-                      positive_logs_dir: str,
-                      faulty_logs_dir: str,
-                      debug=False) -> Tuple[float, float]:
-    """
-    Calculates the specificity and recall of a state model.
-    :param syntax_tree: The syntax tree used to validate individual logs.
-    :param state_model: The state model that accepts or rejects a given trace.
-    :param positive_logs_dir: The directory containing the positive log traces used to test recall.
-    :param faulty_logs_dir: The directory containing the negative log traces used to test specificity.
-    :param debug: Whether or not to print debug information to the console.
-    """
-
-    # Calculate specificity
-    specificity = calc_specificity(syntax_tree, state_model, faulty_logs_dir, debug)
-
-    # Calculate recall
-    recall = calc_recall(syntax_tree, state_model, positive_logs_dir, debug)
-
-    return specificity, recall
-
-
-def calc_specificity(syntax_tree: SyntaxTree,
-                     state_model: PrefixTree,
-                     faulty_logs_dir: str,
-                     debug=False) -> float:
-    """
-    Calculates the specificity of a model on a given directory of traces.
-    Specificity is defined as |TN| / (|TN| + |FP|),
-     Where TN = True Negative and FP = False Positive.
-    :param syntax_tree: The syntax tree used to validate individual logs.
-    :param state_model: The state model that accepts or rejects a given trace.
-    :param faulty_logs_dir: The directory containing the negative log traces.
-    :param debug: Whether or not to print debug information to the console.
-    """
-
-    # Initialize counters
-    tn: int = 0
-    fp: int = 0
-
-    # Check if directory exists
-    if not os.path.isdir(faulty_logs_dir):
-        raise NotADirectoryError("Log directory not found!")
-
-    # For each file in the directory
-    for filename in os.listdir(faulty_logs_dir):
-
-        # Open the file
-        with open(os.path.join(faulty_logs_dir, filename), 'r') as f:
-
-            if debug:
-                print(f"Opening file {filename} to evaluate specificity...")
-
-            # If the state model accepts the trace
-            if match_trace(state_model, f.readlines(), syntax_tree):
-
-                # Increase the false positives by one, should have been rejected
-                fp += 1
-
-                if debug:
-                    print("File incorrectly accepted")
-
-            # If the state model rejects the trace
-            else:
-
-                # Increase the true negatives by one, correctly rejected
-                tn += 1
-
-                if debug:
-                    print("File correctly rejected")
-
-    # Calculate the final result
-    res: float = tn / (tn + fp)
-
-    if debug:
-        print(f"Final specificity score: {res}")
-
-    return res
-
-
-def calc_recall(syntax_tree: SyntaxTree,
-                state_model: PrefixTree,
-                positive_logs_dir: str,
-                debug=False) -> float:
-    """
-    Calculates the recall of a model on a given directory of traces.
-    Recall is defined as |TP| / (|TP| + |FN|),
-     Where TP = True Positive and FN = False Negative.
-    :param syntax_tree: The syntax tree used to validate individual logs.
-    :param state_model: The state model that accepts or rejects a given trace.
-    :param positive_logs_dir: The directory containing the negative log traces.
-    :param debug: Whether or not to print debug information to the console.
-    """
-
-    # Initialize counters
-    tp: int = 0
-    fn: int = 0
-
-    # Check if directory exists
-    if not os.path.isdir(positive_logs_dir):
-        raise NotADirectoryError("Log directory not found!")
-
-    # For each file in the directory
-    for filename in os.listdir(positive_logs_dir):
-
-        # Open the file
-        with open(os.path.join(positive_logs_dir, filename), 'r') as f:
-
-            if debug:
-                print(f"Opening file {filename} to evaluate recall...")
-
-            # If the state model accepts the trace
-            if match_trace(state_model, f.readlines(), syntax_tree):
-
-                # Increase the true positives by one, correctly accepted
-                tp += 1
-
-                if debug:
-                    print("File correctly accepted")
-
-            # If the state model rejects the trace
-            else:
-
-                # Increase the false negatives by one, should have been rejected
-                fn += 1
-
-                if debug:
-                    print("File incorrectly rejected")
-
-    # Calculate the final result
-    res: float = tp / (tp + fn)
-
-    if debug:
-        print(f"Final recall score: {res}")
-
-    return res
-
-
 # Example usage
 if __name__ == '__main__':
 
@@ -273,7 +136,7 @@ if __name__ == '__main__':
     false_traces = str(project_root.joinpath('tests/resources/testlogs'))
 
     k_fold_cross_validation(
-        Parser().parse_file(cfg_file),
+        SyntaxTreeFactory().parse_file(cfg_file),
         false_traces,
         8,
         debug=True
