@@ -237,7 +237,7 @@
             },
             {
               "name": "TakerClamped",
-              "prefix": "(clamped\\son\\s(taker|owner)\\s(funds|output|balance))",
+              "prefix": "\\(clamped\\son\\s(taker|owner)\\s(funds|input|output|balance)\\)",
               "isRegex": true,
               "children": []
             },
@@ -287,12 +287,6 @@
               "name": "TakerConsumingFromOffer",
               "prefix": "Consuming\\sfrom\\soffer\\s[A-Za-z0-9]{64}",
               "isRegex": true,
-              "children": []
-            },
-            {
-              "name": "TakerClampedOnTakerInput",
-              "prefix": "(clamped on taker input)",
-              "isRegex": false,
               "children": []
             },
             {
@@ -788,7 +782,7 @@
           "children": []
         },
         {
-          "name": "EnteringConsensus",
+          "name": "EnteringConsensusProcess",
           "prefix": "(Entering\\sconsensus\\sprocess,\\s(validating|watching),\\ssynced=(yes|no))",
           "isRegex": true,
           "children": []

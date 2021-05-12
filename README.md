@@ -165,39 +165,6 @@ The  `states_by_prop` field stores a mapping from the hash of a `StateProperties
 
 The `merge_states` method can be used to merge two states. When merging `State`s s1 and s2 with templates t1 and t2, and neighbours lists n1 and n2, the result would be a state s3 with template `t1 | t2` and neighbours `n1 U n2`. If either state is terminal or the start state, so will the resulting merged state.
 
-The `remove_loops` method can be used to transform repeating states into a singular self-looping state. The parameter `recurring` can be used to control which merging strategy is used. When set to `False`, the method will only collapse paths of the form `s1 s2+`, where `s1` and `s2` are equivalent, into a single state `s1` with a self loop. When set to `True`, the method will remove all states equivalent to a state that can be reached from it.
-
-Example merge when `recurring = False`:
-
-```
-            0           0
-           /\          /\
-          1  3       ⊂1  ⊂3
-          |  |   ->  |   |
-          1  3       2   1   
-          |  |       |     
-          1  1       1
-          |  
-          2
-          |
-          1
-```
-
-Example removal when `recurring = True`:
-
-```
-            0           0
-           /\          /\
-          1  3       ⊂1  ⊂3
-          |  |   ->  ||   |
-          1  3       2   1   
-          |  |           
-          1  1       
-          |  
-          2
-          |
-          1
-```
 ### The State Machines
 
 TODO
