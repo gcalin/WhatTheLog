@@ -15,12 +15,14 @@ class Evaluator:
                  model: Graph,
                  syntax_tree: SyntaxTree,
                  positive_traces_dir: str,
-                 negative_traces_dir: str):
+                 negative_traces_dir: str,
+                 initial_size: int = None):
 
         self.model = model
         self.syntax_tree = syntax_tree
         self.positive_traces_dir = positive_traces_dir
         self.negative_traces_dir = negative_traces_dir
+        self.initial_model_size = len(model) if initial_size is None else initial_size
 
     def update(self, new_model: Graph):
         """
@@ -28,7 +30,7 @@ class Evaluator:
         """
         self.model = new_model
 
-    def evaluate(self, debug=False) -> float:
+    def evaluate_accuracy(self, debug=False) -> float:
         """
         Statically evaluates a model in terms of specificity and recall. The returned
         Value is the BCR (binary classification rate) defined as `(accuracy + recall) / 2`
@@ -41,40 +43,26 @@ class Evaluator:
 
     def evaluate_size(self) -> float:
         """
-        Evaluates a model in terms of its size.
+        Evaluates a model in terms of its size. The result is normalized by dividing by the initial model size.
         """
-        return (len(self.model) + len(self.model.edges)) / 2
+        return len(self.model) / self.initial_model_size
 
-    def evaluate_relative(self,
-                          other_model: Graph,
-                          w_accuracy: float = 1,
-                          w_size: float = 0,
-                          minimizing: bool = False) -> float:
+    def evaluate(self,
+                 w_accuracy: float = 0.5,
+                 w_size: float = 0.5) -> float:
         """
-        Evaluates the current model relatively against a different model.
-        :param other_model: The model to compare against.
+        Evaluates the current model as a weighted sum between the size and the accuracy.
         :param w_accuracy: The weight of the relative accuracy evaluation in the final evaluation.
         :param w_size: The weight of the relative size evaluation in the final evaluation.
-        :param minimizing: Whether or not to the resulting value should be minimizing or not.
         """
+        # Get the the accuracy
+        accuracy: float = self.evaluate()
 
-        # Construct an evaluator for the other model
-        other: Evaluator = Evaluator(other_model, self.syntax_tree, self.positive_traces_dir, self.negative_traces_dir)
-
-        # Get the static accuracies
-        accuracy_before: float = self.evaluate()
-        accuracy_after: float = other.evaluate()
-
-        # Get the static sizes
-        size_before = self.evaluate_size()
-        size_after = other.evaluate_size()
-
-        # Compute the differences for each evaluation
-        accuracy_dif = (accuracy_after - accuracy_before) / 2
-        size_dif = (size_after - size_before) / 2
+        # Get the size
+        size: float = self.evaluate_size()
 
         # Compute the final result using weights
-        return (w_accuracy * accuracy_dif + w_size * size_dif) * -1 if not minimizing else 1
+        return w_accuracy * accuracy + w_size * size
 
     def calc_specificity(self, debug=False) -> float:
         """
