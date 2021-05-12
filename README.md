@@ -151,7 +151,7 @@ The Prefix Tree is represented internally as directed graph, which is implemente
 ```
 self.edges = SparseMatrix()
 self.states: List[State] = []
-self.state_indices_by_hash: Dict[int, int] = {}
+self.state_indices_by_id: Dict[int, int] = {}
 self.states_by_prop: Dict[int, int] = {}
 ```
 
@@ -159,9 +159,11 @@ The `edges` field stores a sparse matrix of edge values encoded as strings. If a
 
 The `states` field holds a list of instances of the [`State`](whatthelog/prefixtree/state.py) class. This class represent an occurrence of a state in the prefix tree (such as `A` or `B` in our previous prefix tree example). A separate instance of this class is stored for every occurrence of the state in the tree. The `State` class holds a reference to an instance of [`StateProperties`](whatthelog/prefixtree/state_properties.py), where the actual log template is stored. Only one instance of `StateProperties` is stored for every unique set of log templates, and multiple `State` instances can point to the same state properties. Using once again our tree example from earlier: the tree will store one `State` instance for every occurrence of `A`, but all those states will point to one single instance of `StateProperties`, which holds the log template of `A`. Two states with the same set of properties are considered equivalent.
 
-The `state_indices_by_hash` field stores a mapping from the hash of a state instance to the index of that state in the `states` list. This is necessary to allow checking for state membership in the tree in `O(1)`.
+The `state_indices_by_id` field stores a mapping from the id of a state instance to the index of that state in the `states` list. This is necessary to allow checking for state membership in the tree in `O(1)`.
 
-The  `states_by_prop` field stores a mapping from the hash of a `StateProperties` instance to the hash of a `State` instance with those properties. Since the hashing of `StateProperties` is deterministic based on an instance's field values, this mapping allows searching for existing equivalent states during the insertion of a new state in `O(1)`. If an existing equivalent is found, the new state will be set to point to the existing properties, in order to reduce redundancy.
+The  `states_by_prop` field stores a mapping from the hash of a `StateProperties` instance to the id of a `State` instance with those properties. Since the hash of `StateProperties` is deterministic based on an instance's field values, this mapping allows searching for existing equivalent states during the insertion of a new state in `O(1)`. If an existing equivalent is found, the new state will be set to point to the existing properties, in order to reduce redundancy.
+
+The `merge_states` method can be used to merge two states. When merging `State`s s1 and s2 with templates t1 and t2, and neighbours lists n1 and n2, the result would be a state s3 with template `t1 | t2` and neighbours `n1 U n2`. If either state is terminal or the start state, so will the resulting merged state.
 
 ### The State Machines
 
