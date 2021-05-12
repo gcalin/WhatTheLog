@@ -292,3 +292,73 @@ def test_merge_children_to_maintain_determinism3():
     assert len(graph.states) == 8
     graph.remove_loops(True)
     assert len(graph.states) == 2
+
+
+def test_merge_children_to_maintain_determinism4():
+    state0 = State(["1"])
+    state1 = State(["1"])
+    state2 = State(["1"])
+    state3 = State(["1"])
+    state4 = State(["2"])
+    state5 = State(["2"])
+    state6 = State(["2"])
+    state7 = State(["2"])
+    state8 = State(["3"])
+    state9 = State(["3"])
+    state10 = State(["3"])
+    state11 = State(["3"])
+
+    graph = Graph(state0)
+
+    graph.add_state(state0)
+    graph.add_state(state1)
+    graph.add_state(state2)
+    graph.add_state(state3)
+    graph.add_state(state4)
+    graph.add_state(state5)
+    graph.add_state(state6)
+    graph.add_state(state7)
+    graph.add_state(state8)
+    graph.add_state(state9)
+    graph.add_state(state10)
+    graph.add_state(state11)
+
+    graph.add_edge(state0, state1, EdgeProperties())
+    graph.add_edge(state1, state2, EdgeProperties())
+    graph.add_edge(state2, state3, EdgeProperties())
+    graph.add_edge(state0, state4, EdgeProperties())
+    graph.add_edge(state1, state5, EdgeProperties())
+    graph.add_edge(state2, state6, EdgeProperties())
+    graph.add_edge(state3, state7, EdgeProperties())
+    graph.add_edge(state4, state8, EdgeProperties())
+    graph.add_edge(state5, state9, EdgeProperties())
+    graph.add_edge(state6, state10, EdgeProperties())
+    graph.add_edge(state7, state11, EdgeProperties())
+
+    assert len(graph.states) == 12
+    graph.remove_loops()
+    print(graph.edges.list)
+    assert len(graph.states) == 3
+
+
+def test_merge_children_to_maintain_determinism5():
+    state0 = State(["1"])
+    state1 = State(["1"])
+    state2 = State(["1"])
+    state3 = State(["1"])
+
+    graph = Graph(state0)
+
+    graph.add_state(state0)
+    graph.add_state(state1)
+    graph.add_state(state2)
+    graph.add_state(state3)
+
+    graph.add_edge(state0, state1, EdgeProperties())
+    graph.add_edge(state1, state2, EdgeProperties())
+    graph.add_edge(state2, state3, EdgeProperties())
+
+    assert len(graph.states) == 4
+    graph.remove_loops(True)
+    print(graph.edges.list)
+    assert len(graph.states) == 1
