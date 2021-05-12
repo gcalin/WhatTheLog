@@ -1,6 +1,6 @@
 import bisect
 from whatthelog.exceptions import StateDoesNotExistException
-from typing import Union, Tuple, Any, List
+from typing import Union, Tuple, Any, List, Dict, Set
 
 
 class SparseMatrix:
@@ -13,6 +13,8 @@ class SparseMatrix:
     def __init__(self):
         # The list in which the sparse matrix is stored
         self.list: List[str] = list()
+        # A dictionary linking children to their parent (needs to be maintained)
+        self.parents: Dict[int, Set[int]] = dict()
 
     def __setitem__(self, key: Tuple[int, int], value: Any) -> None:
         """
@@ -21,6 +23,10 @@ class SparseMatrix:
         index = self.find_index(key)
         if index is None:
             bisect.insort_right(self.list, str(key[0]) + self.separator + str(key[1]) + self.separator + str(value))
+            if key[1] in self.parents:
+                self.parents[key[1]].add(key[0])
+            else:
+                self.parents[key[1]] = {key[0]}
         else:
             self.list[index] = str(key[0]) + self.separator + str(key[1]) + self.separator + str(value)
 
@@ -86,31 +92,37 @@ class SparseMatrix:
             current = self.get_values(search_list, index)
 
             if new_parent >= 0:
+                self.parents[current[1]].remove(current[0])
                 if (new_parent, current[1]) in self:
                     to_delete.append(index)
                 else:
                     search_list[index] = str(new_parent) + self.separator + str(current[1]) + self.separator + current[2]
+                    self.parents[current[1]].add(new_parent)
 
             result = [(current[1], current[2])]
             idx = index - 1
             while idx >= 0 and search_list[idx].startswith(str(item) + self.separator):
                 current = self.get_values(search_list, idx)
                 if new_parent >= 0:
+                    self.parents[current[1]].remove(current[0])
                     if (new_parent, current[1]) in self:
                         to_delete.append(idx)
                     else:
                         search_list[idx] = str(new_parent) + self.separator + str(current[1]) + self.separator + current[
                         2]
+                        self.parents[current[1]].add(new_parent)
                 result.append((current[1], current[2]))
                 idx -= 1
             idx = index + 1
             while idx < len(search_list) and search_list[idx].startswith(str(item) + self.separator):
                 current = self.get_values(search_list, idx)
                 if new_parent >= 0:
+                    self.parents[current[1]].remove(current[0])
                     if (new_parent, current[1]) in self:
                         to_delete.append(idx)
                     else:
                         search_list[idx] = str(new_parent) + self.separator + str(current[1]) + self.separator + current[2]
+                        self.parents[current[1]].add(new_parent)
                 result.append((current[1], current[2]))
                 idx += 1
 
@@ -169,24 +181,32 @@ class SparseMatrix:
         :param i: the input entry
         :return: the list of parent entries
         """
+        if i not in self.parents:
+            return []
 
-        result: List[int] = []
-        to_delete: List[int] = []
-        for index, item in enumerate(self.list):
-            keys = item.split('.', 2)
+        parents = list(self.parents[i])
 
-            if int(keys[1]) is i:
-                if new_child >= 0:
-                    if (int(keys[0]), new_child) in self:
-                        to_delete.append(index)
+        if new_child >= 0:
+            for p in parents:
+                index = self.bisearch(self.list, str(p) + self.separator + str(i) + self.separator)
+                self.parents[i].remove(p)
+                if (p, new_child) in self:
+                    # The edge we want to create is already present, so delete the current one
+                    # (no duplicate edges will then be created)
+                    del self.list[index]
+                else:
+                    # The edge we want to create is not yet present. Change the current edge to this value.
+                    # WARNING: list needs to be sorted after this operation.
+                    # todo consider more efficient approach than resorting list. Suggestion: deleting value and inserting it again.
+                    # todo ^ This will change from O(nlogn) to O(n + log n + n), worth it?
+                    if new_child in self.parents:
+                        self.parents[new_child].add(p)
                     else:
-                        self.list[index] = keys[0] + self.separator + str(new_child) + self.separator + keys[2]
-                result.append(int(keys[0]))
+                        self.parents[new_child] = {p}
+                    keys = self.get_values(self.list, index)
+                    self.list[index] = str(p) + self.separator + str(new_child) + self.separator + keys[2]
 
-        for i in to_delete:
-            del self.list[i]
-
-        return result
+        return parents
 
     def get_parents(self, i: int):
         return self.__get_parents(i)

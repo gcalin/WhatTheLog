@@ -91,6 +91,8 @@ class Graph(AutoPrinter):
             for dup in duplicates:
                 for c in children:
                     if c.is_equivalent(children[dup]) and c is not children[dup]:
+                        if children[dup] in current_unique and c in current_unique:
+                            raise Exception('Both the nodes were in current unique')
                         if children[dup] in current_unique:
                             self.merge_states(children[dup], c)
                         else:
@@ -102,6 +104,15 @@ class Graph(AutoPrinter):
                 duplicates = [i for i, x in enumerate(children_templates) if i != children_templates.index(x)]
             else:
                 duplicates = []
+
+    def add_terminal(self):
+        terminal: State = State(['markov-terminal'], True)
+        self.add_state(terminal)
+
+        for n in self.states.values():
+            if n.is_terminal and n.properties.log_templates[0] != 'markov-terminal':
+                self.edges.change_children_of_parents(self.state_indices_by_id[id(n)],
+                                                      self.state_indices_by_id[id(terminal)])
 
     def __remove_singular_loops(self) -> None:
         """
@@ -134,7 +145,6 @@ class Graph(AutoPrinter):
 
         # While there are still unreached nodes
         while len(stack) > 0:
-
             # Get the first node and its neighbours
             current, been = stack.pop()
             outgoing = self.get_outgoing_states_not_self(current)
@@ -144,8 +154,9 @@ class Graph(AutoPrinter):
                 out = outgoing.pop()
                 if current.is_equivalent(out) and current is not out:
                     self.merge_states(current, out)
-                    self.merge_equivalent_children(current)
                     outgoing = self.get_outgoing_states_not_self(current)
+
+            self.merge_equivalent_children(current)
 
             # Get all outgoing edges except self loops
             outgoing = self.get_outgoing_states_not_self(current)
@@ -184,12 +195,9 @@ class Graph(AutoPrinter):
 
         # While there are still unreached nodes
         while len(stack) != 0:
-
             # Get current state and visited list
             state, current_unique = stack.pop()
             if state not in self:
-                continue
-            if state in current_unique:  # Should not occur, but does not hurt.
                 continue
             else:
 
@@ -202,10 +210,12 @@ class Graph(AutoPrinter):
                 if len(arr) > 0:
                     # There will only be one equivalent
                     self.merge_states(arr[0], state)
+                    state = arr[0]
                     self.merge_equivalent_children(arr[0], current_unique)
-                    outgoing = [x for x in self.get_outgoing_states(arr[0]) if x not in current_unique]
+                    outgoing = self.get_outgoing_states_not_self(state)
                 else:
                     # If none are equivalent, mark the current state as unique
+                    # self.merge_equivalent_children(state, current_unique)
                     current_unique.append(state)
 
                 # Continue the traversal for all neighbours of current node
@@ -235,7 +245,13 @@ class Graph(AutoPrinter):
             state1.properties = self.prop_by_hash[state1.properties.get_prop_hash()]
         else:
             self.prop_by_hash[state1.properties.get_prop_hash()] = state1.properties
-
+        # print('----')
+        # print(state1.id)
+        # print(state2.id)
+        # print(self.state_indices_by_id[id(state1)])
+        # print(self.state_indices_by_id[id(state2)])
+        state1.id = self.state_indices_by_id[id(state1)]
+        state2.id = self.state_indices_by_id[id(state2)]
         self.edges.change_parent_of_children(self.state_indices_by_id[id(state1)],
                                              self.state_indices_by_id[id(state2)])
 

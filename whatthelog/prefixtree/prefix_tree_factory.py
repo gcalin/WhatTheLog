@@ -129,8 +129,12 @@ class PrefixTreeFactory(AutoPrinter):
 
         with open(tracepath, 'r') as file:
             for log in file:
-
-                template = syntax_tree.search(log).name
+                try:
+                    template = syntax_tree.search(log).name
+                except Exception as e:
+                    print(e)
+                    print(log)
+                    return
                 if template is None:
                     raise UnidentifiedLogException(
                         log + " was not identified as a valid log.")

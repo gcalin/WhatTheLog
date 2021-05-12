@@ -32,7 +32,7 @@ class Visualizer:
         """
         labels, branches, depth = self.__populate_graph()
 
-        plt.figure(1, figsize=(branches + 1, depth / 2 + 1))
+        plt.figure(1, figsize=(branches + 5, depth / 2 + 1))
 
         pos = graphviz_layout(self.G, prog="dot")
         nx.draw_networkx_labels(self.G, pos, labels)
@@ -66,8 +66,10 @@ class Visualizer:
         depth = 1
 
         visited = {self.graph.start_node}
+        counter = 0
 
-        while len(queue) != 0:
+        while len(queue) != 0 and counter < 10:
+            counter += 1
             level_size = len(queue)
             while level_size > 0:
                 state = queue.pop(0)
@@ -96,7 +98,7 @@ class Visualizer:
             label += "["
         for log_template in log_templates:
             if log_template not in self.label_mapping:
-                self.label_mapping[log_template] = len(self.label_mapping)
+                self.label_mapping[log_template] = log_template#len(self.label_mapping)
 
             label += str(self.label_mapping[log_template])
 
