@@ -218,6 +218,12 @@
           "isRegex": false,
           "children": [
             {
+              "name": "TakerLeg",
+              "prefix": "\\s+leg\\d+\\s(in|out)\\:\\s\\d+\\.\\d+\\/[A-Z][A-Z][A-Z]",
+              "isRegex": true,
+              "children": []
+            },
+            {
               "name": "TakerCrossing",
               "prefix": "(Crossing\\sas\\:\\s([A-Za-z0-9]+))",
               "isRegex": true,
