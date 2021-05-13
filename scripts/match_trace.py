@@ -1,7 +1,8 @@
 import random
-from typing import List, Union, Dict
+from typing import List, Union
 
-from whatthelog.prefixtree.prefix_tree import PrefixTree, State
+from whatthelog.prefixtree.graph import Graph
+from whatthelog.prefixtree.prefix_tree import State
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 
 
@@ -10,7 +11,7 @@ def template_matches_state(template: str, state: State) -> bool:
 
 
 def match_trace(
-        prefix_tree: PrefixTree,
+        model: Graph,
         trace: List[str],
         syntax_tree: SyntaxTree) -> Union[List[State], None]:
     """
@@ -19,7 +20,7 @@ def match_trace(
     If it fits, a successor that matches the next line is picked and the list
     is traversed recursively.
 
-    :param prefix_tree: The prefix tree in which states need to be matched.
+    :param model: The prefix tree in which states need to be matched.
     :param trace: The lines to be matched against the tree.
     :param syntax_tree: The syntax tree used to validate the lines.
     :return: If the trace corresponds to a sequence of states in the prefix tree,
@@ -40,7 +41,7 @@ def match_trace(
     # Get the root's children
     root_children = list(
         filter(lambda s: template_matches_state(template.name, s),
-               prefix_tree.get_children(prefix_tree.get_root())))
+               model.get_outgoing_states(model.start_node)))
 
     # If no suitable option, return
     if len(root_children) == 0:
@@ -54,7 +55,7 @@ def match_trace(
 
         # If the trace is exactly one line long, return the root state if it is terminal
         if len(trace) == 1:
-            return [current_state] if [s for s in prefix_tree.get_children(current_state) if s.is_terminal] else None
+            return [current_state] if [s for s in model.get_outgoing_states(current_state) if s.is_terminal] else None
 
         # Remove the checked line from trace
         trace[:] = trace[1:]
@@ -67,8 +68,10 @@ def match_trace(
             return None
 
         # Check if any of the children of current node contain the template in their state
-        children: List[State] = prefix_tree.get_children(current_state)
-        successor: List[State] = list(filter(lambda next_state: template_matches_state(template.name, next_state), children))
+        children: List[State] = model.get_outgoing_states(current_state)
+        successor: List[State] = list(filter(
+            lambda next_state: template_matches_state(template.name, next_state),
+            children))
 
         if len(successor) == 0:
             # If none found, the trace cannot be matched
@@ -79,7 +82,7 @@ def match_trace(
             next_node: State = random.choice(successor)
 
             # Continue the search recursively
-            tail: List[State] = match_trace_rec(next_node, prefix_tree, trace[1:], syntax_tree)
+            tail: List[State] = match_trace_rec(next_node, model, trace[1:], syntax_tree)
 
             if tail is None:
                 # If the search failed, return none
@@ -92,7 +95,7 @@ def match_trace(
 
 def match_trace_rec(
         current_state: State,
-        prefix_tree: PrefixTree,
+        model: Graph,
         trace: List[str],
         syntax_tree: SyntaxTree) -> Union[List[State], None]:
     """
@@ -101,7 +104,7 @@ def match_trace_rec(
     if any exists.
 
     :param current_state: The current state of the prefix tree
-    :param prefix_tree: The prefix tree in which states need to be matched.
+    :param model: The prefix tree in which states need to be matched.
     :param trace: The lines to be matched against the tree.
     :param syntax_tree: The syntax tree used to validate the lines.
     :return: If the trace corresponds to a sequence of states in the prefix tree,
@@ -118,7 +121,7 @@ def match_trace_rec(
             return None
 
         # Check if any of the children of current node contain the template in their state
-        children: List[State] = prefix_tree.get_children(current_state)
+        children: List[State] = model.get_outgoing_states(current_state)
         successor: List[State] = list(
             filter(lambda next_state: template_matches_state(template.name, next_state), children))
 
@@ -135,7 +138,6 @@ def match_trace_rec(
             # Remove first trace
             trace = trace[1:]
 
-    children = prefix_tree.get_children(current_state)
-    if [state.is_terminal for state in prefix_tree.get_children(current_state) if state.is_terminal]:
+    if [state.is_terminal for state in model.get_outgoing_states(current_state) if state.is_terminal]:
         return res
     return None
