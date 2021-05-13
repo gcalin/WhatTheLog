@@ -16,13 +16,17 @@ class Evaluator:
                  syntax_tree: SyntaxTree,
                  positive_traces_dir: str,
                  negative_traces_dir: str,
-                 initial_size: int = None):
+                 initial_size: int = None,
+                 weight_accuracy: float = 0.5,
+                 weight_size: float = 0.5):
 
         self.model = model
         self.syntax_tree = syntax_tree
         self.positive_traces_dir = positive_traces_dir
         self.negative_traces_dir = negative_traces_dir
         self.initial_model_size = len(model) if initial_size is None else initial_size
+        self.weight_accuracy = weight_accuracy
+        self.weight_size = weight_size
 
     def update(self, new_model: Graph):
         """
@@ -48,13 +52,19 @@ class Evaluator:
         return len(self.model) / self.initial_model_size
 
     def evaluate(self,
-                 w_accuracy: float = 0.5,
-                 w_size: float = 0.5) -> float:
+                 w_accuracy: float = None,
+                 w_size: float = None) -> float:
         """
         Evaluates the current model as a weighted sum between the size and the accuracy.
         :param w_accuracy: The weight of the relative accuracy evaluation in the final evaluation.
         :param w_size: The weight of the relative size evaluation in the final evaluation.
         """
+        if w_accuracy is None:
+            w_accuracy = self.weight_accuracy
+
+        if w_size is None:
+            w_size = self.weight_size
+
         # Get the the accuracy
         accuracy: float = self.evaluate()
 
