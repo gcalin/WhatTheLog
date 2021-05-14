@@ -210,7 +210,7 @@ def produce_false_trace(input_file: str, output_file: str, syntax_tree: SyntaxTr
             func(lines, syntax_tree)
 
         # While the produced log is still accepted, continue scrambling it
-        while match_trace(state_model, lines, syntax_tree):
+        while match_trace(state_model, lines.copy(), syntax_tree):
             n_mutations = random.randint(1, 3)
             mutations = [random.choice([delete_one, swap, r_swap]) for _ in range(n_mutations)]
 
