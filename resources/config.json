@@ -219,7 +219,7 @@
           "children": [
             {
               "name": "TakerLeg",
-              "prefix": "\\s+leg\\d+\\s(in|out)\\:\\s\\d+\\.\\d+\\/[A-Z][A-Z][A-Z]",
+              "prefix": "\\s+leg\\d+\\s(in|out)\\:\\s\\d+\\.\\d+\\/[A-Z]{3}",
               "isRegex": true,
               "children": []
             },
@@ -296,7 +296,7 @@
               "children": []
             },
             {
-              "name": "TakerDone",
+              "name": "TakerDoneConsumed",
               "prefix": "Done: all the input currency has been consumed.",
               "isRegex": false,
               "children": []
@@ -320,7 +320,7 @@
               "children": []
             },
             {
-              "name": "TakerDone",
+              "name": "TakerDoneReceived",
               "prefix": "Done: the desired amount has been received.",
               "isRegex": false,
               "children": []
@@ -427,7 +427,7 @@
         },
         {
           "name": "Direct",
-          "prefix": "\\d\\sDirect:",
+          "prefix": "\\d+\\sDirect:",
           "isRegex": true,
           "children": []
         },
@@ -462,7 +462,7 @@
           "children": []
         },
         {
-          "name": "TryToCancel",
+          "name": "TakerReportsDoneDuringCrossing",
           "prefix": "The\\staker\\sreports\\she\\'s\\sdone\\sduring\\scrossing\\!",
           "isRegex": true,
           "children": []
@@ -498,12 +498,6 @@
           "children": []
         },
         {
-          "name": "OfferFullyCrossed",
-          "prefix": "Offer fully crossed!",
-          "isRegex": false,
-          "children": []
-        },
-        {
           "name": "AttemptingCross",
           "prefix": "(Attempting\\scross\\:\\s((([A-Za-z0-9]+\\/)?)[A-Z]{3}\\s\\-\\>\\s(([A-Za-z0-9]+\\/)?)[A-Z]{3}))",
           "isRegex": true,
@@ -512,12 +506,6 @@
         {
           "name": "VoteCount",
           "prefix": "(\\{\\\"nays\\\"\\:(\\d+)\\,\\\"our\\_vote\\\"\\:(true|false)\\,\\\"votes\\\"\\:\\{((\\\"[A-Z0-9]{40}\\\"\\:(true|false)(\\,?))+))\\}\\,\\\"yays\\\"\\:(\\d+)\\}",
-          "isRegex": true,
-          "children": []
-        },
-        {
-          "name": "AttemptingCross",
-          "prefix": "Attempting\\scross\\:\\s[A-Z]{3}\\s\\-\\>\\s[A-Za-z0-9]+\\/[A-Z]{3}",
           "isRegex": true,
           "children": []
         },
@@ -673,7 +661,7 @@
           "children": []
         },
         {
-          "name": "TryToCancel",
+          "name": "OfferCantBeFound",
           "prefix": "Offer\\s\\#\\d+\\scan\\'t\\sbe\\sfound\\.",
           "isRegex": true,
           "children": []
