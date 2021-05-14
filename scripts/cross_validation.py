@@ -12,7 +12,7 @@ from whatthelog.prefixtree.prefix_tree_factory import PrefixTreeFactory
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 
-random.seed(os.environ['random_seed'])
+random.seed(os.environ['random_seed'] if 'random_seed' in os.environ else 5)
 
 
 def k_fold_cross_validation(syntax_tree: SyntaxTree,
