@@ -178,7 +178,7 @@ class MarkovChain:
 
         self.transitionMatrix[1][1] = 1  # Create a self loop for the terminal state
 
-    def find_duplicates(self, threshold: float = 0.0) -> List[List[int]]:
+    def find_duplicates(self, threshold: float = 0.0, rowdup: bool = True) -> List[List[int]]:
         result = list()
 
         for row in range(len(self.transitionMatrix)):
@@ -194,7 +194,11 @@ class MarkovChain:
                     if not found:
                         equivalent = True
                         for pos in range(len(self.transitionMatrix[i])):
-                            if abs(self.transitionMatrix[i][pos] - self.transitionMatrix[row][pos]) > threshold:
+                            if (rowdup and
+                                abs(self.transitionMatrix[i][pos] - self.transitionMatrix[row][pos]) > threshold) \
+                                    or \
+                                    (not rowdup and
+                                     abs(self.transitionMatrix[pos][i] - self.transitionMatrix[pos][row]) > threshold):
                                 equivalent = False
                                 break
                         if equivalent:
@@ -306,15 +310,15 @@ class MarkovChain:
 
         self.train()
 
-        threshhold = 0.0
+        threshold = 0.0
         if self.initial_size == -1:
             self.initial_size = len(self.transitionMatrix)
         while len(self.transitionMatrix) > size:
             print(str(100 * (self.initial_size - len(self.transitionMatrix)) / (self.initial_size - size)) + ' %')
-            candidates = self.find_duplicates(threshhold) + self.find_prop_1(threshhold)
+            candidates = self.find_duplicates(threshold) + self.find_prop_1(threshold) + self.find_duplicates(threshold, False)
             while len(candidates) == 0:  # move boundaries to find more candidates
-                threshhold += 0.001
-                candidates = self.find_duplicates(threshhold) + self.find_prop_1(threshhold)
+                threshold += 0.001
+                candidates = self.find_duplicates(threshold) + self.find_prop_1(threshold) + self.find_duplicates(threshold, False)
             for c in candidates:
                 c.sort()
             # print(candidates)
@@ -329,17 +333,15 @@ class MarkovChain:
                     max = r
             # print(candidates[max])
             # print(self.states)
-            # self.print_matrix()
-            # print('---------')
+            self.print_matrix()
+            print('---------')
             self.process_candidate_list(candidates[max])
         print('')
         self.print_matrix()
 
         # todo should create the false traces from unused log files
 
-        # todo leave out
-
-    def print_matrix(self, matrix = None):
+    def print_matrix(self, matrix=None):
         if matrix is None:
             matrix = self.transitionMatrix
         for r in range(len(matrix)):
@@ -348,7 +350,7 @@ class MarkovChain:
                 # if self.transitionMatrix[r][c] == 0.0:
                 #     vstr += "    "
                 # else:
-                    vstr += str(matrix[r][c]) + " "
+                vstr += str(matrix[r][c]) + " "
             print(vstr)
 
         [print(i, aaa) for aaa, i in self.states.items()]
@@ -358,9 +360,13 @@ if __name__ == '__main__':
     # self.train("../../tests/resources/testlogs/")
     # self.train("../../resources/traces/")
     # self.train("../../../all/")
-    # chain = MarkovChain("resources/traces/")
+    # chain = MarkovChain("resources/traces/", weight_size=0.8, weight_accuracy=0.2)
     chain = MarkovChain("tests/resources/testlogs/", weight_size=0.8, weight_accuracy=0.2)
 
     # chain.generate_false_traces(500)
 
-    chain.do_it(4)
+    # todo hard because
+    #  lot of duplicate checking
+    #  A LOT OF evaluating
+
+    chain.do_it(2)
