@@ -1,16 +1,16 @@
 {
   "name": "ledgerconsensus",
-  "prefix": "(\\d{4}-[A-Z][a-z][a-z]-\\d{2}\\s\\d{2}\\:\\d{2}\\:\\d{2}\\.\\d{9})\\sLedgerConsensus\\:",
+  "syntax": "(\\d{4}-[A-Z][a-z][a-z]-\\d{2}\\s\\d{2}\\:\\d{2}\\:\\d{2}\\.\\d{9})\\sLedgerConsensus\\:",
   "isRegex": true,
   "children": [
     {
       "name": "Error",
-      "prefix": "ERR ",
+      "syntax": "ERR ",
       "isRegex": false,
       "children": [
         {
           "name": "BowingOutExpiredValidatorList",
-          "prefix": "Voluntarily bowing out of consensus process because of an expired validator list.",
+          "syntax": "Voluntarily bowing out of consensus process because of an expired validator list.",
           "isRegex": false,
           "children": []
         }
@@ -18,60 +18,60 @@
     },
     {
       "name": "Warning",
-      "prefix": "WRN ",
+      "syntax": "WRN ",
       "isRegex": false,
       "children": [
         {
           "name": "NeedConsensusLedger",
-          "prefix": "(Need\\sconsensus\\sledger\\s([A-Z0-9]{64}))",
+          "syntax": "(Need\\sconsensus\\sledger\\s([A-Z0-9]{64}))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "GotButNoLongerProposing",
-          "prefix": "(By\\sthe\\stime\\swe\\sgot\\s[A-Z0-9]{64}\\sno\\speers\\swere\\sproposing\\sit)",
+          "syntax": "(By\\sthe\\stime\\swe\\sgot\\s[A-Z0-9]{64}\\sno\\speers\\swere\\sproposing\\sit)",
           "isRegex": true,
           "children": []
         },
         {
           "name": "ViewOfConsensusChanged",
-          "prefix": "(View\\sof\\sconsensus\\schanged\\sduring\\s(open|close|establish|accept|consensus)\\sstatus\\=(open|close|establish|accept|consensus)\\,\\s+mode\\=(proposing|observing|switchedLedger|wrongLedger))",
+          "syntax": "(View\\sof\\sconsensus\\schanged\\sduring\\s(open|close|establish|accept|consensus)\\sstatus\\=(open|close|establish|accept|consensus)\\,\\s+mode\\=(proposing|observing|switchedLedger|wrongLedger))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "TransactionWarningObj",
-          "prefix": "({\\\"accepted\\\":(true|false),\\\"account_hash\\\":\\\"([A-Z0-9]{64})\\\",\\\"close_flags\\\":(\\d+),\\\"close_time\\\":(\\d+),(.*))",
+          "syntax": "({\\\"accepted\\\":(true|false),\\\"account_hash\\\":\\\"([A-Z0-9]{64})\\\",\\\"close_flags\\\":(\\d+),\\\"close_time\\\":(\\d+),(.*))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "HashToHash",
-          "prefix": "(([A-Z0-9]{64})\\sto\\s([A-Z0-9]{64}))",
+          "syntax": "(([A-Z0-9]{64})\\sto\\s([A-Z0-9]{64}))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "ValWarning",
-          "prefix": "(Val|New):\\s\\d+\\s[A-Z0-9]+",
+          "syntax": "(Val|New):\\s\\d+\\s[A-Z0-9]+",
           "isRegex": true,
           "children": []
         },
         {
           "name": "NotValidatingIncompatible",
-          "prefix": "Not validating incompatible following ledger",
+          "syntax": "Not validating incompatible following ledger",
           "isRegex": false,
           "children": []
         },
         {
           "name": "RemovingStaleProposal",
-          "prefix": "(Removing\\sstale\\sproposal\\sfrom\\s([A-Z0-9]{40}))",
+          "syntax": "(Removing\\sstale\\sproposal\\sfrom\\s([A-Z0-9]{40}))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "HashVSeq",
-          "prefix": "(Hash\\(VSeq\\):\\s([A-Z0-9]{64}))",
+          "syntax": "(Hash\\(VSeq\\):\\s([A-Z0-9]{64}))",
           "isRegex": true,
           "children": []
         }
@@ -79,71 +79,71 @@
     },
     {
       "name": "Debug",
-      "prefix": "DBG ",
+      "syntax": "DBG ",
       "isRegex": false,
       "children": [
         {
           "name": "TransactionApplied",
-          "prefix": "Transaction applied: ",
+          "syntax": "Transaction applied: ",
           "isRegex": false,
           "children": [
             {
               "name": "TransactionAppliedDestinationTagRequired",
-              "prefix": "A destination tag is required.",
+              "syntax": "A destination tag is required.",
               "isRegex": false,
               "children": []
             },
             {
               "name": "TransactionAppliedInsufficientBalance",
-              "prefix": "Insufficient balance to fund created offer.",
+              "syntax": "Insufficient balance to fund created offer.",
               "isRegex": false,
               "children": []
             },
             {
               "name": "TransactionAppliedInsufficientXRP",
-              "prefix": "Insufficient XRP balance to send.",
+              "syntax": "Insufficient XRP balance to send.",
               "isRegex": false,
               "children": []
             },
             {
               "name": "TransactionAppliedFinalInValidatedLedger",
-              "prefix": "The transaction was applied. Only final in a validated ledger.",
+              "syntax": "The transaction was applied. Only final in a validated ledger.",
               "isRegex": false,
               "children": []
             },
             {
               "name": "TransactionAppliedDestinationDoesNotExist",
-              "prefix": "Destination does not exist. Too little XRP sent to create it.",
+              "syntax": "Destination does not exist. Too little XRP sent to create it.",
               "isRegex": false,
               "children": []
             },
             {
               "name": "transactionAppliedPathCouldNotSendPartialAmount",
-              "prefix": "Path could not send partial amount.",
+              "syntax": "Path could not send partial amount.",
               "isRegex": false,
               "children": []
             },
             {
               "name": "transactionAppliedNoSuchLineTooLittleReserve",
-              "prefix": "No such line. Too little reserve to create it.",
+              "syntax": "No such line. Too little reserve to create it.",
               "isRegex": false,
               "children": []
             },
             {
               "name": "TransactionAppliedInsufficientReserve",
-              "prefix": "Insufficient reserve to create offer.",
+              "syntax": "Insufficient reserve to create offer.",
               "isRegex": false,
               "children": []
             },
             {
               "name": "TransactionAppliedFillOrKillOfferKilled",
-              "prefix": "FillOrKill offer killed.",
+              "syntax": "FillOrKill offer killed.",
               "isRegex": false,
               "children": []
             },
             {
               "name": "DestionationNotExistSendXRP",
-              "prefix": "Destination does not exist. Send XRP to create it.",
+              "syntax": "Destination does not exist. Send XRP to create it.",
               "isRegex": false,
               "children": []
             }
@@ -151,24 +151,24 @@
         },
         {
           "name": "Report",
-          "prefix": "Report: ",
+          "syntax": "Report: ",
           "isRegex": false,
           "children": [
             {
               "name": "PropValCorFail",
-              "prefix": "(Prop=(yes|no)\\sval=(yes|no)\\scorLCL=(yes|no)\\sfail=(yes|no))",
+              "syntax": "(Prop=(yes|no)\\sval=(yes|no)\\scorLCL=(yes|no)\\sfail=(yes|no))",
               "isRegex": true,
               "children": []
             },
             {
               "name": "TransactionSetClose",
-              "prefix": "(Transaction\\sSet\\s\\=\\s[A-Z0-9]{64}\\,\\sclose\\s([0-9]{9}))",
+              "syntax": "(Transaction\\sSet\\s\\=\\s[A-Z0-9]{64}\\,\\sclose\\s([0-9]{9}))",
               "isRegex": true,
               "children": []
             },
             {
               "name": "PrevHash",
-              "prefix": "(Prev\\s=\\s([A-Z0-9]{64}):(\\d+))",
+              "syntax": "(Prev\\s=\\s([A-Z0-9]{64}):(\\d+))",
               "isRegex": true,
               "children": []
             }
@@ -176,18 +176,18 @@
         },
         {
           "name": "Pass",
-          "prefix": "Pass: ",
+          "syntax": "Pass: ",
           "isRegex": false,
           "children": [
             {
               "name": "PassBegins",
-              "prefix": "((\\d+)\\sbegins\\s\\((\\d+)\\stransactions\\))",
+              "syntax": "((\\d+)\\sbegins\\s\\((\\d+)\\stransactions\\))",
               "isRegex": true,
               "children": []
             },
             {
               "name": "PassCompleted",
-              "prefix": "((\\d+)\\scompleted\\s\\((\\d+)\\schanges\\))",
+              "syntax": "((\\d+)\\scompleted\\s\\((\\d+)\\schanges\\))",
               "isRegex": true,
               "children": []
             }
@@ -195,18 +195,18 @@
         },
         {
           "name": "FinalPass",
-          "prefix": "Final pass: ",
+          "syntax": "Final pass: ",
           "isRegex": false,
           "children": [
             {
               "name": "FinalPassBegins",
-              "prefix": "((\\d+)\\sbegins\\s\\((\\d+)\\stransactions\\))",
+              "syntax": "((\\d+)\\sbegins\\s\\((\\d+)\\stransactions\\))",
               "isRegex": true,
               "children": []
             },
             {
               "name": "FinalPassCompleted",
-              "prefix": "((\\d+)\\scompleted\\s\\((\\d+)\\schanges\\))",
+              "syntax": "((\\d+)\\scompleted\\s\\((\\d+)\\schanges\\))",
               "isRegex": true,
               "children": []
             }
@@ -214,126 +214,126 @@
         },
         {
           "name": "Taker",
-          "prefix": "Taker ",
+          "syntax": "Taker ",
           "isRegex": false,
           "children": [
             {
               "name": "TakerLeg",
-              "prefix": "\\s+leg\\d+\\s(in|out)\\:\\s\\d+\\.\\d+\\/[A-Z]{3}",
+              "syntax": "\\s+leg\\d+\\s(in|out)\\:\\s\\d+\\.\\d+\\/[A-Z]{3}",
               "isRegex": true,
               "children": []
             },
             {
               "name": "TakerCrossing",
-              "prefix": "(Crossing\\sas\\:\\s([A-Za-z0-9]+))",
+              "syntax": "(Crossing\\sas\\:\\s([A-Za-z0-9]+))",
               "isRegex": true,
               "children": []
             },
             {
               "name": "TakerBalancingFirstLeg",
-              "prefix": "Balancing: adjusted first leg down",
+              "syntax": "Balancing: adjusted first leg down",
               "isRegex": false,
               "children": []
             },
             {
               "name": "TakerBalancingSecondLeg",
-              "prefix": "Balancing: adjusted second leg down",
+              "syntax": "Balancing: adjusted second leg down",
               "isRegex": false,
               "children": []
             },
             {
               "name": "TakerClamped",
-              "prefix": "\\(clamped\\son\\s(taker|owner)\\s(funds|input|output|balance)\\)",
+              "syntax": "\\(clamped\\son\\s(taker|owner)\\s(funds|input|output|balance)\\)",
               "isRegex": true,
               "children": []
             },
             {
               "name": "TakerFlowXrpToIou",
-              "prefix": "flow_xrp_to_iou",
+              "syntax": "flow_xrp_to_iou",
               "isRegex": false,
               "children": []
             },
             {
               "name": "TakerFlowIouToXrp",
-              "prefix": "flow_iou_to_xrp",
+              "syntax": "flow_iou_to_xrp",
               "isRegex": false,
               "children": []
             },
             {
               "name": "TakerFlowIouToIou",
-              "prefix": "flow_iou_to_iou",
+              "syntax": "flow_iou_to_iou",
               "isRegex": false,
               "children": []
             },
             {
               "name": "TakerOfferIn",
-              "prefix": "(\\s+)Offer\\sin\\:\\s(\\d+)((\\.(\\d+))?)\\/([A-Z]{3})",
+              "syntax": "(\\s+)Offer\\sin\\:\\s(\\d+)((\\.(\\d+))?)\\/([A-Z]{3})",
               "isRegex": true,
               "children": []
             },
             {
               "name": "TakerOrderIn",
-              "prefix": "(\\s+)order\\sin\\:\\s(\\d+)((\\.(\\d+))?)\\/([A-Z]{3})",
+              "syntax": "(\\s+)order\\sin\\:\\s(\\d+)((\\.(\\d+))?)\\/([A-Z]{3})",
               "isRegex": true,
               "children": []
             },
             {
               "name": "TakerOfferOut",
-              "prefix": "(\\s+)Offer\\sout\\:\\s(\\d+)((\\.(\\d+))?)\\/([A-Z]{3})((\\s\\(issuer\\:\\s([A-Za-z0-9]+)\\))?)",
+              "syntax": "(\\s+)Offer\\sout\\:\\s(\\d+)((\\.(\\d+))?)\\/([A-Z]{3})((\\s\\(issuer\\:\\s([A-Za-z0-9]+)\\))?)",
               "isRegex": true,
               "children": []
             },
             {
               "name": "TakerOrderOut",
-              "prefix": "(\\s+)order\\sout\\:\\s(\\d+)((\\.(\\d+))?)\\/([A-Z]{3})((\\s\\(issuer\\:\\s([A-Za-z0-9]+)\\))?)",
+              "syntax": "(\\s+)order\\sout\\:\\s(\\d+)((\\.(\\d+))?)\\/([A-Z]{3})((\\s\\(issuer\\:\\s([A-Za-z0-9]+)\\))?)",
               "isRegex": true,
               "children": []
             },
             {
               "name": "TakerConsumingFromOffer",
-              "prefix": "Consuming\\sfrom\\soffer\\s[A-Za-z0-9]{64}",
+              "syntax": "Consuming\\sfrom\\soffer\\s[A-Za-z0-9]{64}",
               "isRegex": true,
               "children": []
             },
             {
               "name": "TakerDoneConsumed",
-              "prefix": "Done: all the input currency has been consumed.",
+              "syntax": "Done: all the input currency has been consumed.",
               "isRegex": false,
               "children": []
             },
             {
               "name": "TakerUnfunded",
-              "prefix": "Unfunded: taker is out of funds.",
+              "syntax": "Unfunded: taker is out of funds.",
               "isRegex": false,
               "children": []
             },
             {
               "name": "TakerDoneUnfunded",
-              "prefix": "Done: taker out of funds.",
+              "syntax": "Done: taker out of funds.",
               "isRegex": false,
               "children": []
             },
             {
               "name": "TakerBalance",
-              "prefix": "(\\s+)Balance\\:\\s(\\d+)((\\.(\\d+))?)\\/([A-Z]{3})",
+              "syntax": "(\\s+)Balance\\:\\s(\\d+)((\\.(\\d+))?)\\/([A-Z]{3})",
               "isRegex": true,
               "children": []
             },
             {
               "name": "TakerDoneReceived",
-              "prefix": "Done: the desired amount has been received.",
+              "syntax": "Done: the desired amount has been received.",
               "isRegex": false,
               "children": []
             },
             {
               "name": "TakerAvailableFunds",
-              "prefix": "Available bridge funds:",
+              "syntax": "Available bridge funds:",
               "isRegex": false,
               "children": []
             },
             {
               "name": "TakerXRP",
-              "prefix": "((\\s+)xrp:\\s(\\d+)\\/([A-Z]{3}))",
+              "syntax": "((\\s+)xrp:\\s(\\d+)\\/([A-Z]{3}))",
               "isRegex": true,
               "children": []
             }
@@ -341,67 +341,67 @@
         },
         {
           "name": "TransactionRetry",
-          "prefix": "Transaction retry: ",
+          "syntax": "Transaction retry: ",
           "isRegex": false,
           "children": [
             {
               "name": "TransactionRetryFinalInapplicablePriorTX",
-              "prefix": "Missing/inapplicable prior transaction.",
+              "syntax": "Missing/inapplicable prior transaction.",
               "isRegex": false,
               "children": []
             },
             {
               "name": "TransactionRetryDestinationDoesNotExist",
-              "prefix": "Destination does not exist. Too little XRP sent to create it.",
+              "syntax": "Destination does not exist. Too little XRP sent to create it.",
               "isRegex": false,
               "children": []
             },
             {
               "name": "TransactionRetryInsufficientXRP",
-              "prefix": "Insufficient XRP balance to send.",
+              "syntax": "Insufficient XRP balance to send.",
               "isRegex": false,
               "children": []
             },
             {
               "name": "TransactionRetryPathCouldNotSendPartial",
-              "prefix": "Path could not send partial amount.",
+              "syntax": "Path could not send partial amount.",
               "isRegex": false,
               "children": []
             },
             {
               "name": "transactionRetrySourceAccountDoesNotExist",
-              "prefix": "The source account does not exist",
+              "syntax": "The source account does not exist",
               "isRegex": false,
               "children": []
             },
             {
               "name": "transactionRetryInsufficientBalance",
-              "prefix": "Insufficient balance to fund created offer.",
+              "syntax": "Insufficient balance to fund created offer.",
               "isRegex": false,
               "children": []
             },
             {
               "name": "transactionRetryDestinationTagIsRequired",
-              "prefix": "A destination tag is required.",
+              "syntax": "A destination tag is required.",
               "isRegex": false,
               "children": []
             },
 
             {
               "name": "transactionRetryDestinationDoesNotExistSendXRPToCreate",
-              "prefix": "Destination does not exist. Send XRP to create it.",
+              "syntax": "Destination does not exist. Send XRP to create it.",
               "isRegex": false,
               "children": []
             },
             {
               "name": "transactionRetryInsufficientReserve",
-              "prefix": "Insufficient reserve to create offer.",
+              "syntax": "Insufficient reserve to create offer.",
               "isRegex": false,
               "children": []
             },
             {
               "name": "transactionRetryNoSuchLineTooLittleReserve",
-              "prefix": "No such line. Too little reserve to create it.",
+              "syntax": "No such line. Too little reserve to create it.",
               "isRegex": false,
               "children": []
             }
@@ -409,350 +409,350 @@
         },
         {
           "name": "DirectResult",
-          "prefix": "Direct\\sResult:\\s[A-Za-z]+",
+          "syntax": "Direct\\sResult:\\s[A-Za-z]+",
           "isRegex": true,
           "children": []
         },
         {
           "name":  "Bridge",
-          "prefix": "\\d+\\sBridge\\:",
+          "syntax": "\\d+\\sBridge\\:",
           "isRegex": true,
           "children": []
         },
         {
           "name": "BridgeResult",
-          "prefix": "Bridge\\sResult:\\s[A-Za-z]+",
+          "syntax": "Bridge\\sResult:\\s[A-Za-z]+",
           "isRegex": true,
           "children": []
         },
         {
           "name": "Direct",
-          "prefix": "\\d+\\sDirect:",
+          "syntax": "\\d+\\sDirect:",
           "isRegex": true,
           "children": []
         },
         {
           "name": "DelayOffersMustBePartiallyFunded",
-          "prefix": "delay: Offers must be at least partially funded.",
+          "syntax": "delay: Offers must be at least partially funded.",
           "isRegex": true,
           "children": []
         },
         {
           "name": "FundsInfo",
-          "prefix": "(\\s*funds\\:\\s\\d+((\\.\\d+)?))\\/[A-Z]{3}((\\/[a-zA-z0-9]+)?)",
+          "syntax": "(\\s*funds\\:\\s\\d+((\\.\\d+)?))\\/[A-Z]{3}((\\/[a-zA-z0-9]+)?)",
           "isRegex": true,
           "children": []
         },
         {
           "name": "OutInfo",
-          "prefix": "(\\s*out\\:\\s\\d+((\\.\\d+)?))\\/[A-Z]{3}((\\/[a-zA-z0-9]+)?)",
+          "syntax": "(\\s*out\\:\\s\\d+((\\.\\d+)?))\\/[A-Z]{3}((\\/[a-zA-z0-9]+)?)",
           "isRegex": true,
           "children": []
         },
         {
           "name": "QualityInfo",
-          "prefix": "(\\s*quality\\:\\s\\d+)",
+          "syntax": "(\\s*quality\\:\\s\\d+)",
           "isRegex": true,
           "children": []
         },
         {
           "name": "OwnerInfo",
-          "prefix": "(\\s*owner\\:\\s[a-zA-Z0-9]+)",
+          "syntax": "(\\s*owner\\:\\s[a-zA-Z0-9]+)",
           "isRegex": true,
           "children": []
         },
         {
           "name": "TakerReportsDoneDuringCrossing",
-          "prefix": "The\\staker\\sreports\\she\\'s\\sdone\\sduring\\scrossing\\!",
+          "syntax": "The\\staker\\sreports\\she\\'s\\sdone\\sduring\\scrossing\\!",
           "isRegex": true,
           "children": []
         },
         {
           "name": "Vote",
-          "prefix": "(Peer\\s[A-Z0-9]{40}\\svotes\\s(YES|NO)\\son\\s[A-Z0-9]{64})",
+          "syntax": "(Peer\\s[A-Z0-9]{40}\\svotes\\s(YES|NO)\\son\\s[A-Z0-9]{64})",
           "isRegex": true,
           "children": []
         },
         {
           "name": "OfferFullyCrossed",
-          "prefix": "Offer fully crossed!",
+          "syntax": "Offer fully crossed!",
           "isRegex": false,
           "children": []
         },
         {
           "name": "NoCTConsensus",
-          "prefix": "(No\\sCT\\sconsensus\\:\\sProposers\\:(\\d+)\\sMode\\:(proposing|observing|switchedLedger|wrongLedger)\\sThresh\\:(\\d+)\\sPos\\:\\d+)",
+          "syntax": "(No\\sCT\\sconsensus\\:\\sProposers\\:(\\d+)\\sMode\\:(proposing|observing|switchedLedger|wrongLedger)\\sThresh\\:(\\d+)\\sPos\\:\\d+)",
           "isRegex": true,
           "children": []
         },
         {
           "name": "CCTimeSeq",
-          "prefix": "(CCTime:\\sseq\\s([0-9]+\\:\\s[0-9]+\\shas\\s[0-9]+\\,\\s[0-9]+\\srequired))",
+          "syntax": "(CCTime:\\sseq\\s([0-9]+\\:\\s[0-9]+\\shas\\s[0-9]+\\,\\s[0-9]+\\srequired))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "FinalResult",
-          "prefix": "(final\\sresult\\:\\s([a-z]+))",
+          "syntax": "(final\\sresult\\:\\s([a-z]+))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "AttemptingCross",
-          "prefix": "(Attempting\\scross\\:\\s((([A-Za-z0-9]+\\/)?)[A-Z]{3}\\s\\-\\>\\s(([A-Za-z0-9]+\\/)?)[A-Z]{3}))",
+          "syntax": "(Attempting\\scross\\:\\s((([A-Za-z0-9]+\\/)?)[A-Z]{3}\\s\\-\\>\\s(([A-Za-z0-9]+\\/)?)[A-Z]{3}))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "VoteCount",
-          "prefix": "(\\{\\\"nays\\\"\\:(\\d+)\\,\\\"our\\_vote\\\"\\:(true|false)\\,\\\"votes\\\"\\:\\{((\\\"[A-Z0-9]{40}\\\"\\:(true|false)(\\,?))+))\\}\\,\\\"yays\\\"\\:(\\d+)\\}",
+          "syntax": "(\\{\\\"nays\\\"\\:(\\d+)\\,\\\"our\\_vote\\\"\\:(true|false)\\,\\\"votes\\\"\\:\\{((\\\"[A-Z0-9]{40}\\\"\\:(true|false)(\\,?))+))\\}\\,\\\"yays\\\"\\:(\\d+)\\}",
           "isRegex": true,
           "children": []
         },
         {
           "name": "CreateCancelsOrder",
-          "prefix": "(Create\\scancels\\sorder\\s[0-9]+)",
+          "syntax": "(Create\\scancels\\sorder\\s[0-9]+)",
           "isRegex": true,
           "children": []
         },
         {
           "name": "RelayingDisputedTx",
-          "prefix": "(Relaying\\sdisputed\\stx\\s[A-Z0-9]{64})",
+          "syntax": "(Relaying\\sdisputed\\stx\\s[A-Z0-9]{64})",
           "isRegex": true,
           "children": []
         },
         {
           "name": "EnteringRippleCalcInPayment",
-          "prefix": "Entering\\sRippleCalc\\sin\\spayment:\\s([A-Z0-9]+)",
+          "syntax": "Entering\\sRippleCalc\\sin\\spayment:\\s([A-Z0-9]+)",
           "isRegex": true,
           "children": []
         },
         {
           "name": "MissingInapplicablePriorTransaction",
-          "prefix": "Missing inapplicable prior transaction.",
+          "syntax": "Missing inapplicable prior transaction.",
           "isRegex": false,
           "children": []
         },
         {
           "name": "HashHasHash",
-          "prefix": "([A-Z0-9]+\\shas\\s[A-Z0-9]+)",
+          "syntax": "([A-Z0-9]+\\shas\\s[A-Z0-9]+)",
           "isRegex": true,
           "children": []
         },
         {
           "name": "TXNFinal",
-          "prefix": "((TXN)\\s[A-Z0-9]{64}\\/final)",
+          "syntax": "((TXN)\\s[A-Z0-9]{64}\\/final)",
           "isRegex": true,
           "children": []
         },
         {
           "name": "BuildingCanonicalSet",
-          "prefix": "(Building\\scanonical\\stx\\sset\\:\\s([A-Z0-9]{64}))",
+          "syntax": "(Building\\scanonical\\stx\\sset\\:\\s([A-Z0-9]{64}))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "TXN_Retry",
-          "prefix": "TXN\\s[A-Z0-9]{64}\\/retry",
+          "syntax": "TXN\\s[A-Z0-9]{64}\\/retry",
           "isRegex": true,
           "children": []
         },
         {
           "name": "Offer",
-          "prefix": "\\s+offer:\\s[A-Z0-9]{64}",
+          "syntax": "\\s+offer:\\s[A-Z0-9]{64}",
           "isRegex": true,
           "children": []
         },
         {
           "name": "Offer2",
-          "prefix": "\\s+offer2:\\s[A-Z0-9]{64}",
+          "syntax": "\\s+offer2:\\s[A-Z0-9]{64}",
           "isRegex": true,
           "children": []
         },
         {
           "name": "Offer1",
-          "prefix": "\\s+offer1:\\s[A-Z0-9]{64}",
+          "syntax": "\\s+offer1:\\s[A-Z0-9]{64}",
           "isRegex": true,
           "children": []
         },
         {
           "name": "In",
-          "prefix": "\\s+in:\\s\\d+(\\.\\d+)?(\\/[A-Z]{3}(\\/[A-Za-z0-9]+)?)?",
+          "syntax": "\\s+in:\\s\\d+(\\.\\d+)?(\\/[A-Z]{3}(\\/[A-Za-z0-9]+)?)?",
           "isRegex": true,
           "children": []
         },
         {
           "name": "CreateDisputes",
-          "prefix": "createDisputes\\s[A-Z0-9]{64}\\sto\\s[A-Z0-9]{64}",
+          "syntax": "createDisputes\\s[A-Z0-9]{64}\\sto\\s[A-Z0-9]{64}",
           "isRegex": true,
           "children": []
         },
         {
           "name": "DifferencesFound",
-          "prefix": "\\d+\\sdifferences\\sfound",
+          "syntax": "\\d+\\sdifferences\\sfound",
           "isRegex": true,
           "children": []
         },
         {
           "name": "NotCreateDisputesNoPosition",
-          "prefix": "Not creating disputes: no position yet.",
+          "syntax": "Not creating disputes: no position yet.",
           "isRegex": false,
           "children": []
         },
         {
           "name": "TxHash",
-          "prefix": "(\\s+(Tx)\\:\\s([A-Z0-9]{64}))",
+          "syntax": "(\\s+(Tx)\\:\\s([A-Z0-9]{64}))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "TxIsDisputed",
-          "prefix": "(Transaction\\s([A-Z0-9]{64})\\sis\\sdisputed)",
+          "syntax": "(Transaction\\s([A-Z0-9]{64})\\sis\\sdisputed)",
           "isRegex": true,
           "children": []
         },
         {
           "name": "GotProposalButDiff",
-          "prefix": "(Got\\sproposal\\sfor\\s[A-Z0-9]{64}\\sbut\\swe\\sare\\son\\s[A-Z0-9]{64})",
+          "syntax": "(Got\\sproposal\\sfor\\s[A-Z0-9]{64}\\sbut\\swe\\sare\\son\\s[A-Z0-9]{64})",
           "isRegex": true,
           "children": []
         },
         {
           "name": "PeerNowVotes",
-          "prefix": "(Peer\\s([A-Z0-9]{40})\\snow\\svotes\\s(YES|NO)\\son\\s([A-Z0-9]{64}))",
+          "syntax": "(Peer\\s([A-Z0-9]{40})\\snow\\svotes\\s(YES|NO)\\son\\s([A-Z0-9]{64}))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "WeNowVote",
-          "prefix": "(We\\snow\\svote\\s(YES|NO)\\son\\s([A-Z0-9]{64}))",
+          "syntax": "(We\\snow\\svote\\s(YES|NO)\\son\\s([A-Z0-9]{64}))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "ConsensusBuildLedgerAlreadyPresent",
-          "prefix": "Consensus built ledger we already had",
+          "syntax": "Consensus built ledger we already had",
           "isRegex": false,
           "children": []
         },
 
         {
           "name": "WaitMinimumTimeBeforeClosing",
-          "prefix": "Must wait minimum time before closing",
+          "syntax": "Must wait minimum time before closing",
           "isRegex": false,
           "children": []
         },
         {
           "name": "ConsensusLedgerFullyValidated",
-          "prefix": "Consensus ledger fully validated",
+          "syntax": "Consensus ledger fully validated",
           "isRegex": false,
           "children": []
         },
         {
           "name": "ConsensusBuiltLedgerAcquiring",
-          "prefix": "Consensus built ledger we were acquiring",
+          "syntax": "Consensus built ledger we were acquiring",
           "isRegex": false,
           "children": []
         },
         {
           "name": "TryToCancel",
-          "prefix": "Trying\\sto\\scancel\\soffer\\s\\#[\\d+]",
+          "syntax": "Trying\\sto\\scancel\\soffer\\s\\#[\\d+]",
           "isRegex": true,
           "children": []
         },
         {
           "name": "OfferCantBeFound",
-          "prefix": "Offer\\s\\#\\d+\\scan\\'t\\sbe\\sfound\\.",
+          "syntax": "Offer\\s\\#\\d+\\scan\\'t\\sbe\\sfound\\.",
           "isRegex": true,
           "children": []
         },
         {
           "name": "BuildingCanonicalTxSet",
-          "prefix": "Building\\sCanonical\\stx\\sset:\\s[A-Z0-9]+",
+          "syntax": "Building\\sCanonical\\stx\\sset:\\s[A-Z0-9]+",
           "isRegex": true,
           "children": []
         },
         {
           "name": "NotRelayingDisputedTx",
-          "prefix": "Not\\srelaying\\sdisputed\\stx\\s[A-Z0-9]{64}",
+          "syntax": "Not\\srelaying\\sdisputed\\stx\\s[A-Z0-9]{64}",
           "isRegex": true,
           "children": []
         },
         {
           "name": "DisputedTransaction",
-          "prefix": "(Test\\sapplying\\sdisputed\\stransaction\\sthat\\sdid\\snot\\sget\\sin\\s([A-Z0-9]{64}))",
+          "syntax": "(Test\\sapplying\\sdisputed\\stransaction\\sthat\\sdid\\snot\\sget\\sin\\s([A-Z0-9]{64}))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "Don't have tx set for peer",
-          "prefix": "Don't have tx set for peer",
+          "syntax": "Don't have tx set for peer",
           "isRegex": false,
           "children": []
         },
         {
           "name": "NotPausing",
-          "prefix": "not\\spausing\\s\\(.*\\)",
+          "syntax": "not\\spausing\\s\\(.*\\)",
           "isRegex": true,
           "children": []
         },
         {
           "name": "NormalConsensus",
-          "prefix": "normal consensus",
+          "syntax": "normal consensus",
           "isRegex": false,
           "children": []
         },
         {
           "name": "CheckingTXConsensus",
-          "prefix": "(Checking\\sfor\\sTX\\sconsensus:\\sagree=(\\d+),\\sdisagree=(\\d+))",
+          "syntax": "(Checking\\sfor\\sTX\\sconsensus:\\sagree=(\\d+),\\sdisagree=(\\d+))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "AttemptApplyTransactions",
-          "prefix": "(Attempting\\sto\\sapply\\s(\\d+)\\stransactions)",
+          "syntax": "(Attempting\\sto\\sapply\\s(\\d+)\\stransactions)",
           "isRegex": true,
           "children": []
         },
         {
           "name": "AppliedTransactions",
-          "prefix": "(Applied\\s(\\d+)\\stransactions((\\.)|(\\;\\s(\\d+)\\sfailed\\sand\\s(\\d+)\\swill\\sbe\\sretried\\.)))",
+          "syntax": "(Applied\\s(\\d+)\\stransactions((\\.)|(\\;\\s(\\d+)\\sfailed\\sand\\s(\\d+)\\swill\\sbe\\sretried\\.)))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "ConsensusBuiltLedger",
-          "prefix": "Consensus built new ledger",
+          "syntax": "Consensus built new ledger",
           "isRegex": false,
           "children": []
         },
         {
           "name": "FlushedAccounts",
-          "prefix": "(Flushed\\s(\\d+)\\saccounts\\sand\\s(\\d+)\\stransaction\\snodes)",
+          "syntax": "(Flushed\\s(\\d+)\\saccounts\\sand\\s(\\d+)\\stransaction\\snodes)",
           "isRegex": true,
           "children": []
         },
         {
           "name": "BuiltLedger",
-          "prefix": "(Built\\sledger\\s#(\\d+):\\s([A-Z0-9]{64}))",
+          "syntax": "(Built\\sledger\\s#(\\d+):\\s([A-Z0-9]{64}))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "SeqSupportObj",
-          "prefix": "({\\\"seq\\_support\\\":{(.*)},\\\"trie\":{(.*)})",
+          "syntax": "({\\\"seq\\_support\\\":{(.*)},\\\"trie\":{(.*)})",
           "isRegex": true,
           "children": []
         },
         {
           "name": "ConsensusTriggeredCheck",
-          "prefix": "Consensus triggered check of ledger",
+          "syntax": "Consensus triggered check of ledger",
           "isRegex": false,
           "children": []
         },
         {
           "name": "StateOnConsensusChange",
-          "prefix": "(State\\son\\sconsensus\\schange\\s{(.*)})",
+          "syntax": "(State\\son\\sconsensus\\schange\\s{(.*)})",
           "isRegex": true,
           "children": []
         }
@@ -760,59 +760,59 @@
     },
     {
       "name": "Info",
-      "prefix": "NFO ",
+      "syntax": "NFO ",
       "isRegex": false,
       "children": [
         {
           "name": "Closed",
-          "prefix": "(We\\sclosed\\sat\\s\\d{9})",
+          "syntax": "(We\\sclosed\\sat\\s\\d{9})",
           "isRegex": true,
           "children": []
         },
         {
           "name": "CloseOffer",
-          "prefix": "(Our\\sclose\\soffset\\sis\\sestimated\\sat\\s((\\-?)\\d+)\\s\\(\\d+\\))",
+          "syntax": "(Our\\sclose\\soffset\\sis\\sestimated\\sat\\s((\\-?)\\d+)\\s\\(\\d+\\))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "EnteringConsensusProcess",
-          "prefix": "(Entering\\sconsensus\\sprocess,\\s(validating|watching),\\ssynced=(yes|no))",
+          "syntax": "(Entering\\sconsensus\\sprocess,\\s(validating|watching),\\ssynced=(yes|no))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "BowingOutOfConsensus",
-          "prefix": "Bowing out of consensus",
+          "syntax": "Bowing out of consensus",
           "isRegex": false,
           "children": []
         },
         {
           "name": "Consensus mode change",
-          "prefix": "(Consensus\\smode\\schange\\sbefore\\=(proposing|observing|switchedLedger|wrongLedger)\\,\\safter\\=(proposing|observing|switchedLedger|wrongLedger))",
+          "syntax": "(Consensus\\smode\\schange\\sbefore\\=(proposing|observing|switchedLedger|wrongLedger)\\,\\safter\\=(proposing|observing|switchedLedger|wrongLedger))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "ConvergenceCutoff",
-          "prefix": "(Converge\\scutoff\\s\\((\\d+)\\sparticipants\\))",
+          "syntax": "(Converge\\scutoff\\s\\((\\d+)\\sparticipants\\))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "CNF",
-          "prefix": "CNF ",
+          "syntax": "CNF ",
           "isRegex": false,
           "children": [
             {
               "name": "CNFValue",
-              "prefix": "Val\\s[A-Z0-9]{64}",
+              "syntax": "Val\\s[A-Z0-9]{64}",
               "isRegex": true,
               "children": []
             },
             {
               "name": "CNFBuild",
-              "prefix": "buildLCL\\s[A-Z0-9]{64}",
+              "syntax": "buildLCL\\s[A-Z0-9]{64}",
               "isRegex": true,
               "children": []
             }
@@ -820,55 +820,55 @@
         },
         {
           "name": "Proposers",
-          "prefix": "(Proposers:(\\d+)\\snw:(\\d+)\\sthrV:(\\d+)\\sthrC:(\\d+))",
+          "syntax": "(Proposers:(\\d+)\\snw:(\\d+)\\sthrV:(\\d+)\\sthrC:(\\d+))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "PositionChange",
-          "prefix": "(Position\\schange:\\sCTime\\s(\\d{9}),\\stx\\s([A-Z0-9]{64}))",
+          "syntax": "(Position\\schange:\\sCTime\\s(\\d{9}),\\stx\\s([A-Z0-9]{64}))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "NoChange",
-          "prefix": "(No\\schange\\s\\((YES|NO)\\)\\s\\:\\sweight\\s(\\-?)\\d{1,2}\\,\\spercent\\s\\d{1,2})",
+          "syntax": "(No\\schange\\s\\((YES|NO)\\)\\s\\:\\sweight\\s(\\-?)\\d{1,2}\\,\\spercent\\s\\d{1,2})",
           "isRegex": true,
           "children": []
         },
         {
           "name": "TimeVotes",
-          "prefix": "\\d+\\stime\\svotes\\sfor\\s\\d+",
+          "syntax": "\\d+\\stime\\svotes\\sfor\\s\\d+",
           "isRegex": true,
           "children": []
         },
         {
           "name": "EnteringConsensus",
-          "prefix": "(Entering\\sconsensus\\swith:\\s([A-Z0-9]{64}))",
+          "syntax": "(Entering\\sconsensus\\swith:\\s([A-Z0-9]{64}))",
           "isRegex": true,
           "children": []
         },
         {
           "name": "CorrectLCL",
-          "prefix": "Correct\\sLCL\\sis:\\s([A-Z0-9]{64})",
+          "syntax": "Correct\\sLCL\\sis:\\s([A-Z0-9]{64})",
           "isRegex": true,
           "children": []
         },
         {
           "name": "HaveConsensusLedger",
-          "prefix": "Have\\sthe\\sconsensus\\sledger\\s([A-Z0-9]{64})",
+          "syntax": "Have\\sthe\\sconsensus\\sledger\\s([A-Z0-9]{64})",
           "isRegex": true,
           "children": []
         },
         {
           "name": "TXConsensusNotCTConsensus",
-          "prefix": "We have TX consensus but not CT consensus",
+          "syntax": "We have TX consensus but not CT consensus",
           "isRegex": false,
           "children": []
         },
         {
           "name": "ConsensusBuiltOldLedger",
-          "prefix": "Consensus\\sbuilt\\sold\\sledger:\\s(\\d+)\\s\\<=\\s(\\d+)",
+          "syntax": "Consensus\\sbuilt\\sold\\sledger:\\s(\\d+)\\s\\<=\\s(\\d+)",
           "isRegex": true,
           "children": []
         }
