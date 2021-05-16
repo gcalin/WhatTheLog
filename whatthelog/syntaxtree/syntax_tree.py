@@ -73,12 +73,12 @@ class SyntaxTree(AutoPrinter):
 
     def search(self, input: str) -> Union[SyntaxTree, None]:
         """
-        Recursively search the prefix tree for Nodes matching the
+        Recursively search the syntax tree for Nodes matching the
         :param input: the string to match
-        :return: the prefix tree node representing the best match, or None if no match found
+        :return: the syntax tree node representing the best match, or None if no match found
         """
 
-        # Prefix match found at the beginning of the string
+        # Syntax match found at the beginning of the string
         position = re.search(self.__pattern, input)
         if position and position.start() == 0:
 
