@@ -57,7 +57,7 @@ class SyntaxTreeFactory(AutoPrinter):
     def __parse(self, configs: dict) -> SyntaxTree:
 
         name = configs["name"]
-        prefix = configs["prefix"]
+        prefix = configs["syntax"]
         isRegex = configs["isRegex"]
         children = configs["children"]
 

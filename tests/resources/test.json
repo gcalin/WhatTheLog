@@ -1,22 +1,22 @@
 {
   "name": "root",
-  "prefix": "[root]",
+  "syntax": "[root]",
   "isRegex": false,
   "children": [
     {
       "name": "node1",
-      "prefix": "[node1]",
+      "syntax": "[node1]",
       "isRegex": false,
       "children": []
     },
     {
       "name": "node2",
-      "prefix": "(\\d{3}) (\\d{2})",
+      "syntax": "(\\d{3}) (\\d{2})",
       "isRegex": true,
       "children": [
         {
           "name": "node3",
-          "prefix": "[node3]",
+          "syntax": "[node3]",
           "isRegex": false,
           "children": []
         }
