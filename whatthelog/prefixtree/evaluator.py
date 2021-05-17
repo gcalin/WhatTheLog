@@ -49,7 +49,7 @@ class Evaluator:
         """
         Evaluates a model in terms of its size. The result is normalized by dividing by the initial model size.
         """
-        return len(self.model) / self.initial_model_size
+        return 1 - len(self.model) / self.initial_model_size
 
     def evaluate(self,
                  w_accuracy: float = None,
