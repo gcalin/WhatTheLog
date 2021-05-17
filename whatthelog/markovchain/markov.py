@@ -261,7 +261,13 @@ class MarkovChain:
         states = deepcopy(self.states)
         self.process_candidate_list(candidate, matrix, states)
 
-        # specificity
+        return self.calculate_score(matrix, states)
+
+    def calculate_score(self, matrix=None, states=None):  # specificity
+        if matrix is None:
+            matrix = self.transitionMatrix
+        if states is None:
+            states = self.states
         true_negative = 0
         false_positive = 0
         for file in os.listdir(self.falsedir):
@@ -333,8 +339,8 @@ class MarkovChain:
                     max = r
             # print(candidates[max])
             # print(self.states)
-            self.print_matrix()
-            print('---------')
+            # self.print_matrix()
+            # print('---------')
             self.process_candidate_list(candidates[max])
         print('')
         self.print_matrix()
@@ -369,4 +375,5 @@ if __name__ == '__main__':
     #  lot of duplicate checking
     #  A LOT OF evaluating
 
-    chain.do_it(2)
+    chain.do_it(5)
+    print(chain.calculate_score())
