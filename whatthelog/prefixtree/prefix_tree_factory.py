@@ -15,7 +15,7 @@ from tqdm import tqdm
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Internal
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
+from whatthelog.prefixtree.edge_properties import EdgeProperties
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.prefixtree.state import State
 from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
@@ -49,7 +49,7 @@ class PrefixTreeFactory(AutoPrinter):
         :param config_file_path: the configuration file describing the syntax tree
         :return: the full prefix tree
         """
-
+        print(traces_dir)
         return PrefixTreeFactory.__generate_prefix_tree(traces_dir, config_file_path)
 
     @staticmethod
@@ -99,7 +99,7 @@ class PrefixTreeFactory(AutoPrinter):
         print("Parsing syntax tree...")
 
         syntax_tree = SyntaxTreeFactory().parse_file(config_file)
-        prefix_tree = PrefixTree(State([""]))
+        prefix_tree = PrefixTree(State([""]), State(["terminal"], is_terminal=True))
 
         print("Parsing traces...")
 
@@ -151,5 +151,5 @@ class PrefixTreeFactory(AutoPrinter):
                     parent = child
                     nodes = prefix_tree.get_children(child)
 
-        prefix_tree.add_child(State(["terminal"], True), parent)
+        prefix_tree.add_edge(parent, prefix_tree.get_terminal(), EdgeProperties())
         return prefix_tree

@@ -39,6 +39,112 @@ class Graph(AutoPrinter):
         self.prop_by_hash: Dict[int, StateProperties] = {}
         self.start_node = start_node
 
+    def remove_loops(self, recurring: bool = False) -> None:
+        """
+        Main method to remove loops.
+        These can be recurring depending on the 'recurring' variable.
+        Please view the sub-methods for further explanation
+        :param recurring: determines whether recurring loops should be merged, or only singular loops
+                          (equivalent subsequent states).
+        """
+        if recurring:
+            pass
+        else:
+            self.__remove_singular_loops()
+
+
+    def merge_equivalent_children(self, current: State, current_unique: List[State] = None) -> None:
+        """
+        Merge all equivalent children, such that the resulting automaton remains deterministic while merging.
+        :param current: The state of which we want to merge the children
+        :param current_unique: The list of states which should remain in the tree, as they are referenced by other
+                               nodes.
+        """
+        if current_unique is None:
+            current_unique = []
+        children = self.get_outgoing_states_not_self(current)
+        children_templates = list(map(lambda x: x.properties.log_templates[0], children))
+        duplicates = [i for i, x in enumerate(children_templates) if i != children_templates.index(x)]
+        while len(duplicates) > 0:
+            for dup in duplicates:
+                for c in children:
+                    if c.is_equivalent(children[dup]) and c is not children[dup]:
+                        if children[dup] in current_unique and c in current_unique:
+                            raise Exception('Both the nodes were in current unique')
+                        if children[dup] in current_unique:
+                            self.merge_states(children[dup], c)
+                        else:
+                            self.merge_states(c, children[dup])
+                        break
+            children = self.get_outgoing_states_not_self(current)
+            if children:
+                children_templates = list(map(lambda x: x.properties.log_templates[0], children))
+                duplicates = [i for i, x in enumerate(children_templates) if i != children_templates.index(x)]
+            else:
+                duplicates = []
+
+    def add_terminal(self):
+        terminal: State = State(['markov-terminal'], True)
+        self.add_state(terminal)
+
+        for n in self.states.values():
+            if n.is_terminal and n.properties.log_templates[0] != 'markov-terminal':
+                self.edges.change_children_of_parents(self.state_indices_by_id[id(n)],
+                                                      self.state_indices_by_id[id(terminal)])
+
+    def __remove_singular_loops(self) -> None:
+        """
+        Removes equivalent subsequent loops from the graph.
+        For example if graph is:
+            0
+           /\
+          1  3
+          1  3
+          1  1
+          2
+          1
+        The output will be:
+            0
+           / \
+          ⊂1 ⊂3
+          |   |
+          2   1
+          |
+          1
+          ⊂ indicates a self-loop.
+        """
+
+        # Initialize traversal variables
+        assert self.start_node is not None
+        current = self.start_node
+        been = set()
+        stack = [(current, been)]
+
+        # While there are still unreached nodes
+        while len(stack) > 0:
+            # Get the first node and its neighbours
+            current, been = stack.pop()
+            outgoing = self.get_outgoing_states_not_self(current)
+
+            # Merge all states directly linked to and equivalent to the current state
+            while len(outgoing) > 0:
+                out = outgoing.pop()
+                if current.is_equivalent(out) and current is not out:
+                    self.merge_states(current, out)
+                    outgoing = self.get_outgoing_states_not_self(current)
+
+            self.merge_equivalent_children(current)
+
+            # Get all outgoing edges except self loops
+            outgoing = self.get_outgoing_states_not_self(current)
+
+            # Mark current state as visited
+            been.add(current)
+
+            # Continue traversal with all unvisited neighbouring nodes
+            for node in [n for n in outgoing if n not in been]:
+                stack.append((node, been.copy()))
+
     def get_state_by_id(self, state_id: int):
         """
         Method to fetch the state object from its hash.
@@ -95,6 +201,7 @@ class Graph(AutoPrinter):
         del self.states[self.state_indices_by_id[id(state2)]]
         del self.state_indices_by_id[id(state2)]
         del state2
+
 
     def add_state(self, state: State) -> None:
         """

@@ -30,10 +30,19 @@ class PrefixTree(Graph):
 
     __slots__ = ['__root']
 
-    def __init__(self, root: State):
+    def __init__(self, root: State, terminal: State = None):
         super().__init__(root)
         self.__root = root
+        self.__terminal = terminal
         self.add_state(root)
+        self.add_state(terminal)
+
+    def get_terminal(self):
+        """
+        Terminal getter
+        :return: terminal state
+        """
+        return self.__terminal
 
     def get_root(self) -> State:
         """
