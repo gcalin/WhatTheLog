@@ -1,6 +1,6 @@
 {
   "name": "node",
-  "prefix": "[node]",
+  "syntax": "[node]",
   "isRegex": false,
   "children": []
 }

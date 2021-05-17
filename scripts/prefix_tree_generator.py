@@ -19,6 +19,7 @@ import tracemalloc
 
 from whatthelog.prefixtree.prefix_tree_factory import PrefixTreeFactory
 from whatthelog.auto_printer import AutoPrinter
+from whatthelog.prefixtree.visualizer import Visualizer
 from whatthelog.utils import profile_mem
 
 def print(msg): AutoPrinter.static_print(msg)
@@ -36,9 +37,10 @@ if __name__ == '__main__':
     # tracemalloc.start()
 
     pt = PrefixTreeFactory.get_prefix_tree(str(project_root.joinpath('resources/traces')),
-                                           str(project_root.joinpath('resources/config.json')))
+                                           str(project_root.joinpath('resources/config.json')), remove_trivial_loops=True)
 
     PrefixTreeFactory.pickle_tree(pt, project_root.joinpath('out/fullPrefixTree.p'))
+    Visualizer(pt).visualize()
 
     print(f"Done! Parsed full tree of size: {pt.size()}")
     print(f"Time elapsed: {timedelta(seconds=time() - start_time)}")
