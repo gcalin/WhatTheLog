@@ -2,6 +2,7 @@ import os
 from numpy import array_split, mean, std
 from pathlib import Path
 from random import shuffle
+import random
 from typing import Tuple, List
 
 from scripts.log_scrambler import produce_false_trace
@@ -10,6 +11,8 @@ from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.prefixtree.prefix_tree_factory import PrefixTreeFactory
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
+
+random.seed(os.environ['random_seed'] if 'random_seed' in os.environ else 5)
 
 
 def k_fold_cross_validation(syntax_tree: SyntaxTree,

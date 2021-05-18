@@ -1,10 +1,10 @@
-#****************************************************************************************************
+# ****************************************************************************************************
 # Imports
-#****************************************************************************************************
+# ****************************************************************************************************
 
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # External
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 import os
 import sys
@@ -12,10 +12,11 @@ from pathlib import Path
 import pickle
 from tqdm import tqdm
 
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Internal
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+from whatthelog.prefixtree.edge_properties import EdgeProperties
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.prefixtree.state import State
 from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
@@ -23,16 +24,17 @@ from whatthelog.exceptions import UnidentifiedLogException
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 from whatthelog.auto_printer import AutoPrinter
 
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Global Variables
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 def print(msg): AutoPrinter.static_print(msg)
 
-
-#****************************************************************************************************
+# ****************************************************************************************************
 # Prefix Tree Factory
-#****************************************************************************************************
+# ****************************************************************************************************
+
 
 class PrefixTreeFactory(AutoPrinter):
     """
@@ -40,17 +42,18 @@ class PrefixTreeFactory(AutoPrinter):
     """
 
     @staticmethod
-    def get_prefix_tree(traces_dir: str, config_file_path: str) -> PrefixTree:
+    def get_prefix_tree(traces_dir: str, config_file_path: str, remove_trivial_loops: bool = False) -> PrefixTree:
         """
         Parses a full tree from a set of log traces in a common directory,
         using a user-supplied syntax tree from an input configuration file.
         Assumes that all log traces are linear.
         :param traces_dir: the directory containing the log files to be parsed
         :param config_file_path: the configuration file describing the syntax tree
+        :param remove_trivial_loops: Indicates whether trivial loops (subsequent states) should be merged.
         :return: the full prefix tree
         """
 
-        return PrefixTreeFactory.__generate_prefix_tree(traces_dir, config_file_path)
+        return PrefixTreeFactory.__generate_prefix_tree(traces_dir, config_file_path, remove_trivial_loops)
 
     @staticmethod
     def pickle_tree(tree: PrefixTree, file: str) -> None:
@@ -81,12 +84,13 @@ class PrefixTreeFactory(AutoPrinter):
         return tree
 
     @staticmethod
-    def __generate_prefix_tree(log_dir: str, config_file: str) -> PrefixTree:
+    def __generate_prefix_tree(log_dir: str, config_file: str, remove_trivial_loops: bool) -> PrefixTree:
         """
         Script to parse log file into prefix tree.
 
         :param log_dir: Path to directory containing traces.
         :param config_file: Path to configuration file for syntax tree
+        :param remove_trivial_loops: Indicates whether trivial loops (subsequent states) should be merged.
         :return: Prefix tree along with a dictionary mapping log templates
          to unique ids.
         """
@@ -106,14 +110,15 @@ class PrefixTreeFactory(AutoPrinter):
         pbar = tqdm(os.listdir(log_dir), file=sys.stdout, leave=False)
         for filename in pbar:
             filepath = str(Path(log_dir).joinpath(filename)).strip()
-            PrefixTreeFactory.__parse_trace(filepath, syntax_tree, prefix_tree)
+            PrefixTreeFactory.__parse_trace(filepath, syntax_tree, prefix_tree, remove_trivial_loops)
 
         return prefix_tree
 
     @staticmethod
     def __parse_trace(tracepath: str,
                       syntax_tree: SyntaxTree,
-                      prefix_tree: PrefixTree) -> PrefixTree:
+                      prefix_tree: PrefixTree,
+                      remove_trivial_loops: bool) -> PrefixTree:
         """
         Function that parses a trace file and modifies the given
         prefix tree to include it.
@@ -121,6 +126,7 @@ class PrefixTreeFactory(AutoPrinter):
         :param tracepath: The path to the trace file to parse
         :param syntax_tree: The syntax tree used to get the log template from the log
         :param prefix_tree: The current prefix tree to be used
+        :param remove_trivial_loops: Indicates whether trivial loops (subsequent states) should be merged.
         :return: PrefixTree
         """
 
@@ -130,26 +136,36 @@ class PrefixTreeFactory(AutoPrinter):
         with open(tracepath, 'r') as file:
             for log in file:
 
-                template = syntax_tree.search(log).name
-                if template is None:
+                tree = syntax_tree.search(log)
+                if tree is None:
                     raise UnidentifiedLogException(
                         log + " was not identified as a valid log.")
+                template = tree.name
 
                 exists = False
 
-                for node in nodes:
-                    if template in node.properties.log_templates:
-                        parent = node
+                if remove_trivial_loops and parent.properties.log_templates[0] == template:
+                    # There will only be 1 template per state initially
+                    if parent not in nodes:
+                        prefix_tree.add_edge(parent, parent, EdgeProperties([]))
+                else:
+                    for node in nodes:
+                        if template in node.properties.log_templates:
+                            parent = node
+                            nodes = prefix_tree.get_children(parent)
+                            exists = True
+                            break
+
+                    if not exists:
+                        child = State([template])
+                        prefix_tree.add_child(child, parent)
+
+                        parent = child
                         nodes = prefix_tree.get_children(parent)
-                        exists = True
-                        break
 
-                if not exists:
-                    child = State([template])
-                    prefix_tree.add_child(child, parent)
-
-                    parent = child
-                    nodes = prefix_tree.get_children(child)
-
+        if remove_trivial_loops:
+            for n in nodes:
+                if n.properties.log_templates[0] == 'terminal':
+                    return prefix_tree
         prefix_tree.add_child(State(["terminal"], True), parent)
         return prefix_tree
