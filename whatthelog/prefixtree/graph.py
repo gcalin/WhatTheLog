@@ -5,7 +5,7 @@
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # External
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
+import random
 from typing import List, Union, Dict, Tuple
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -96,6 +96,33 @@ class Graph(AutoPrinter):
         del self.state_indices_by_id[id(state2)]
         del state2
 
+    def full_merge_states(self, s1: State, s2: State):
+        """
+        Fully merges two states and removes non-determinism.
+        :param s1: One of the two states to merge.
+        :param s2: One of the two states to merge.
+        """
+        if s2 is None or s1 is None:
+            return
+
+        # Trivially merge the states
+        self.merge_states(s1, s2)
+
+        # Remove non-determinism in the merged state's children by merging them.
+        current, changed = self.merge_equivalent_children(s1)
+
+        # Get the current state's children
+        parents = self.get_incoming_states(current)
+
+        # For each parent
+        while len(parents) > 0:
+            # Remove non-determinism in the parent
+            current, changed = self.merge_equivalent_children(parents.pop())
+
+            # If a change occurred, update the list of parents
+            if changed:
+                parents = self.get_incoming_states(current)
+
     def add_state(self, state: State) -> None:
         """
         Method to add a new state to the graph.
@@ -116,7 +143,7 @@ class Graph(AutoPrinter):
         else:
             self.prop_by_hash[state.properties.get_prop_hash()] = state.properties
 
-    def add_edge(self, start: State, end: State, props: EdgeProperties) -> bool:
+    def add_edge(self, start: State, end: State, props: EdgeProperties = EdgeProperties()) -> bool:
         """
         Method to add an edge to the graph
 
@@ -136,6 +163,50 @@ class Graph(AutoPrinter):
             self.edges[start_index, end_index] = str(props)
             return True
         return False
+
+    def merge_equivalent_children(self, current: State) -> Tuple[State, bool]:
+        """
+        Merge all equivalent children, such that the resulting automaton remains deterministic while merging.
+        :param current: The state of which we want to merge the children
+        """
+        merged: bool = False
+
+        # Get all the children of the current node except possibly itself
+        children = self.get_outgoing_states(current)
+
+        # Get the log templates
+        children_templates: List[List[str]] = list(map(lambda x: x.properties.log_templates, children))
+
+        # Get a list of duplicate states
+        # Two states are duplicates if they have any template in common
+        duplicates = [i for i, x in enumerate(children_templates)
+                      if i != self.__equivalence_index(children_templates, x)]
+
+        # While there are still duplicates left
+        while len(duplicates) > 0:
+
+            # For each duplicate
+            for dup in duplicates:
+
+                for c in children:
+                    # If a child has a common template with the duplicate, merge them
+                    if c.is_equivalent_weak(children[dup]) and c is not children[dup]:
+                        if children[dup] is current:
+                            current = c
+                        self.merge_states(c, children[dup])
+                        merged = True
+                        break
+
+            # Update the children and duplicates list
+            children = self.get_outgoing_states(current)
+            if children:
+                children_templates = list(map(lambda x: x.properties.log_templates, children))
+                duplicates = [i for i, x in enumerate(children_templates)
+                              if i != self.__equivalence_index(children_templates, x)]
+            else:
+                duplicates = []
+
+        return current, merged
 
     def size(self):
         """
@@ -187,6 +258,18 @@ class Graph(AutoPrinter):
         else:
             return None
 
+    def get_random_state(self) -> State:
+        """
+        Gets a random state in the graph.
+        """
+        return random.choice(list(self.states.values()))
+
+    def get_random_child(self, state: State) -> State:
+        """
+        Gets a random child of a given state.
+        """
+        return random.choice(self.get_outgoing_states_not_self(state))
+
     def __str__(self):
         return str(self.states)
 
@@ -195,3 +278,15 @@ class Graph(AutoPrinter):
 
     def __len__(self):
         return len(self.states)
+
+    @staticmethod
+    def __equivalence_index(target_list: List[List[str]], target_items: List[str]) -> Union[int, None]:
+        """
+        For a given template, find the first index within a list that has a weakly equivalent template.
+        Weak equivalence implies that at least one template is common.
+        """
+        for i, l in enumerate(target_list):
+            for item in target_items:
+                if item in l:
+                    return i
+        return None
