@@ -5,6 +5,7 @@
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # External
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+import os
 import random
 from typing import List, Union, Dict, Tuple
 
@@ -23,6 +24,8 @@ from whatthelog.prefixtree.edge_properties import EdgeProperties
 # Graph
 # ****************************************************************************************************
 from whatthelog.prefixtree.state_properties import StateProperties
+
+random.seed(os.environ['random_seed'] if 'random_seed' in os.environ else 5)
 
 
 class Graph(AutoPrinter):
@@ -111,7 +114,7 @@ class Graph(AutoPrinter):
         # Remove non-determinism in the merged state's children by merging them.
         current, changed = self.merge_equivalent_children(s1)
 
-        # Get the current state's children
+        # Get the current state's parent
         parents = self.get_incoming_states(current)
 
         # For each parent
