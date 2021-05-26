@@ -1,8 +1,5 @@
-import random
 import pytest
-import copy
 
-from scripts.match_trace import match_trace
 from whatthelog.prefixtree.prefix_tree import PrefixTree, State
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 from typing import List

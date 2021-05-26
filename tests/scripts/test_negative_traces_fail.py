@@ -1,8 +1,7 @@
 import os
-from typing import Tuple, Dict, List
+from typing import List
 
 from scripts.log_scrambler import process_file
-from scripts.match_trace import match_trace
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.prefixtree.prefix_tree_factory import PrefixTreeFactory
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
@@ -73,7 +72,7 @@ def execute_test_on_trace(filename: str, state_tree: PrefixTree) -> int:
     wrong_trace = generate_negative_traces(filename)
 
     # Check whether this trace is invalid
-    result = match_trace(state_tree, wrong_trace, get_syntax_tree())
+    result = state_tree.match_trace(wrong_trace)
 
     # Clean up
     delete_negative_traces(filename)

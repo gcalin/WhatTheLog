@@ -6,7 +6,6 @@
 # External
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-from copy import deepcopy
 from datetime import timedelta
 import os
 from pathlib import Path
