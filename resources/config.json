@@ -219,7 +219,7 @@
           "children": [
             {
               "name": "TakerLeg",
-              "syntax": "\\s+leg\\d+\\s(in|out)\\:\\s\\d+\\.\\d+\\/[A-Z]{3}",
+              "syntax": "\\s+leg\\d+\\s(in|out)\\:\\s\\d+(\\.\\d+)?\\/[A-Z]{3}",
               "isRegex": true,
               "children": []
             },

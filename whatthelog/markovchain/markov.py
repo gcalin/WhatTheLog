@@ -3,6 +3,8 @@ import os
 import random
 import sys
 from copy import deepcopy
+import shutil
+from functools import partial
 from typing import List, Dict
 
 import numpy as np
@@ -24,17 +26,20 @@ class MarkovChain:
 
     def __init__(self, tracesdir: str, config_file: str = "resources/config.json", weight_size: float = 0.5,
                  weight_accuracy: float = 0.5):
+        self.maxLength = 0
         self.tracesdir = tracesdir
         self.config_file = config_file
         self.falsedir = 'out/false_traces/'
+        self.truedir = 'resources/truetraces/'
+        self.truetestdir = 'out/truetraces/'
 
         self.weight_size = weight_size
         self.weight_accuracy = weight_accuracy
-        self.initial_size = -1
 
         # Parse the syntaxtree from the config file.
         self.syntaxtree: SyntaxTree = SyntaxTreeFactory().parse_file(self.config_file)
         all_states: List[str] = self.get_all_states(self.syntaxtree)
+        self.pt = None
 
         self.graph = None  # This is a storage for the current state for the parallel execution
         self.graph_nodes = None
@@ -59,20 +64,22 @@ class MarkovChain:
         self.transitionMatrix = [[0 for _ in range(len(self.states))]
                                  for _ in range(len(self.states))]
 
-        # todo remove unreached nodes
+        self.initial_size = len(self.transitionMatrix)
 
         print('[ markov.py ] - Chain ready.')
 
-    def generate_false_traces(self, amount: int = 500):
-        syntax_tree = SyntaxTreeFactory().parse_file(self.config_file)
-        pt = PrefixTreeFactory.get_prefix_tree(self.tracesdir, self.config_file)
+    def generate_false_traces_from_prefixtree(self, amount: int = 500):
+        self.pt = PrefixTreeFactory.get_prefix_tree(self.tracesdir, self.config_file)
         print('[ markov.py ] - Generating false traces...')
+        self.generate_false_traces(amount)
+        print('[ markov.py ] - False traces generated')
+
+    def generate_false_traces(self, amount):
         pbar = tqdm(range(amount), file=sys.stdout, leave=False)
         for i in pbar:
             produce_false_trace(os.path.join(self.tracesdir, os.listdir(self.tracesdir)
             [random.randint(0, len(os.listdir(self.tracesdir)) - 1)]),
-                                self.falsedir + '/false' + str(i), syntax_tree, pt)
-        print('[ markov.py ] - False traces generated')
+                                self.falsedir + '/false' + str(i), self.syntaxtree, self.pt)
 
     def get_all_states(self, syntaxtree: SyntaxTree) -> List[str]:
         res = []
@@ -176,6 +183,8 @@ class MarkovChain:
         self.delete_unreachable()
         print('[ markov.py ] - Unreachable states removed.')
 
+        self.initial_size = len(self.transitionMatrix)
+
         self.transitionMatrix[1][1] = 1  # Create a self loop for the terminal state
 
     def find_duplicates(self, threshold: float = 0.0, rowdup: bool = True) -> List[List[int]]:
@@ -214,7 +223,7 @@ class MarkovChain:
         for r in range(len(self.transitionMatrix)):
             for d in range(len(self.transitionMatrix)):
                 # We don't want to remove the root and terminal node
-                if self.transitionMatrix[r][d] >= 1.0 - threshold and r not in [0, 1] and d not in [0, 1] and r != d:
+                if self.transitionMatrix[r][d] >= 1.0 - threshold and r != d:
                     temporary_result.append([r, d])  # Only one, otherwise things might break
                     break
 
@@ -223,7 +232,7 @@ class MarkovChain:
         for i in temporary_result:
             new = True
             for r in result:
-                if r[-1] == i[0]:
+                if r[-1] == i[0] and i[1] not in r:
                     r.append(i[1])
                     new = False
                     break
@@ -257,95 +266,123 @@ class MarkovChain:
                 candidate[a] -= 1
 
     def evaluate_candidate(self, candidate: List[int]):
-        matrix = deepcopy(self.transitionMatrix)
-        states = deepcopy(self.states)
-        self.process_candidate_list(candidate, matrix, states)
+        if self.weight_size * len(candidate) / self.maxLength + self.weight_accuracy < self.weight_size:
+            # Optimal outcome for this candidate vs the worst outcome for the candidate with most compression
+            print('=========================================================')
+            return 0
+        else:
+            matrix = deepcopy(self.transitionMatrix)
+            states = deepcopy(self.states)
+            current_length = len(candidate)
+            self.process_candidate_list(candidate, matrix, states)
+            return self.weight_size * current_length / self.maxLength + self.weight_accuracy * \
+                   sum(self.calculate_accuracy(matrix, states)) / 3
 
-        return self.calculate_score(matrix, states)
-
-    def calculate_score(self, matrix=None, states=None):  # specificity
+    def calculate_accuracy(self, matrix=None, states=None):  # specificity
         if matrix is None:
             matrix = self.transitionMatrix
         if states is None:
             states = self.states
+
         true_negative = 0
-        false_positive = 0
         for file in os.listdir(self.falsedir):
             with open(os.path.join(self.falsedir, file), 'r') as f:
                 current = states['root']
-                detect_false = False
                 for l in f.readlines():
                     next_node = states[self.syntaxtree.search(l).name]
-                    if matrix[current][next_node] < 1 / 1e6:  # Some small value
+                    if matrix[current][next_node] < 1 / 1e10:  # Some small value close to 0
                         true_negative += 1
-                        detect_false = True
                         break
                     current = next_node
-                if not detect_false:
-                    false_positive += 1
 
-        specificity = true_negative / (true_negative + false_positive)
-
-        # recall
         true_positive = 0
-        false_negative = 0
-        for file in os.listdir(self.tracesdir):  # todo use others
-            with open(os.path.join(self.tracesdir, file), 'r') as f:
+        for file in os.listdir(self.truetestdir):
+            with open(os.path.join(self.truetestdir, file), 'r') as f:
+                is_valid = True
                 current = states['root']
-                detect_false = False
                 for l in f.readlines():
+                    if self.syntaxtree.search(l).name not in states:
+                        is_valid = False
+                        break
                     next_node = states[self.syntaxtree.search(l).name]
-                    if matrix[current][next_node] < 1 / 1e6:  # Some small value
-                        false_negative += 1
-                        detect_false = True
+                    if matrix[current][next_node] < 1 / 1e10:  # Some small value close to 0
+                        is_valid = False
                         break
                     current = next_node
-                if not detect_false:
+                if is_valid:
                     true_positive += 1
 
-        recall = true_positive / (false_negative + true_positive)
+        specificity = true_negative / len(os.listdir(self.falsedir))
+        recall = true_positive / len(os.listdir(self.truetestdir))
+        precision = true_positive / (true_positive + (len(os.listdir(self.falsedir)) - true_negative))
 
-        accuracy = (specificity + recall) / 2
+        return specificity, recall, precision
 
-        size = 1 - len(matrix) / self.initial_size
-        print(size, specificity, recall)
-        return self.weight_size * size + self.weight_accuracy * accuracy
+    def get_candidates(self, threshold: float = 0.0):
+        # Duplicate rows
+        candidates = list(map(lambda x: sorted(x), self.find_duplicates(threshold)))
+        # Duplicate columns
+        candidates += list(map(lambda x: sorted(x), list(
+            filter(lambda x: sorted(x) not in candidates, self.find_duplicates(threshold, False)))))
+        # Probability of 1
+        candidates += list(
+            map(lambda x: sorted(x), list(filter(lambda x: sorted(x) not in candidates, self.find_prop_1(threshold)))))
+
+        return candidates
 
     def do_it(self, size: int):
         assert size > 0, 'Can not have a size of 0'
 
         self.train()
 
-        threshold = 0.0
-        if self.initial_size == -1:
-            self.initial_size = len(self.transitionMatrix)
         while len(self.transitionMatrix) > size:
+            threshold = 0.0
             print(str(100 * (self.initial_size - len(self.transitionMatrix)) / (self.initial_size - size)) + ' %')
-            candidates = self.find_duplicates(threshold) + self.find_prop_1(threshold) + self.find_duplicates(threshold, False)
+            candidates = []
             while len(candidates) == 0:  # move boundaries to find more candidates
+                candidates = self.get_candidates(threshold)
                 threshold += 0.001
-                candidates = self.find_duplicates(threshold) + self.find_prop_1(threshold) + self.find_duplicates(threshold, False)
+
+            to_split = []
+            for c in range(len(candidates)):
+                if len(candidates[c]) - 1 > len(self.transitionMatrix) - size:
+                    to_split.append(c)
+
+            to_split.reverse()
+            for s in to_split:
+                l = candidates[s]
+                i = 1
+                while i < len(l):
+                    candidates.append([l[i-1], l[i]])
+                    i += 1
+                del candidates[s]
+
+            self.maxLength = 0
             for c in candidates:
                 c.sort()
-            # print(candidates)
-            a_pool = multiprocessing.Pool()
-            results = a_pool.map(self.evaluate_candidate, candidates)
-            a_pool.close()
-            a_pool.join()
-            # print(results)
-            max = 0
-            for r in range(len(results)):
-                if results[r] > results[max]:
-                    max = r
-            # print(candidates[max])
-            # print(self.states)
-            # self.print_matrix()
-            # print('---------')
-            self.process_candidate_list(candidates[max])
-        print('')
-        self.print_matrix()
+                if len(c) > self.maxLength:
+                    self.maxLength = len(c)
 
-        # todo should create the false traces from unused log files
+            max = 0
+            if len(candidates) > 1:
+                a_pool = multiprocessing.Pool(processes=12)
+                results = a_pool.map(self.evaluate_candidate, candidates)
+                a_pool.close()
+                a_pool.join()
+
+                for r in range(len(candidates)):
+                    if results[r] > results[max]:
+                        max = r
+
+            # self.print_matrix()
+            self.process_candidate_list(candidates[max])
+            with open('out/eval/evaluation4', 'a') as f:
+                specificity, recall, precision = self.calculate_accuracy()
+                f.write('<tr><td>' + str(1 - len(self.transitionMatrix)/self.initial_size) + '</td>')
+                f.write('<td>' + str(specificity) + '</td>')
+                f.write('<td>' + str(recall) + '</td>')
+                f.write('<td>' + str(precision) + '</td></tr>\n')
+        # self.print_matrix()
 
     def print_matrix(self, matrix=None):
         if matrix is None:
@@ -353,27 +390,55 @@ class MarkovChain:
         for r in range(len(matrix)):
             vstr = str(r) + ": "
             for c in range(len(matrix)):
-                # if self.transitionMatrix[r][c] == 0.0:
-                #     vstr += "    "
-                # else:
                 vstr += str(matrix[r][c]) + " "
             print(vstr)
 
         [print(i, aaa) for aaa, i in self.states.items()]
 
+    def select_true_traces(self, amount=50):
+        if os.path.exists(self.truetestdir):
+            shutil.rmtree(self.truetestdir)
+        os.mkdir(self.truetestdir)
+        for i in range(amount):
+            shutil.copy(os.path.join(self.truedir, os.listdir(self.truedir)
+            [random.randint(0, len(os.listdir(self.truedir)) - 1)]),
+                        os.path.join(self.truetestdir, os.listdir(self.truedir)
+            [random.randint(0, len(os.listdir(self.truedir)) - 1)]))
 
 if __name__ == '__main__':
     # self.train("../../tests/resources/testlogs/")
     # self.train("../../resources/traces/")
     # self.train("../../../all/")
     # chain = MarkovChain("resources/traces/", weight_size=0.8, weight_accuracy=0.2)
-    chain = MarkovChain("tests/resources/testlogs/", weight_size=0.8, weight_accuracy=0.2)
+    # direc = "resources/traces5/"
+    # direc = "tests/resources/testlogs/"
+    # chain = MarkovChain(direc, weight_size=0.5, weight_accuracy=0.5)
 
-    # chain.generate_false_traces(500)
+    # falsetraces = MarkovChain(direc)
+    # falsetraces.train()
+    # print(len(falsetraces.transitionMatrix))
+    # falsetraces.generate_false_traces_from_prefixtree(50)
+    # chain.do_it(6)
+    # chain.print_matrix()
+    # print(chain.calculate_accuracy())
 
-    # todo hard because
-    #  lot of duplicate checking
-    #  A LOT OF evaluating
+    with open('out/eval/evaluation4', 'w+') as f:
+        f.write('')
+    for j in range(10):
+        # if j > 8:
+            print('current progress:', j+1, '/ 10')
+            # falsetraces.generate_false_traces(50);
 
-    chain.do_it(5)
-    print(chain.calculate_score())
+            direc = 'resources/traces' + str(j + 1) + '/'
+            falsetraces = MarkovChain(direc)
+            falsetraces.select_true_traces(100)
+            falsetraces.generate_false_traces_from_prefixtree(100)
+
+            chain = MarkovChain(direc, weight_size=0.5, weight_accuracy=0.5)
+            chain.train()
+            # print(len(chain.transitionMatrix))
+            chain.do_it(1)
+
+
+    # chain.do_it(6)
+    # print(chain.calculate_score())
