@@ -1,12 +1,9 @@
-from typing import List, Tuple
+import pytest
 
 from whatthelog.exceptions import StateDoesNotExistException
 from whatthelog.prefixtree.edge_properties import EdgeProperties
 from whatthelog.prefixtree.graph import Graph
-import pytest
-
 from whatthelog.prefixtree.state import State
-from whatthelog.prefixtree.visualizer import Visualizer
 
 
 @pytest.fixture
@@ -17,7 +14,7 @@ def graph():
     state3 = State(["3"])
     state4 = State(["4"])
 
-    graph = Graph(state0)
+    graph = Graph(None, state0)
 
     graph.add_state(state0)
     graph.add_state(state1)
@@ -58,7 +55,7 @@ def test_add_state(graph: Graph):
 
 
 def test_add_state_properties_pointers():
-    graph = Graph()
+    graph = Graph(None)
     state1 = State(["prop"])
     state2 = State(["prop"])
 
@@ -92,13 +89,13 @@ def test_size(graph: Graph):
 
 
 def test_get_outgoing_props():
-    graph = Graph()
+    graph = Graph(None)
     state1 = State(["1"])
     state2 = State(["2"])
     graph.add_state(state1)
     graph.add_state(state2)
 
-    props = EdgeProperties(["50"])
+    props = EdgeProperties(1)
     graph.add_edge(state1, state2, props)
 
     assert graph.get_outgoing_props(state1) == [props]

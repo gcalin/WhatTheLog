@@ -7,12 +7,15 @@
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 from __future__ import annotations
-from typing import List, Union
+
+from copy import deepcopy
+from typing import List, Union, Tuple
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Internal
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+from syntaxtree.syntax_tree import SyntaxTree
 from whatthelog.prefixtree.edge_properties import EdgeProperties
 from whatthelog.prefixtree.graph import Graph
 from whatthelog.prefixtree.state import State
@@ -28,11 +31,8 @@ class PrefixTree(Graph):
     Prefix tree implemented using an adjacency map-based graph.
     """
 
-    __slots__ = ['__root']
-
-    def __init__(self, root: State):
-        super().__init__(root)
-        self.__root = root
+    def __init__(self, syntax_tree: SyntaxTree, root: State):
+        super().__init__(syntax_tree, root)
         self.add_state(root)
 
     def get_root(self) -> State:
@@ -41,7 +41,7 @@ class PrefixTree(Graph):
 
         :return: the root of the tree
         """
-        return self.__root
+        return self.start_node
 
     def get_children(self, state: State) -> List[State]:
         """
@@ -52,7 +52,7 @@ class PrefixTree(Graph):
         """
         return self.get_outgoing_states(state)
 
-    def add_child(self, state: State, parent: State, props: EdgeProperties = EdgeProperties([])):
+    def add_child(self, state: State, parent: State, props: EdgeProperties = EdgeProperties()):
         """
         Method to add a child in the tree.
         Requires that the parent be in the current tree.
@@ -119,10 +119,10 @@ class PrefixTree(Graph):
         :param other: the tree to be merged into this one.
         """
 
-        if not self.__root.is_equivalent(other.get_root()):
+        if not self.start_node.is_equivalent(other.get_root()):
             raise InvalidTreeException("Merge failed: source tree does not have same root as destination tree!")
 
-        stack = [(self.__root, other.get_root())]
+        stack = [(self.start_node, other.get_root())]
         while True:
 
             this_state, that_state = stack.pop()
@@ -139,6 +139,36 @@ class PrefixTree(Graph):
 
             if not stack:
                 break
+
+    def get_adj_list(self, remove_self_loops: bool = False) -> List[Tuple[int, int, float]]:
+        """
+        Returns an adjacency list representing the prefix tree, as a list of tuples in the form:
+            (edge_start, edge_end, edge_weight).
+
+        Each edge's weight is the frequency with which that edge is used from its parent,
+        in other words: if node A has two children B and C, with edge AB having 6 passes
+        and edge AC having 4 passes, then edge AB will have weight 0.6 andAC 0.4.
+
+        :param remove_self_loops: if True the output will not contain self-looping edges
+                                  (edges with same origin as destination)
+        :return: the adjacency matrix for the prefix tree
+        """
+
+        return self.edges.get_weights_list(remove_self_loops)
+
+    def __deepcopy__(self, memodict={}) -> PrefixTree:
+
+        output = PrefixTree(self.syntax_tree, self.start_node)
+        output.edges = deepcopy(self.edges)
+        output.states = deepcopy(self.states)
+        output.prop_by_hash = deepcopy(self.prop_by_hash)
+
+        # --- Rebuild state indices table ---
+        output.state_indices_by_id = {}
+        for index, state in output.states.items():
+            output.state_indices_by_id[id(state)] = index
+
+        return output
 
 
 #****************************************************************************************************

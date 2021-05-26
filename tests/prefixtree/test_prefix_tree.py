@@ -6,7 +6,7 @@ from whatthelog.prefixtree.state import State
 
 @pytest.fixture()
 def tree():
-    return PrefixTree(State(["root"]))
+    return PrefixTree(None, State(["root"]))
 
 
 def test_add_child(tree: PrefixTree):
@@ -32,7 +32,7 @@ def test_add_child_incorrect_parent(tree: PrefixTree):
 
 def test_get_root():
     root = State(["root"])
-    tree = PrefixTree(root)
+    tree = PrefixTree(None, root)
 
     assert tree.get_root() == root
 
@@ -73,7 +73,7 @@ def test_get_parent_of_root(tree: PrefixTree):
 
 
 def test_add_branch(tree: PrefixTree):
-    other = PrefixTree(State(["other"]))
+    other = PrefixTree(None, State(["other"]))
     child1 = State(["child1"])
     other.add_child(child1, other.get_root())
 
@@ -85,7 +85,7 @@ def test_add_branch(tree: PrefixTree):
 
 def test_merge(tree: PrefixTree):
     tree.add_child(State(["child1"]), tree.get_root())
-    other = PrefixTree(tree.get_root())
+    other = PrefixTree(None, tree.get_root())
     other.add_child(State(["child2"]), other.get_root())
 
     tree.merge(other)
@@ -97,7 +97,7 @@ def test_merge_complex(tree: PrefixTree):
     child1 = State(["child1"])
 
     tree.add_child(child1, tree.get_root())
-    other = PrefixTree(tree.get_root())
+    other = PrefixTree(None, tree.get_root())
     other.add_child(child1, other.get_root())
     other.add_child(State(["child2"]), child1)
     other.add_child(State(["child3"]), child1)
@@ -113,5 +113,5 @@ def test_merge_complex(tree: PrefixTree):
 
 def test_merge_different_roots(tree: PrefixTree):
     with pytest.raises(InvalidTreeException):
-        other = PrefixTree(State(["other"]))
+        other = PrefixTree(None, State(["other"]))
         tree.merge(other)

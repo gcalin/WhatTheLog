@@ -9,7 +9,12 @@
 from __future__ import annotations
 from ast import literal_eval
 from dataclasses import dataclass, field
-from typing import List
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Internal
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+from whatthelog.exceptions import InvalidPropertiesException
 
 
 #****************************************************************************************************
@@ -19,11 +24,17 @@ from typing import List
 @dataclass
 class EdgeProperties:
 
-    props: List[str] = field(default_factory=lambda: [])
+    passes: int = field(default=1)
 
     def __str__(self):
-        return str(self.props)
+        return str(self.passes)
 
     @staticmethod
     def parse(string: str):
-        return EdgeProperties(literal_eval(string))
+
+        passes = literal_eval(string)
+        if not type(passes) is int:
+            raise InvalidPropertiesException(f"Error while deserializing edge properties: "
+                                             f"expected Integer but got {str(type(passes))}")
+
+        return EdgeProperties(passes)

@@ -8,6 +8,8 @@
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 from __future__ import annotations
+
+from copy import copy, deepcopy
 from typing import List
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -50,6 +52,12 @@ class State:
 
     def get_properties(self):
         return self.properties
+
+    def __copy__(self) -> State:
+        return State(self.properties.log_templates, self.is_terminal)
+
+    def __deepcopy__(self, memodict={}) -> State:
+        return State(deepcopy(self.properties).log_templates, self.is_terminal)
 
     def __str__(self):
         if len(self.properties) == 1:

@@ -71,6 +71,7 @@ MANIFEST
 
 # Resources
 resources/traces*
+resources/train_set
 resources/prefixtree.png
 
 # Temporary Files

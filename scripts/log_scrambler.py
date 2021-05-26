@@ -224,13 +224,15 @@ def produce_false_trace(input_file: str, output_file: str, syntax_tree: SyntaxTr
 
 
 def main(argv):
+
+    project_root = pathlib.Path(os.path.abspath(os.path.dirname(__file__))).parent
     start_time = time()
     tracemalloc.start()
 
     assert len(argv) > 1, "Not enough arguments supplied!"
 
-    input_dir = argv[0]
-    output_dir = argv[1]
+    input_dir = project_root.joinpath(argv[0])
+    output_dir = project_root.joinpath(argv[1])
     config_file = argv[2] if len(argv) > 2 else config_default
     pool_size = argv[3] if len(argv) > 3 else pool_size_default
 

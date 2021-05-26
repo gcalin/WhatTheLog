@@ -21,7 +21,6 @@ from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.prefixtree.state import State
 from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 from whatthelog.exceptions import UnidentifiedLogException
-from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 from whatthelog.auto_printer import AutoPrinter
 
 
@@ -64,6 +63,9 @@ class PrefixTreeFactory(AutoPrinter):
         :param file: the file to dump the pickled tree to
         """
 
+        # --- Delete state indices table to save space since it will be invalid after unpickling ---
+        tree.state_indices_by_id = {}
+
         with open(file, 'wb+') as f:
             pickle.dump(tree, f)
 
@@ -79,7 +81,12 @@ class PrefixTreeFactory(AutoPrinter):
             raise FileNotFoundError("Pickle file not found!")
 
         with open(file, 'rb') as f:
-            tree = pickle.load(f)
+            tree: PrefixTree = pickle.load(f)
+
+        # --- Rebuild state indices table ---
+        tree.state_indices_by_id = {}
+        for index, state in tree.states.items():
+            tree.state_indices_by_id[id(state)] = index
 
         return tree
 
@@ -103,28 +110,24 @@ class PrefixTreeFactory(AutoPrinter):
         print("Parsing syntax tree...")
 
         syntax_tree = SyntaxTreeFactory().parse_file(config_file)
-        prefix_tree = PrefixTree(State([""]))
+        prefix_tree = PrefixTree(syntax_tree, State([""]))
 
         print("Parsing traces...")
 
         pbar = tqdm(os.listdir(log_dir), file=sys.stdout, leave=False)
         for filename in pbar:
             filepath = str(Path(log_dir).joinpath(filename)).strip()
-            PrefixTreeFactory.__parse_trace(filepath, syntax_tree, prefix_tree, remove_trivial_loops)
+            PrefixTreeFactory.__parse_trace(filepath, prefix_tree, remove_trivial_loops)
 
         return prefix_tree
 
     @staticmethod
-    def __parse_trace(tracepath: str,
-                      syntax_tree: SyntaxTree,
-                      prefix_tree: PrefixTree,
-                      remove_trivial_loops: bool) -> PrefixTree:
+    def __parse_trace(tracepath: str, prefix_tree: PrefixTree, remove_trivial_loops: bool) -> PrefixTree:
         """
         Function that parses a trace file and modifies the given
         prefix tree to include it.
 
         :param tracepath: The path to the trace file to parse
-        :param syntax_tree: The syntax tree used to get the log template from the log
         :param prefix_tree: The current prefix tree to be used
         :param remove_trivial_loops: Indicates whether trivial loops (subsequent states) should be merged.
         :return: PrefixTree
@@ -136,7 +139,7 @@ class PrefixTreeFactory(AutoPrinter):
         with open(tracepath, 'r') as file:
             for log in file:
 
-                tree = syntax_tree.search(log)
+                tree = prefix_tree.syntax_tree.search(log)
                 if tree is None:
                     raise UnidentifiedLogException(
                         log + " was not identified as a valid log.")
@@ -147,10 +150,13 @@ class PrefixTreeFactory(AutoPrinter):
                 if remove_trivial_loops and parent.properties.log_templates[0] == template:
                     # There will only be 1 template per state initially
                     if parent not in nodes:
-                        prefix_tree.add_edge(parent, parent, EdgeProperties([]))
+                        prefix_tree.add_edge(parent, parent, EdgeProperties())
+                    else:
+                        prefix_tree.update_edge(parent, parent)
                 else:
                     for node in nodes:
                         if template in node.properties.log_templates:
+                            prefix_tree.update_edge(parent, node)
                             parent = node
                             nodes = prefix_tree.get_children(parent)
                             exists = True
@@ -163,9 +169,8 @@ class PrefixTreeFactory(AutoPrinter):
                         parent = child
                         nodes = prefix_tree.get_children(parent)
 
-        if remove_trivial_loops:
-            for n in nodes:
-                if n.properties.log_templates[0] == 'terminal':
-                    return prefix_tree
+        for n in nodes:
+            if n.properties.log_templates[0] == 'terminal':
+                return prefix_tree
         prefix_tree.add_child(State(["terminal"], True), parent)
         return prefix_tree

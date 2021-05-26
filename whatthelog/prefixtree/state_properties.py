@@ -55,3 +55,9 @@ class StateProperties(AutoPrinter):
 
     def __repr__(self):
         return str(self)
+
+    def __copy__(self):
+        return StateProperties(self.log_templates)
+
+    def __deepcopy__(self, memodict={}):
+        return StateProperties([template for template in self.log_templates])

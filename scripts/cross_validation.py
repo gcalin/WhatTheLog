@@ -6,7 +6,7 @@ import random
 from typing import Tuple, List
 
 from scripts.log_scrambler import produce_false_trace
-from whatthelog.prefixtree.evaluator import Evaluator
+from clustering.evaluator import Evaluator
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.prefixtree.prefix_tree_factory import PrefixTreeFactory
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
@@ -93,7 +93,7 @@ def k_fold_cross_validation(syntax_tree: SyntaxTree,
             produce_false_trace(os.path.join(temp_dir_name_recall, trace_name), new_name_specificity, syntax_tree, model)
 
         # Evaluate the model and append the results
-        evaluator: Evaluator = Evaluator(model, syntax_tree, str(temp_dir_name_recall), str(temp_dir_name_specificity))
+        evaluator: Evaluator = Evaluator(model, str(temp_dir_name_recall), str(temp_dir_name_specificity))
         s = evaluator.calc_specificity(debug=debug)
         r = evaluator.calc_recall(debug=debug)
         specificity.append(s)

@@ -1,9 +1,6 @@
 import os
 
-
-from scripts.match_trace import match_trace
 from whatthelog.prefixtree.graph import Graph
-from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 
 
 class Evaluator:
@@ -13,7 +10,6 @@ class Evaluator:
 
     def __init__(self,
                  model: Graph,
-                 syntax_tree: SyntaxTree,
                  positive_traces_dir: str,
                  negative_traces_dir: str,
                  initial_size: int = None,
@@ -21,7 +17,6 @@ class Evaluator:
                  weight_size: float = 0.5):
 
         self.model = model
-        self.syntax_tree = syntax_tree
         self.positive_traces_dir = positive_traces_dir
         self.negative_traces_dir = negative_traces_dir
         self.initial_model_size = len(model) if initial_size is None else initial_size
@@ -100,7 +95,7 @@ class Evaluator:
                     print(f"Opening file {filename} to evaluate specificity...")
 
                 # If the state model accepts the trace
-                if match_trace(self.model, f.readlines(), self.syntax_tree):
+                if self.model.match_trace(f.readlines()):
 
                     # Increase the false positives by one, should have been rejected
                     fp += 1
@@ -151,7 +146,7 @@ class Evaluator:
                     print(f"Opening file {filename} to evaluate recall...")
 
                 # If the state model accepts the trace
-                if match_trace(self.model, f.readlines(), self.syntax_tree):
+                if self.model.match_trace(f.readlines()):
 
                     # Increase the true positives by one, correctly accepted
                     tp += 1
