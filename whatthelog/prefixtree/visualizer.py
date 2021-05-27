@@ -40,8 +40,8 @@ class Visualizer(AutoPrinter):
         A.graph_attr.update(nodesep="0.5")
         A.graph_attr.update(pad="1")
         A.layout('dot')
-        A.draw(str(PROJECT_ROOT.joinpath("resources/" + file_name)))
-        print("Visualization has been saved at: " + str(PROJECT_ROOT.joinpath("resources/" + file_name)))
+        A.draw(str(PROJECT_ROOT.joinpath("out/" + file_name)))
+        print("Visualization has been saved at: " + str(PROJECT_ROOT.joinpath("out/" + file_name)))
         pprint(self.label_mapping)
 
     def __populate_graph(self) -> Tuple[Dict[int, str], int, int]:

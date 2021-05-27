@@ -1,16 +1,4 @@
-# ****************************************************************************************************
-# Imports
-# ****************************************************************************************************
-
-# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# External
-# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
 from typing import List, Union, Dict, Tuple
-
-# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# Internal
-# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 from whatthelog.prefixtree.state import State
 from whatthelog.auto_printer import AutoPrinter
@@ -18,10 +6,6 @@ from whatthelog.exceptions import StateAlreadyExistsException, StateDoesNotExist
 from whatthelog.prefixtree.sparse_matrix import SparseMatrix
 from whatthelog.prefixtree.edge_properties import EdgeProperties
 
-
-# ****************************************************************************************************
-# Graph
-# ****************************************************************************************************
 from whatthelog.prefixtree.state_properties import StateProperties
 
 
@@ -266,7 +250,7 @@ class Graph(AutoPrinter):
         else:
             return None
 
-    def get_outgoing_states(self, state: State) -> Union[List[State], None]:
+    def get_outgoing_states(self, state: State) -> List[State]:
         """
         Method to get outgoing states of a state.
 
@@ -278,7 +262,7 @@ class Graph(AutoPrinter):
             results = self.edges.find_children(self.state_indices_by_id[id(state)])
             return [self.states[result[0]] for result in results] if results is not None else []
         else:
-            return None
+            raise StateDoesNotExistException()
 
     def get_incoming_states(self, state: State):
         """
