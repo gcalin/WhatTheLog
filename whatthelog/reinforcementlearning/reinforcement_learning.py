@@ -1,21 +1,19 @@
 import random
 import time
-
 import numpy as np
 from numpy.compat import long
 
+from scripts.match_trace import match_trace
 from whatthelog.definitions import PROJECT_ROOT
 from whatthelog.prefixtree.evaluator import Evaluator
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.prefixtree.prefix_tree_factory import PrefixTreeFactory
 from whatthelog.prefixtree.visualizer import Visualizer
-from whatthelog.reinforcementlearning.actionspace import Actions
 from whatthelog.reinforcementlearning.environment import GraphEnv
 from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 
 
 if __name__ == '__main__':
-
     a = long(time.time() * 256)
     random.seed(a)
     st = SyntaxTreeFactory().parse_file(
@@ -23,7 +21,7 @@ if __name__ == '__main__':
     pt: PrefixTree = PrefixTreeFactory().get_prefix_tree(
         PROJECT_ROOT.joinpath("resources/traces"),
         PROJECT_ROOT.joinpath("resources/config.json"))
-    print(len(pt))
+
     PrefixTreeFactory().pickle_tree(pt, PROJECT_ROOT.joinpath(
         "out/prefixtree.pickle"))
 
@@ -45,6 +43,7 @@ if __name__ == '__main__':
     env.seed()
     for i in range(epochs):
         state = env.reset()
+        total_reward = 0
 
         done = False
 
@@ -60,6 +59,7 @@ if __name__ == '__main__':
                              key=lambda x: x[1])[0]
 
             next_state, reward, done, info = env.step(action)
+            total_reward += reward
 
             old_value = q_table[state][action]
             max_q = np.max(q_table[next_state])
@@ -67,8 +67,9 @@ if __name__ == '__main__':
                     reward + gamma * max_q)
             state = next_state
             epoch += 1
-            print(q_table)
 
-    Visualizer(pt).visualize("1 epoch.png")
+        print(f"Epoch {i} completed with reward: {total_reward}!")
+        print("q table: \n", q_table)
+        Visualizer(env.graph).visualize(f"{i} epoch.png")
 
     print("Timesteps taken: {}".format(epochs))

@@ -25,8 +25,10 @@ class Graph(AutoPrinter):
         self.prop_by_hash: Dict[int, StateProperties] = {}
         self.start_node = start_node
         self.terminal_node = terminal_node
-        self.add_state(start_node)
-        self.add_state(terminal_node)
+        if start_node is not None:
+            self.add_state(start_node)
+        if terminal_node is not None:
+            self.add_state(terminal_node)
 
     def get_state_by_id(self, state_id: int):
         """

@@ -19,3 +19,8 @@ class StateAlreadyExistsException(Exception):
 @dataclass(frozen=True)
 class StateDoesNotExistException(Exception):
     message: str = field(default="State does not exist in graph")
+
+
+@dataclass(frozen=True)
+class NonDeterminismException(Exception):
+    message: str = field(default="Tree is non-deterministic")

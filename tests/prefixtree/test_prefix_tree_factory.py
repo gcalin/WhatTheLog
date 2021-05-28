@@ -89,7 +89,7 @@ def test_remove_trivial_loops_several():
         PROJECT_ROOT.joinpath("resources/config.json"),
         True)
 
-    assert tree.size() == 41  # 35 + root + terminal * 5
+    assert tree.size() == 37  # 35 + root + terminal
 
 
 

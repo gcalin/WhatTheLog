@@ -1,7 +1,6 @@
 import os
 
 
-from scripts.match_trace import match_trace
 from whatthelog.prefixtree.graph import Graph
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 
@@ -42,7 +41,7 @@ class Evaluator:
         """
         specificity = self.calc_specificity(debug=debug)
         recall = self.calc_recall(debug=debug)
-
+        print(f"recall: {recall}, , specificity: {specificity}")
         return (specificity + recall) / 2
 
     def evaluate_size(self) -> float:
@@ -67,9 +66,10 @@ class Evaluator:
 
         # Get the the accuracy
         accuracy: float = self.evaluate_accuracy()
-
+        print(f"acc: {accuracy}")
         # Get the size
         size: float = self.evaluate_size()
+        print(f"size: {size}")
 
         # Compute the final result using weights
         return w_accuracy * accuracy + w_size * size
@@ -100,7 +100,7 @@ class Evaluator:
                     print(f"Opening file {filename} to evaluate specificity...")
 
                 # If the state model accepts the trace
-                if match_trace(self.model, f.readlines(), self.syntax_tree):
+                if self.model.match_trace(f.readlines(), self.syntax_tree):
 
                     # Increase the false positives by one, should have been rejected
                     fp += 1
@@ -151,7 +151,7 @@ class Evaluator:
                     print(f"Opening file {filename} to evaluate recall...")
 
                 # If the state model accepts the trace
-                if match_trace(self.model, f.readlines(), self.syntax_tree):
+                if self.model.match_trace(f.readlines(), self.syntax_tree):
 
                     # Increase the true positives by one, correctly accepted
                     tp += 1

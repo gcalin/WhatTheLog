@@ -183,7 +183,7 @@ class SparseMatrix:
                         self.list[index] = keys[0] + self.separator + str(new_child) + self.separator + keys[2]
                 result.append(int(keys[0]))
 
-        for i in to_delete:
+        for i in reversed(to_delete):
             del self.list[i]
 
         return result

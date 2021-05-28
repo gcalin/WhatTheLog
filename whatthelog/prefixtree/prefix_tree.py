@@ -28,21 +28,28 @@ class PrefixTree(Graph):
     Prefix tree implemented using an adjacency map-based graph.
     """
 
-    __slots__ = ['__root']
-
     def __init__(self, root: State, terminal: State = None):
-        super().__init__(root)
-        self.__root = root
-        self.__terminal = terminal
-        self.add_state(root)
-        self.add_state(terminal)
+        super().__init__(root, terminal)
+
+    def __getstate__(self):
+        return {slot: getattr(self, slot) for slot in self.__slots__}
+
+    def __setstate__(self, state):
+
+        for slot in state:
+            setattr(self, slot, state[slot])
+
+        # --- Rebuild state indices table ---
+        self.state_indices_by_id = {}
+        for index, state in self.states.items():
+            self.state_indices_by_id[id(state)] = index
 
     def get_terminal(self):
         """
         Terminal getter
         :return: terminal state
         """
-        return self.__terminal
+        return self.terminal_node
 
     def get_root(self) -> State:
         """
@@ -50,7 +57,7 @@ class PrefixTree(Graph):
 
         :return: the root of the tree
         """
-        return self.__root
+        return self.start_node
 
     def get_children(self, state: State) -> List[State]:
         """
@@ -128,10 +135,10 @@ class PrefixTree(Graph):
         :param other: the tree to be merged into this one.
         """
 
-        if not self.__root.is_equivalent(other.get_root()):
+        if not self.get_root().is_equivalent(other.get_root()):
             raise InvalidTreeException("Merge failed: source tree does not have same root as destination tree!")
 
-        stack = [(self.__root, other.get_root())]
+        stack = [(self.get_root(), other.get_root())]
         while True:
 
             this_state, that_state = stack.pop()

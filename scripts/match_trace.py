@@ -2,6 +2,7 @@ import random
 import os
 from typing import List, Union
 
+from whatthelog.exceptions import NonDeterminismException
 from whatthelog.prefixtree.graph import Graph
 from whatthelog.prefixtree.prefix_tree import State
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
@@ -51,7 +52,10 @@ def match_trace(
         return None
 
     # Randomly pick first suitable state
-    current_state: State = random.choice(root_children)
+    if len(root_children) > 1:
+        raise NonDeterminismException()
+
+    current_state: State = root_children[0]
 
     # Check if the template matches the root of the state tree
     if template_matches_state(template.name, current_state):
