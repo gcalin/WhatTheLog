@@ -124,6 +124,7 @@ class Graph(AutoPrinter):
 
             # If a change occurred, update the list of parents
             if changed:
+                current, changed = self.merge_equivalent_children(current)
                 parents = self.get_incoming_states(current)
 
     def add_state(self, state: State) -> None:
@@ -178,12 +179,15 @@ class Graph(AutoPrinter):
         children = self.get_outgoing_states(current)
 
         # Get the log templates
-        children_templates: List[List[str]] = list(map(lambda x: x.properties.log_templates, children))
+        children_templates: List[List[str]] = list(
+            map(lambda x: x.properties.log_templates, children))
 
         # Get a list of duplicate states
         # Two states are duplicates if they have any template in common
         duplicates = [i for i, x in enumerate(children_templates)
                       if i != self.__equivalence_index(children_templates, x)]
+
+        has_nondeterminism = len(duplicates) > 0
 
         # While there are still duplicates left
         while len(duplicates) > 0:
@@ -193,7 +197,8 @@ class Graph(AutoPrinter):
 
                 for c in children:
                     # If a child has a common template with the duplicate, merge them
-                    if c.is_equivalent_weak(children[dup]) and c is not children[dup]:
+                    if c.is_equivalent_weak(children[dup]) and c is not \
+                            children[dup]:
                         if children[dup] is current:
                             current = c
                         self.merge_states(c, children[dup])
@@ -203,11 +208,19 @@ class Graph(AutoPrinter):
             # Update the children and duplicates list
             children = self.get_outgoing_states(current)
             if children:
-                children_templates = list(map(lambda x: x.properties.log_templates, children))
+                children_templates = list(
+                    map(lambda x: x.properties.log_templates, children))
                 duplicates = [i for i, x in enumerate(children_templates)
-                              if i != self.__equivalence_index(children_templates, x)]
+                              if
+                              i != self.__equivalence_index(children_templates,
+                                                            x)]
             else:
                 duplicates = []
+
+        if has_nondeterminism:
+            children = self.get_outgoing_states_not_self(current)
+            for child in children:
+                self.merge_equivalent_children(child)
 
         return current, merged
 
