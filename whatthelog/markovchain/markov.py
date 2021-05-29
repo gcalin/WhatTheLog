@@ -20,8 +20,6 @@ from whatthelog.prefixtree.state import State
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 
-random.seed(os.environ['random_seed'] if 'random_seed' in os.environ else 5)
-
 
 class MarkovChain:
     """
@@ -39,7 +37,7 @@ class MarkovChain:
         self.true_test_dir = true_test_dir
 
         self.eval_file = eval_file
-        if eval_file:
+        if eval_file and not os.path.exists(eval_file):
             with open(eval_file, 'w+') as open_file:
                 open_file.write('')
 
@@ -311,21 +309,23 @@ class MarkovChain:
             for a in range(len(candidate)):
                 candidate[a] -= 1
 
-    def evaluate_candidate(self, candidate: List[int]) -> float:
+    def evaluate_candidate(self, candidate: List[int]) -> Tuple[float, Tuple[float, float, float]]:
         """
         Evaluates the score of a candidate. This score is based on conciseness and accuracy.
         :param candidate: The candidate which should be evaluated
         """
-        if self.weight_size * len(candidate) / self.maxLength + self.weight_accuracy < self.weight_size:
+        if self.weight_size * len(candidate) / self.maxLength + self.weight_accuracy <= self.weight_size:
             # Optimal accuracy for this candidate vs the worst accuracy for the candidate with most compression
-            return 0
+            return 0, (0, 0, 0)
         else:
             matrix = deepcopy(self.transitionMatrix)
             states = deepcopy(self.states)
             current_length = len(candidate)
             self.process_candidate_list(candidate, matrix, states)
+            score = self.calculate_accuracy(matrix, states)
+            specificity, recall, _ = score
             return self.weight_size * current_length / self.maxLength + self.weight_accuracy * \
-                np.mean(self.calculate_accuracy(matrix, states))
+                np.mean([specificity, recall]), score
 
     def calculate_accuracy(self, matrix: List[List[float]] = None, states: Dict[str, int] = None) \
             -> Tuple[float, float, float]:
@@ -401,9 +401,6 @@ class MarkovChain:
         """
         assert minimum_size > 0, 'Can not have a size of 0'
 
-        # Training the markov chain using multiprocessing
-        self.train()
-
         previous_matrix = deepcopy(self.transitionMatrix)
         current_accuracy = 1
 
@@ -446,9 +443,10 @@ class MarkovChain:
                     self.maxLength = len(c)
 
             max_index = 0
+            results = []
             # We only want to evaluate the candidates if there are more than 1
             if len(candidates) > 1:
-                a_pool = multiprocessing.Pool(processes=12)
+                a_pool = multiprocessing.Pool()
                 # Evaluate all the candidates using multiprocessing
                 results = a_pool.map(self.evaluate_candidate, candidates)
                 a_pool.close()
@@ -456,11 +454,14 @@ class MarkovChain:
 
                 # Pick the best candidate
                 for r in range(len(candidates)):
-                    if results[r] > results[max_index]:
+                    if results[r][0] > results[max_index][0]:
                         max_index = r
 
             self.process_candidate_list(candidates[max_index])
-            score = self.calculate_accuracy()
+            if results:
+                score = results[max_index][1]
+            else:
+                score = self.calculate_accuracy()
             current_accuracy = np.mean(score)
             if self.eval_file:
                 with open(self.eval_file, 'a') as file:
@@ -502,14 +503,14 @@ class MarkovChain:
 
 
 if __name__ == '__main__':
+    random.seed(7)
     for j in range(10):
         print('current progress:', j + 1, '/ 10')
 
-        chain = MarkovChain('resources/traces' + str(j + 1) + '/', weight_size=0.5, weight_accuracy=0.5,
-                            eval_file='out/eval/evaluation5')
+        chain = MarkovChain('resources/traces' + str(j + 1) + '/', eval_file='out/eval/evaluation8')
         chain.select_true_traces(100)
         chain.generate_false_traces_from_prefix_tree(100)
         chain.train()
-        chain.compress(1, 0)
+        chain.compress(1, -1)
 
     # Note that k-cross validation should be used when evaluating for a single size

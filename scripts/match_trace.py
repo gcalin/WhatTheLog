@@ -6,7 +6,7 @@ from whatthelog.prefixtree.graph import Graph
 from whatthelog.prefixtree.prefix_tree import State
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 
-random.seed(os.environ['random_seed'] if 'random_seed' in os.environ else 5)
+# random.seed(os.environ['random_seed'] if 'random_seed' in os.environ else 5)
 
 
 def template_matches_state(template: str, state: State) -> bool:
