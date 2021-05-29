@@ -96,8 +96,8 @@ class Visualizer(AutoPrinter):
             if log_template not in self.label_mapping:
                 self.label_mapping[log_template] = log_template
 
-            label += str(self.label_mapping[log_template])
-
+            label += str(self.label_mapping[log_template]) + ", "
+        label = label[:-2]
         if len(log_templates) > 1:
             label += "]"
 

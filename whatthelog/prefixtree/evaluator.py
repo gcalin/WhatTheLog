@@ -41,7 +41,6 @@ class Evaluator:
         """
         specificity = self.calc_specificity(debug=debug)
         recall = self.calc_recall(debug=debug)
-        print(f"recall: {recall}, , specificity: {specificity}")
         return (specificity + recall) / 2
 
     def evaluate_size(self) -> float:
@@ -66,10 +65,8 @@ class Evaluator:
 
         # Get the the accuracy
         accuracy: float = self.evaluate_accuracy()
-        print(f"acc: {accuracy}")
         # Get the size
         size: float = self.evaluate_size()
-        print(f"size: {size}")
 
         # Compute the final result using weights
         return w_accuracy * accuracy + w_size * size

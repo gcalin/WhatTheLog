@@ -1,11 +1,11 @@
 from copy import deepcopy
-from typing import List, Tuple
+from typing import List
+
+import pytest
 
 from whatthelog.exceptions import StateDoesNotExistException
 from whatthelog.prefixtree.edge_properties import EdgeProperties
 from whatthelog.prefixtree.graph import Graph
-import pytest
-
 from whatthelog.prefixtree.state import State
 
 
@@ -35,7 +35,8 @@ def graph():
 @pytest.fixture
 def fully_connected_graph():
     # A fully connected 4 state graph.
-    states: List[State] = [State(["0"]), State(["1"]), State(["2"]), State(["3"])]
+    states: List[State] = [State(["0"]), State(["1"]), State(["2"]),
+                           State(["3"])]
 
     graph: Graph = Graph()
 
@@ -206,7 +207,8 @@ def test_complex_merge_1(fully_connected_graph: Graph):
 
     for state in fully_connected_graph.states.values():
         for other_state in fully_connected_graph.states.values():
-            assert state in fully_connected_graph.get_outgoing_states(other_state)
+            assert state in fully_connected_graph.get_outgoing_states(
+                other_state)
 
 
 def test_complex_merge_2(graph_2: Graph):
@@ -214,7 +216,7 @@ def test_complex_merge_2(graph_2: Graph):
                               graph_2.states[1])
 
     new_node = graph_2.states[2]
-    
+
     assert len(graph_2) == 3
     assert new_node.properties.log_templates == ["0", "1"]
 
@@ -265,6 +267,23 @@ def test_complex_merge_5(graph_2: Graph):
     assert set(new_node.properties.log_templates) == {"0", "1", "2"}
 
 
+def test_merge_equivalent_children():
+    state0 = State(["0"])
+    state1 = State(["1", "0"])
+    state2 = State(["2", "1"])
+    graph: Graph = Graph(state0)
+
+    graph.add_state(state1)
+    graph.add_state(state2)
+    graph.add_edge(state0, state1)
+
+    graph.add_edge(state0, state2)
+    graph.merge_equivalent_children(state0)
+
+    assert len(graph) == 2
+    assert "2" in state1.get_properties().log_templates
+
+
 def test_merge_equivalent_children_self():
     state0 = State(["0"])
     state1 = State(["1", "0"])
@@ -280,3 +299,49 @@ def test_merge_equivalent_children_self():
     graph.merge_equivalent_children(state0)
 
     assert len(graph) == 1
+    assert "1" in state0.get_properties().log_templates
+
+
+def test_merge_with_all_children():
+    start = State([""])
+    graph = Graph(start_node=start)
+
+    child1 = State(["child1"])
+    child2 = State(["child2"])
+    graph.add_state(child1)
+    graph.add_state(child2)
+    graph.add_edge(start, child1, EdgeProperties())
+    graph.add_edge(start, child2, EdgeProperties())
+
+    assert graph.size() == 3
+    graph.full_merge_states_all_children(start)
+    print(graph.edges)
+    assert graph.size() == 1
+
+
+def test_merge_child_into_parent():
+    root = State(["0"])
+    graph = Graph(root)
+    start = State(["start"])
+    child1 = State(["1"])
+    child2 = State(["2"])
+
+    graph.add_state(start)
+    graph.add_state(child1)
+    graph.add_state(child2)
+
+    graph.add_edge(child2, child2)
+    graph.add_edge(root, start)
+    graph.add_edge(start, start)
+    graph.add_edge(start, child1)
+    graph.add_edge(start, child2)
+
+    graph.full_merge_states(child2, start)
+
+    assert graph.size() == 3
+    root_children = graph.get_outgoing_states(root)
+    assert len(root_children) == 1 and root_children[0] == child2
+    child2_children = graph.get_outgoing_states(child2)
+    assert len(
+        child2_children) == 2 and child1 in child2_children and child2 in child2_children
+    assert start not in graph

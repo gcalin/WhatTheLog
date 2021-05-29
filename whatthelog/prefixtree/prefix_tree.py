@@ -31,19 +31,6 @@ class PrefixTree(Graph):
     def __init__(self, root: State, terminal: State = None):
         super().__init__(root, terminal)
 
-    def __getstate__(self):
-        return {slot: getattr(self, slot) for slot in self.__slots__}
-
-    def __setstate__(self, state):
-
-        for slot in state:
-            setattr(self, slot, state[slot])
-
-        # --- Rebuild state indices table ---
-        self.state_indices_by_id = {}
-        for index, state in self.states.items():
-            self.state_indices_by_id[id(state)] = index
-
     def get_terminal(self):
         """
         Terminal getter

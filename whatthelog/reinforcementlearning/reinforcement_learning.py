@@ -1,21 +1,20 @@
 import random
 import time
+
+import pandas as pd
 import numpy as np
 from numpy.compat import long
+import matplotlib.pyplot as plt
 
-from scripts.match_trace import match_trace
 from whatthelog.definitions import PROJECT_ROOT
 from whatthelog.prefixtree.evaluator import Evaluator
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.prefixtree.prefix_tree_factory import PrefixTreeFactory
-from whatthelog.prefixtree.visualizer import Visualizer
 from whatthelog.reinforcementlearning.environment import GraphEnv
 from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 
 
 if __name__ == '__main__':
-    a = long(time.time() * 256)
-    random.seed(a)
     st = SyntaxTreeFactory().parse_file(
         PROJECT_ROOT.joinpath("resources/config.json"))
     pt: PrefixTree = PrefixTreeFactory().get_prefix_tree(
@@ -29,6 +28,8 @@ if __name__ == '__main__':
                           PROJECT_ROOT.joinpath("resources/traces"),
                           PROJECT_ROOT.joinpath(
                               "resources/negative_traces"))
+    tree = PrefixTreeFactory().unpickle_tree(
+        PROJECT_ROOT.joinpath("out/prefixtree.pickle"))
 
     env = GraphEnv(pt, st)
     q_table = np.zeros([env.observation_space.n, env.action_space.n])
@@ -37,26 +38,33 @@ if __name__ == '__main__':
     alpha = 0.1
     gamma = 0.6
     epsilon = 0.1
-    epochs = 1
-    epoch = 0
+    epochs = 1000
+    iteration = 0
 
-    env.seed()
+    total_rewards = []
+
+    policy = [0, 1, 1, 1, 3, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1]
+    follow_custom_policy = False
+
     for i in range(epochs):
         state = env.reset()
         total_reward = 0
-
+        iteration = 0
         done = False
 
         while not done:
-            actions = env.get_valid_actions()
-
-            if random.random() < epsilon:
-                index = random.randint(0, len(actions) - 1)
-                action = actions[index]
+            if follow_custom_policy:
+                action = policy[iteration]
             else:
-                random.shuffle(actions)
-                action = max(list(enumerate(q_table[state, actions])),
-                             key=lambda x: x[1])[0]
+                actions = env.get_valid_actions()
+
+                if random.random() < epsilon:
+                    index = random.randint(0, len(actions) - 1)
+                    action = actions[index]
+                else:
+                    random.shuffle(actions)
+                    action = max(list(enumerate(q_table[state, actions])),
+                                 key=lambda x: x[1])[0]
 
             next_state, reward, done, info = env.step(action)
             total_reward += reward
@@ -66,10 +74,19 @@ if __name__ == '__main__':
             q_table[state][action] = (1 - alpha) * old_value + alpha * (
                     reward + gamma * max_q)
             state = next_state
-            epoch += 1
+            iteration += 1
 
-        print(f"Epoch {i} completed with reward: {total_reward}!")
-        print("q table: \n", q_table)
-        Visualizer(env.graph).visualize(f"{i} epoch.png")
+        total_rewards.append(total_reward)
+        print(f"Epoch {i} completed with total reward: {total_reward}.")
 
-    print("Timesteps taken: {}".format(epochs))
+    plt.rc('axes', labelsize=15)
+    plt.plot(list(range(epochs)), total_rewards)
+    plt.ylabel("Total reward", labelpad=15)
+    plt.xlabel("Epoch", labelpad=15)
+    plt.legend()
+    plt.tight_layout()
+
+    plt.savefig(PROJECT_ROOT.joinpath("out/plots/small tree 1000 epochs rewards.png"))
+    plt.show()
+
+    pd.DataFrame(q_table).to_csv(PROJECT_ROOT.joinpath("out/q_table.csv"))

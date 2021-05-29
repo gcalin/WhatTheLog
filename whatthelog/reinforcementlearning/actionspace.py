@@ -28,7 +28,7 @@ class ActionSpace(Space):
         elif outgoing_edges == 2:
             return self.actions[:4]
         else:
-            return self.actions[:2]
+            return [Actions.DONT_MERGE.value]
 
 
 class Actions(Enum):
