@@ -42,7 +42,7 @@ from whatthelog.utils import get_peak_mem, bytes_tostring
 # Global Variables
 # ****************************************************************************************************
 
-pool_size_default = 8
+pool_size_default = 4
 config_default = os.path.join(pathlib.Path(__file__).parent.absolute(), "../resources/config.json")
 random.seed(os.environ['random_seed'] if 'random_seed' in os.environ else 5)
 

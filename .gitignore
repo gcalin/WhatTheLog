@@ -72,6 +72,9 @@ MANIFEST
 # Resources
 resources/traces*
 resources/prefixtree.png
+resources/Results.xlsx
+resources/prefix_tree.pickle
+resources/data/
 
 # Temporary Files
 temp/
