@@ -264,3 +264,19 @@ def test_complex_merge_5(graph_2: Graph):
     new_node = list(graph_2.states.values())[0]
     assert len(graph_2) == 1
     assert set(new_node.properties.log_templates) == {"0", "1", "2"}
+
+def test_merge_equivalent_children_self():
+    state0 = State(["0"])
+    state1 = State(["1", "0"])
+
+    graph: Graph = Graph()
+
+    graph.add_state(state0)
+    graph.add_state(state1)
+
+    graph.add_edge(state0, state1)
+    graph.add_edge(state0, state0)
+
+    graph.merge_equivalent_children(state0)
+
+    assert len(graph) == 1

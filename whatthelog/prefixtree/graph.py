@@ -5,6 +5,7 @@
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # External
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+import os
 import random
 from typing import List, Union, Dict, Tuple
 
@@ -23,6 +24,8 @@ from whatthelog.prefixtree.edge_properties import EdgeProperties
 # Graph
 # ****************************************************************************************************
 from whatthelog.prefixtree.state_properties import StateProperties
+
+random.seed(os.environ['random_seed'] if 'random_seed' in os.environ else 5)
 
 
 class Graph(AutoPrinter):
@@ -111,7 +114,7 @@ class Graph(AutoPrinter):
         # Remove non-determinism in the merged state's children by merging them.
         current, changed = self.merge_equivalent_children(s1)
 
-        # Get the current state's children
+        # Get the current state's parent
         parents = self.get_incoming_states(current)
 
         # For each parent
@@ -121,6 +124,7 @@ class Graph(AutoPrinter):
 
             # If a change occurred, update the list of parents
             if changed:
+                current, changed = self.merge_equivalent_children(current)
                 parents = self.get_incoming_states(current)
 
     def add_state(self, state: State) -> None:
@@ -175,12 +179,15 @@ class Graph(AutoPrinter):
         children = self.get_outgoing_states(current)
 
         # Get the log templates
-        children_templates: List[List[str]] = list(map(lambda x: x.properties.log_templates, children))
+        children_templates: List[List[str]] = list(
+            map(lambda x: x.properties.log_templates, children))
 
         # Get a list of duplicate states
         # Two states are duplicates if they have any template in common
         duplicates = [i for i, x in enumerate(children_templates)
                       if i != self.__equivalence_index(children_templates, x)]
+
+        has_nondeterminism = len(duplicates) > 0
 
         # While there are still duplicates left
         while len(duplicates) > 0:
@@ -190,7 +197,8 @@ class Graph(AutoPrinter):
 
                 for c in children:
                     # If a child has a common template with the duplicate, merge them
-                    if c.is_equivalent_weak(children[dup]) and c is not children[dup]:
+                    if c.is_equivalent_weak(children[dup]) and c is not \
+                            children[dup]:
                         if children[dup] is current:
                             current = c
                         self.merge_states(c, children[dup])
@@ -200,11 +208,19 @@ class Graph(AutoPrinter):
             # Update the children and duplicates list
             children = self.get_outgoing_states(current)
             if children:
-                children_templates = list(map(lambda x: x.properties.log_templates, children))
+                children_templates = list(
+                    map(lambda x: x.properties.log_templates, children))
                 duplicates = [i for i, x in enumerate(children_templates)
-                              if i != self.__equivalence_index(children_templates, x)]
+                              if
+                              i != self.__equivalence_index(children_templates,
+                                                            x)]
             else:
                 duplicates = []
+
+        if has_nondeterminism:
+            children = self.get_outgoing_states_not_self(current)
+            for child in children:
+                self.merge_equivalent_children(child)
 
         return current, merged
 
