@@ -14,6 +14,9 @@ class Selection(abc.ABC):
     def select(self, *args, **kwargs) -> Tuple[State, State]:
         pass
 
+    def update(self, model: Graph):
+        self.model = model
+
 
 class RandomSelection(Selection):
     def __init__(self, model: Graph):

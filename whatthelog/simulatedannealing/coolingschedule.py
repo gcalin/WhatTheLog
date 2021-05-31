@@ -11,11 +11,11 @@ class CoolingSchedule(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def chain_length(self, *args, **kwargs) -> float:
+    def chain_length(self, *args, **kwargs) -> int:
         pass
 
     @abc.abstractmethod
-    def update_temperature(self, *args, **kwargs):
+    def update_temperature(self, *args, **kwargs) -> float:
         pass
 
 
@@ -35,6 +35,7 @@ class SimpleSchedule(CoolingSchedule):
 
     def update_temperature(self, *args, **kwargs):
         self.temperature *= self.a
+        return self.temperature
 
 
 class BonomiLuttonSchedule(SimpleSchedule):
@@ -56,8 +57,9 @@ class LundySchedule(CoolingSchedule):
     def chain_length(self) -> int:
         return 6
 
-    def update_temperature(self, deviation: float):
+    def update_temperature(self, deviation: float) -> float:
         self.temperature /= (1 + self.alpha * self.temperature)
+        return self.temperature
 
 
 class AartsSchedule(CoolingSchedule):
@@ -70,6 +72,7 @@ class AartsSchedule(CoolingSchedule):
         self.acceptance_ratio = acceptance_ratio
         self.neighborhood_size = neighborhood_size
         self.delta = delta
+        self.temperature = self.avg_increase / log(e, 1 / self.acceptance_ratio)
 
     def initial_temperature(self) -> float:
         return self.avg_increase / log(e, 1 / self.acceptance_ratio)
@@ -77,5 +80,6 @@ class AartsSchedule(CoolingSchedule):
     def chain_length(self) -> int:
         return self.neighborhood_size
 
-    def update_temperature(self, deviation: float):
+    def update_temperature(self, deviation: float) -> float:
         self.temperature = self.temperature / ((1 + self.temperature * log(e, self.delta + 1)) / (3 * deviation))
+        return self.temperature
