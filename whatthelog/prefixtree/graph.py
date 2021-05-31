@@ -6,9 +6,10 @@
 # External
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+from __future__ import annotations
+from copy import deepcopy
 import random
-import os
-from typing import List, Union, Dict
+from typing import List, Union, Dict, Tuple
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Internal
@@ -21,8 +22,6 @@ from whatthelog.exceptions import StateAlreadyExistsException, StateDoesNotExist
 from whatthelog.prefixtree.sparse_matrix import SparseMatrix
 from whatthelog.prefixtree.edge_properties import EdgeProperties
 from whatthelog.prefixtree.state_properties import StateProperties
-
-random.seed(os.environ['random_seed'] if 'random_seed' in os.environ else 5)
 
 
 # ****************************************************************************************************
@@ -44,12 +43,13 @@ class Graph(AutoPrinter):
 
     __slots__ = ['syntax_tree', 'edges', 'states', 'state_indices_by_id', 'prop_by_hash', 'start_node']
 
-    def __init__(self, syntax_tree: SyntaxTree, start_node: State = None):
+    def __init__(self, syntax_tree: SyntaxTree, start_node: State):
 
+        assert start_node is not None, "Start node is None!"
         self.syntax_tree = syntax_tree
         self.edges = SparseMatrix()
-        self.states: Dict[int, State] = {}
-        self.state_indices_by_id: Dict[int, int] = {}
+        self.states: Dict[int, State] = { 0: start_node }
+        self.state_indices_by_id: Dict[int, int] = { id(start_node): 0 }
         self.prop_by_hash: Dict[int, StateProperties] = {}
         self.start_node = start_node
 
@@ -76,7 +76,7 @@ class Graph(AutoPrinter):
         else:
             return []
 
-    def merge_states(self, state1: State, state2: State) -> None:
+    def __merge_states(self, state1: State, state2: State) -> None:
         """
         This method merges two states and passes the properties from one state to the other.
         :param state1: The new 'merged' state
@@ -110,6 +110,36 @@ class Graph(AutoPrinter):
         del self.states[self.state_indices_by_id[id(state2)]]
         del self.state_indices_by_id[id(state2)]
         del state2
+
+    def merge_states(self, s1: State, s2: State):
+        """
+        Fully merges two states and removes non-determinism.
+        :param s1: One of the two states to merge.
+        :param s2: One of the two states to merge.
+        """
+
+        if s2 is None or s1 is None:
+            return
+
+        assert s1 in self and s2 in self, "State not in graph!"
+
+        # Trivially merge the states
+        self.__merge_states(s1, s2)
+
+        # # Remove non-determinism in the merged state's children by merging them.
+        # current, changed = self.merge_equivalent_children(s1)
+        #
+        # # Get the current state's parent
+        # parents = self.get_incoming_states(current)
+        #
+        # # For each parent
+        # while len(parents) > 0:
+        #     # Remove non-determinism in the parent
+        #     current, changed = self.merge_equivalent_children(parents.pop())
+        #
+        #     # If a change occurred, update the list of parents
+        #     if changed:
+        #         parents = self.get_incoming_states(current)
 
     def add_state(self, state: State) -> None:
         """
@@ -153,6 +183,51 @@ class Graph(AutoPrinter):
             return True
         return False
 
+    def merge_equivalent_children(self, current: State) -> Tuple[State, bool]:
+        """
+        Merge all equivalent children, such that the resulting automaton remains deterministic while merging.
+        :param current: The state of which we want to merge the children
+        """
+
+        merged: bool = False
+
+        # Get all the children of the current node except possibly itself
+        children = self.get_outgoing_states(current)
+
+        # Get the log templates
+        children_templates: List[List[str]] = list(map(lambda x: x.properties.log_templates, children))
+
+        # Get a list of duplicate states
+        # Two states are duplicates if they have any template in common
+        duplicates = [i for i, x in enumerate(children_templates)
+                      if i != self.__equivalence_index(children_templates, x)]
+
+        # While there are still duplicates left
+        while len(duplicates) > 0:
+
+            # For each duplicate
+            for dup in duplicates:
+
+                for c in children:
+                    # If a child has a common template with the duplicate, merge them
+                    if c.is_equivalent_weak(children[dup]) and c is not children[dup]:
+                        if children[dup] is current:
+                            current = c
+                        self.__merge_states(c, children[dup])
+                        merged = True
+                        break
+
+            # Update the children and duplicates list
+            children = self.get_outgoing_states(current)
+            if children:
+                children_templates = list(map(lambda x: x.properties.log_templates, children))
+                duplicates = [i for i, x in enumerate(children_templates)
+                              if i != self.__equivalence_index(children_templates, x)]
+            else:
+                duplicates = []
+
+        return current, merged
+
     def size(self):
         """
         Method to get the size of the graph.
@@ -183,9 +258,10 @@ class Graph(AutoPrinter):
         :return: List of outgoing edges from state.
         If state does not exist return None.
         """
+
         if state in self:
             results = self.edges.find_children(self.state_indices_by_id[id(state)])
-            return [self.states[result[0]] for result in results] if results is not None else []
+            return [self.states[result[0]] for result in results] if results else []
         else:
             return None
 
@@ -247,59 +323,70 @@ class Graph(AutoPrinter):
 
         # Get the root's children
         root_children = list(
-            filter(lambda s: template_matches_state(template.name, s),
-                   self.get_outgoing_states(self.start_node)))
+        filter(lambda s: template_matches_state(template.name, s),
+               self.get_outgoing_states(self.start_node)))
+
+        # assert len(root_children) < 2, "Tree is non-deterministic!"
 
         # If no suitable option, return
         if len(root_children) == 0:
             return None
 
-        # Randomly pick first suitable state
-        current_state: State = random.choice(root_children)
+        # current_state = root_children[0]
 
         # Check if the template matches the root of the state tree
-        if template_matches_state(template.name, current_state):
+        for current_state in root_children:
+            if template_matches_state(template.name, current_state):
 
-            # If the trace is exactly one line long, return the root state if it is terminal
-            if len(trace) == 1:
-                return [current_state] \
-                    if [s for s in self.get_outgoing_states(current_state) if s.is_terminal] \
-                    else None
+                # If the trace is exactly one line long, return the root state if it is terminal
+                if len(trace) == 1:
+                    if [s for s in self.get_outgoing_states(current_state) if s.is_terminal]:
+                        return [current_state]
+                    else:
+                        continue
+                    # return [current_state] \
+                    #     if [s for s in self.get_outgoing_states(current_state) if s.is_terminal] \
+                    #     else None
 
-            # Remove the checked line from trace
-            trace[:] = trace[1:]
+                # Remove the checked line from trace
+                trace[:] = trace[1:]
 
-            # Find the state for the second line
-            template = self.syntax_tree.search(trace[0])
+                # Find the state for the second line
+                template = self.syntax_tree.search(trace[0])
 
-            # If no state is found, raise an exception
-            if template is None:
-                return None
+                # If no state is found, raise an exception
+                if template is None:
+                    continue
 
-            # Check if any of the children of current node contain the template in their state
-            children: List[State] = self.get_outgoing_states(current_state)
-            successor: List[State] = list(filter(
-                lambda next_state: template_matches_state(template.name, next_state),
-                children))
+                # Check if any of the children of current node contain the template in their state
+                children: List[State] = self.get_outgoing_states(current_state)
+                successors: List[State] = list(filter(
+                    lambda next_state: template_matches_state(template.name, next_state),
+                    children))
 
-            if len(successor) == 0:
-                # If none found, the trace cannot be matched
-                return None
-            else:
-                # Pick a random suitable next node
-                # TODO: Should this be removed through an invariant in the prefix tree?
-                next_node: State = random.choice(successor)
+                # assert len(successors) < 2, "Tree is non-deterministic!"
 
-                # Continue the search recursively
-                tail: List[State] = self.match_trace_rec(next_node, trace[1:])
+                if len(successors) == 0:
+                    # If none found, the trace cannot be matched
+                    continue
 
-                if tail is None:
-                    # If the search failed, return none
-                    return None
-                else:
-                    # If it was successful, prepend the current state
-                    tail.insert(0, current_state)
-                    return tail
+                # # Pick a random suitable next node
+                # next_node: State = successors[0]
+
+                for next_node in successors:
+
+                    # Continue the search recursively
+                    tail: List[State] = self.match_trace_rec(next_node, trace[1:])
+
+                    if tail is None:
+                        # If the search failed, return none
+                        continue
+                    else:
+                        # If it was successful, prepend the current state
+                        tail.insert(0, current_state)
+                        return tail
+
+        return None
 
     def match_trace_rec(self,
             current_state: State,
@@ -318,6 +405,7 @@ class Graph(AutoPrinter):
         res = [current_state]
 
         while len(trace) != 0:
+
             # Find the template of the first line in the syntax tree
             template = self.syntax_tree.search(trace[0])
 
@@ -327,25 +415,35 @@ class Graph(AutoPrinter):
 
             # Check if any of the children of current node contain the template in their state
             children: List[State] = self.get_outgoing_states(current_state)
-            successor: List[State] = list(
+            successors: List[State] = list(
                 filter(lambda next_state: template_matches_state(template.name, next_state), children))
 
-            if len(successor) == 0:
+            # assert len(successors) < 2, "Tree is non-deterministic!"
+
+            if len(successors) == 0:
                 # If none found, the trace cannot be matched
                 return None
-            else:
-                # Pick a random suitable next node
-                current_state = random.choice(successor)
 
-                # Append result to the list of states
-                res.append(current_state)
+            res.append(successors[0])
 
-                # Remove first trace
-                trace = trace[1:]
+            # Remove first trace
+            trace = trace[1:]
 
         if [state.is_terminal for state in self.get_outgoing_states(current_state) if state.is_terminal]:
             return res
         return None
+
+    def get_random_state(self) -> State:
+        """
+        Gets a random state in the graph.
+        """
+        return random.choice(list(self.states.values()))
+
+    def get_random_child(self, state: State) -> State:
+        """
+        Gets a random child of a given state.
+        """
+        return random.choice(self.get_outgoing_states_not_self(state))
 
     def __str__(self):
         return str(self.states)
@@ -355,3 +453,49 @@ class Graph(AutoPrinter):
 
     def __len__(self):
         return len(self.states)
+
+    def __getstate__(self):
+        return { slot: getattr(self, slot) for slot in self.__slots__ }
+
+    def __setstate__(self, state):
+
+        for slot in state:
+            setattr(self, slot, state[slot])
+
+        # --- Rebuild state indices table ---
+        self.state_indices_by_id = {}
+        for index, state in self.states.items():
+            self.state_indices_by_id[id(state)] = index
+
+    def __deepcopy__(self, memodict={}) -> Graph:
+
+        edges = deepcopy(self.edges)
+        states = deepcopy(self.states)
+        prop_by_hash = deepcopy(self.prop_by_hash)
+
+        start_index = self.state_indices_by_id[id(self.start_node)]
+        new_start = states[start_index]
+
+        output = Graph(deepcopy(self.syntax_tree), new_start)
+        output.edges = edges
+        output.states = states
+        output.prop_by_hash = prop_by_hash
+
+        # --- Rebuild state indices table ---
+        output.state_indices_by_id = {}
+        for index, state in output.states.items():
+            output.state_indices_by_id[id(state)] = index
+
+        return output
+
+    @staticmethod
+    def __equivalence_index(target_list: List[List[str]], target_items: List[str]) -> Union[int, None]:
+        """
+        For a given template, find the first index within a list that has a weakly equivalent template.
+        Weak equivalence implies that at least one template is common.
+        """
+        for i, l in enumerate(target_list):
+            for item in target_items:
+                if item in l:
+                    return i
+        return None

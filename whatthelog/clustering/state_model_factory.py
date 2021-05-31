@@ -22,6 +22,8 @@ import sys
 from sknetwork.utils import edgelist2adjacency
 from sknetwork.hierarchy import LouvainHierarchy, Paris
 from tqdm import tqdm
+from typing import Tuple, List
+from concurrent.futures import ProcessPoolExecutor, wait
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Internal
@@ -46,6 +48,7 @@ class StateModelFactory(AutoPrinter):
 
     default_true_traces_dir = "out/true_traces"
     default_false_traces_dir = "out/false_traces"
+    default_pool_size = 8
     algorithms = {
         'louvain': LouvainHierarchy,
         'paris': Paris
@@ -54,41 +57,14 @@ class StateModelFactory(AutoPrinter):
     def __init__(self, tree: PrefixTree, true_traces_dir: str = None, false_traces_dir: str = None):
 
         if not true_traces_dir:
-            true_traces_dir = project_root.joinpath(self.default_true_traces_dir)
+            self.true_traces_dir = project_root.joinpath(self.default_true_traces_dir)
         if not false_traces_dir:
-            false_traces_dir = project_root.joinpath(self.default_false_traces_dir)
+            self.false_traces_dir = project_root.joinpath(self.default_false_traces_dir)
 
         self.tree = tree
-        self.evaluator = Evaluator(tree, true_traces_dir, false_traces_dir)
+        self.evaluator = Evaluator(tree, self.true_traces_dir, self.false_traces_dir)
 
-    def build_from_dendrogram(self, dendrogram: np.ndarray) -> Graph:
-        """
-        Creates a state model by recursively merging the Prefix Tree nodes
-        according to the given dendrogram produced by hierarchical clustering.
-
-        :param dendrogram: the input dendrogram
-        :return: the resulting Graph instance
-        """
-
-        tree = deepcopy(self.tree)
-        length = len(tree)
-        merged_states = {}
-
-        # TODO: use evaluator to merge until threshold fitness
-        for count, merge in enumerate(tqdm(dendrogram, file=sys.stdout)):
-
-            merge = merge.tolist()
-            dest, source = int(merge[0]), int(merge[1])
-            dest_index = dest if dest < length else merged_states[dest]
-            source_index = source if source < length else merged_states[source]
-
-            tree.merge_states(tree.states[dest_index], tree.states[source_index])
-
-            merged_states[length + count] = dest_index
-
-        return tree
-
-    def run_clustering(self, algorithm: str = 'louvain') -> Graph:
+    def run_clustering(self, algorithm: str = 'louvain') -> Tuple[Graph, List[Tuple[float, float, int]]]:
         """
         Performs a clustering of the prefix tree using the given hierarchical algorithm,
         returns the resulting state model as a Graph of merged states.
@@ -106,6 +82,56 @@ class StateModelFactory(AutoPrinter):
 
         self.print("Building model...")
         return self.build_from_dendrogram(dendrogram)
+
+    def build_from_dendrogram(self, dendrogram: np.ndarray) -> Tuple[Graph, List[Tuple[float, float, int]]]:
+        """
+        Creates a state model by recursively merging the Prefix Tree nodes
+        according to the given dendrogram produced by hierarchical clustering.
+
+        :param dendrogram: the input dendrogram
+        :return: the resulting Graph instance
+        """
+
+        tree = deepcopy(self.tree)
+        length = len(tree)
+        merged_states = {}
+        futures = []
+
+        # TODO: use evaluator to merge until threshold fitness
+        with ProcessPoolExecutor(self.default_pool_size) as pool:
+            pbar = tqdm(dendrogram, file=sys.stdout)
+            for count, merge in enumerate(pbar):
+
+                merge = merge.tolist()
+                dest, source = int(merge[0]), int(merge[1])
+                dest_index = dest if dest < length else merged_states[dest]
+                source_index = source if source < length else merged_states[source]
+
+                tree.merge_states(tree.states[dest_index], tree.states[source_index])
+                merged_states[length + count] = dest_index
+
+                if count % 100 == 0:
+                    copy = deepcopy(tree)
+                    futures.append(pool.submit(self.eval_model, copy))
+
+        accuracies = []
+        for x in futures:
+            accuracies.append(x.result())
+
+        return tree, accuracies
+
+    def eval_model(self, model: Graph) -> Tuple[float, float, int]:
+        """
+        Worker function to evaluate specificity, recall and size of the given model.
+        Intended to be used in parallel subprocesses.
+        :param model: the current model to evaluate.
+        :return: a tuple of specificity, recall and size
+        """
+
+        evaluator = Evaluator(model, self.true_traces_dir, self.false_traces_dir)
+        specificity = evaluator.calc_specificity()
+        recall = evaluator.calc_recall()
+        return specificity, recall, len(model)
 
     @staticmethod
     def pickle_model(model: Graph, file: str) -> None:

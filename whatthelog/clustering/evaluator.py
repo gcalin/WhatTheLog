@@ -1,4 +1,5 @@
 import os
+from multiprocessing import Pool
 
 from whatthelog.prefixtree.graph import Graph
 
@@ -7,6 +8,8 @@ class Evaluator:
     """
     Class containing methods for evaluating state models.
     """
+
+    pool_size_default = 16
 
     def __init__(self,
                  model: Graph,
@@ -35,6 +38,7 @@ class Evaluator:
         Value is the BCR (binary classification rate) defined as `(accuracy + recall) / 2`
         :param debug: Whether or not to print debug information to the console.
         """
+
         specificity = self.calc_specificity(debug=debug)
         recall = self.calc_recall(debug=debug)
 
@@ -54,6 +58,7 @@ class Evaluator:
         :param w_accuracy: The weight of the relative accuracy evaluation in the final evaluation.
         :param w_size: The weight of the relative size evaluation in the final evaluation.
         """
+
         if w_accuracy is None:
             w_accuracy = self.weight_accuracy
 
@@ -61,7 +66,7 @@ class Evaluator:
             w_size = self.weight_size
 
         # Get the the accuracy
-        accuracy: float = self.evaluate()
+        accuracy: float = self.evaluate_accuracy()
 
         # Get the size
         size: float = self.evaluate_size()
@@ -170,3 +175,9 @@ class Evaluator:
             print(f"Final recall score: {res}")
 
         return res
+
+    @staticmethod
+    def match_trace(model: Graph, filename: str) -> bool:
+
+        with open(filename, 'r') as f:
+            return model.match_trace(f.readlines()) is not None

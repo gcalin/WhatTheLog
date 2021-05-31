@@ -1,8 +1,10 @@
 import bisect
 from typing import Union, Tuple, Any, List
 
+from whatthelog.auto_printer import AutoPrinter
 
-class SparseMatrix:
+
+class SparseMatrix(AutoPrinter):
     """
     As we had no efficient way to store the edges, we implemented our own approach to achieve this.
     """
@@ -119,7 +121,7 @@ class SparseMatrix:
 
             to_delete.sort(reverse=True)
             for i in to_delete:
-                del search_list[i]
+                del self.list[i]
 
             return result
         else:
@@ -187,7 +189,7 @@ class SparseMatrix:
                         self.list[index] = keys[0] + self.separator + str(new_child) + self.separator + keys[2]
                 result.append(int(keys[0]))
 
-        for i in to_delete:
+        for i in reversed(to_delete):
             del self.list[i]
 
         return result
@@ -232,7 +234,7 @@ class SparseMatrix:
         # --- Flush edges with same origin, compute normalized weights and add to output ---
         total = sum(i for _, _, i in curr_entries)
         for current in curr_entries:
-            output.append((current[0], current[1], current[2]/total))
+            output.append((current[0], current[1], 1 - (current[2]/total)))
 
         return output
 

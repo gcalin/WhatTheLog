@@ -33,7 +33,6 @@ class PrefixTree(Graph):
 
     def __init__(self, syntax_tree: SyntaxTree, root: State):
         super().__init__(syntax_tree, root)
-        self.add_state(root)
 
     def get_root(self) -> State:
         """
@@ -155,20 +154,6 @@ class PrefixTree(Graph):
         """
 
         return self.edges.get_weights_list(remove_self_loops)
-
-    def __deepcopy__(self, memodict={}) -> PrefixTree:
-
-        output = PrefixTree(self.syntax_tree, self.start_node)
-        output.edges = deepcopy(self.edges)
-        output.states = deepcopy(self.states)
-        output.prop_by_hash = deepcopy(self.prop_by_hash)
-
-        # --- Rebuild state indices table ---
-        output.state_indices_by_id = {}
-        for index, state in output.states.items():
-            output.state_indices_by_id[id(state)] = index
-
-        return output
 
 
 #****************************************************************************************************

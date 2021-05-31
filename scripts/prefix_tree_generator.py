@@ -9,7 +9,6 @@
 from datetime import timedelta
 import os
 from pathlib import Path
-import sys
 from time import time
 import tracemalloc
 
@@ -35,10 +34,10 @@ if __name__ == '__main__':
     start_time = time()
     # tracemalloc.start()
 
-    pt = PrefixTreeFactory.get_prefix_tree(str(project_root.joinpath('resources/traces')),
-                                           str(project_root.joinpath('resources/config.json')))
+    pt = PrefixTreeFactory.get_prefix_tree(str(project_root.joinpath('resources/train_set')),
+                                           str(project_root.joinpath('resources/config.json')), True)
 
-    PrefixTreeFactory.pickle_tree(pt, project_root.joinpath('out/fullPrefixTree.p'))
+    PrefixTreeFactory.pickle_tree(pt, project_root.joinpath('out/testPrefixTree.p'))
 
     print(f"Done! Parsed full tree of size: {pt.size()}")
     print(f"Time elapsed: {timedelta(seconds=time() - start_time)}")

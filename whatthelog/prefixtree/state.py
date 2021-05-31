@@ -50,6 +50,13 @@ class State:
 
         return self.properties == other.properties
 
+    def is_equivalent_weak(self, other: State) -> bool:
+        """
+        Checks if two states have any templates in common.
+        """
+        other_templates: List[str] = other.get_properties().log_templates
+        return any(map(lambda template: template in other_templates, self.get_properties().log_templates))
+
     def get_properties(self):
         return self.properties
 

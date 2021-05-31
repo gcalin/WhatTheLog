@@ -83,11 +83,6 @@ class PrefixTreeFactory(AutoPrinter):
         with open(file, 'rb') as f:
             tree: PrefixTree = pickle.load(f)
 
-        # --- Rebuild state indices table ---
-        tree.state_indices_by_id = {}
-        for index, state in tree.states.items():
-            tree.state_indices_by_id[id(state)] = index
-
         return tree
 
     @staticmethod
