@@ -86,11 +86,14 @@ if __name__ == '__main__':
     pt = PrefixTreeFactory.unpickle_tree(project_root.joinpath('out/testPrefixTree.p'))
 
     factory = StateModelFactory(pt)
+    specificity, recall = factory.eval_model(factory.tree)
+    print(f"Initial specificity: {specificity}, initial recall: {recall}")
+
     model, data = factory.run_clustering('louvain')
 
-    print(f"Done! Final model size: {len(model)}, time elapsed: {timedelta(seconds=time() - start_time)}")
+    print(f"Done! Time elapsed: {timedelta(seconds=time() - start_time)}")
 
-    multiPlot(list(zip(*data)), ['specificity', 'recall', 'size'], len(data),
+    multiPlot(list(zip(*data)), ['specificity', 'recall'], len(data),
               'Metrics over merges', 'merge', 'metric')
 
     factory.pickle_model(model, project_root.joinpath('out/testModel.p'))

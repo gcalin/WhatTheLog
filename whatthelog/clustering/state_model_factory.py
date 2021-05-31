@@ -16,6 +16,7 @@ Email: tommaso.brandirali@gmail.com
 import os
 import pickle
 from copy import deepcopy
+from math import floor
 import numpy as np
 from pathlib import Path
 import sys
@@ -64,7 +65,7 @@ class StateModelFactory(AutoPrinter):
         self.tree = tree
         self.evaluator = Evaluator(tree, self.true_traces_dir, self.false_traces_dir)
 
-    def run_clustering(self, algorithm: str = 'louvain') -> Tuple[Graph, List[Tuple[float, float, int]]]:
+    def run_clustering(self, algorithm: str = 'louvain') -> Tuple[Graph, List[Tuple[float, float]]]:
         """
         Performs a clustering of the prefix tree using the given hierarchical algorithm,
         returns the resulting state model as a Graph of merged states.
@@ -80,10 +81,9 @@ class StateModelFactory(AutoPrinter):
         self.print(f"Running '{algorithm}' clustering algorithm...")
         dendrogram = model.fit_transform(adjacency)
 
-        self.print("Building model...")
         return self.build_from_dendrogram(dendrogram)
 
-    def build_from_dendrogram(self, dendrogram: np.ndarray) -> Tuple[Graph, List[Tuple[float, float, int]]]:
+    def build_from_dendrogram(self, dendrogram: np.ndarray) -> Tuple[Graph, List[Tuple[float, float]]]:
         """
         Creates a state model by recursively merging the Prefix Tree nodes
         according to the given dendrogram produced by hierarchical clustering.
@@ -98,8 +98,9 @@ class StateModelFactory(AutoPrinter):
         futures = []
 
         # TODO: use evaluator to merge until threshold fitness
+        self.print("Merging states...")
         with ProcessPoolExecutor(self.default_pool_size) as pool:
-            pbar = tqdm(dendrogram, file=sys.stdout)
+            pbar = tqdm(dendrogram, file=sys.stdout, leave=False)
             for count, merge in enumerate(pbar):
 
                 merge = merge.tolist()
@@ -114,24 +115,25 @@ class StateModelFactory(AutoPrinter):
                     copy = deepcopy(tree)
                     futures.append(pool.submit(self.eval_model, copy))
 
+        self.print("Waiting for evaluation to complete...")
         accuracies = []
-        for x in futures:
+        for x in tqdm(futures, file=sys.stdout, leave=False):
             accuracies.append(x.result())
 
         return tree, accuracies
 
-    def eval_model(self, model: Graph) -> Tuple[float, float, int]:
+    def eval_model(self, model: Graph) -> Tuple[float, float]:
         """
         Worker function to evaluate specificity, recall and size of the given model.
         Intended to be used in parallel subprocesses.
         :param model: the current model to evaluate.
-        :return: a tuple of specificity, recall and size
+        :return: a tuple of specificity and recall
         """
 
         evaluator = Evaluator(model, self.true_traces_dir, self.false_traces_dir)
         specificity = evaluator.calc_specificity()
         recall = evaluator.calc_recall()
-        return specificity, recall, len(model)
+        return specificity, recall
 
     @staticmethod
     def pickle_model(model: Graph, file: str) -> None:

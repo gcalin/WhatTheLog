@@ -73,7 +73,8 @@ class SparseMatrix(AutoPrinter):
         """
         return self.get_values(self.list, self.find_index(coordinates))[2]
 
-    def __find_children(self, search_list: List[str], item: int, new_parent: int = -1) -> Union[
+    def __find_children(self, search_list: List[str], item: int,
+                        new_parent: int = -1) -> Union[
         List[Tuple[int, str]], None]:
         """
         Use binary search to search for all children of the given entry in an input list.
@@ -84,7 +85,8 @@ class SparseMatrix(AutoPrinter):
         """
 
         index: int = self.bisearch(search_list, str(item) + self.separator)
-        to_delete: List[int] = []
+        to_delete = []
+        to_change = []
 
         if index != len(search_list):
 
@@ -94,34 +96,39 @@ class SparseMatrix(AutoPrinter):
                 if (new_parent, current[1]) in self:
                     to_delete.append(index)
                 else:
-                    search_list[index] = str(new_parent) + self.separator + str(current[1]) + self.separator + current[2]
+                    to_change.append((index, str(new_parent) + self.separator + str(current[1]) + self.separator + current[2]))
 
             result = [(current[1], current[2])]
             idx = index - 1
-            while idx >= 0 and search_list[idx].startswith(str(item) + self.separator):
+            while idx >= 0 and search_list[idx].startswith(
+                    str(item) + self.separator):
                 current = self.get_values(search_list, idx)
                 if new_parent >= 0:
                     if (new_parent, current[1]) in self:
                         to_delete.append(idx)
                     else:
-                        search_list[idx] = str(new_parent) + self.separator + str(current[1]) + self.separator + current[
-                        2]
+                        to_change.append((idx, str(new_parent) + self.separator + str(current[1]) + self.separator + current[2]))
+
                 result.append((current[1], current[2]))
                 idx -= 1
             idx = index + 1
-            while idx < len(search_list) and search_list[idx].startswith(str(item) + self.separator):
+            while idx < len(search_list) and search_list[idx].startswith(
+                    str(item) + self.separator):
                 current = self.get_values(search_list, idx)
                 if new_parent >= 0:
                     if (new_parent, current[1]) in self:
                         to_delete.append(idx)
                     else:
-                        search_list[idx] = str(new_parent) + self.separator + str(current[1]) + self.separator + current[2]
+                        to_change.append((idx, str(new_parent) + self.separator + str(current[1]) + self.separator + current[2]))
                 result.append((current[1], current[2]))
                 idx += 1
 
+            for i, new_v in to_change:
+                search_list[i] = new_v
+
             to_delete.sort(reverse=True)
             for i in to_delete:
-                del self.list[i]
+                del search_list[i]
 
             return result
         else:
@@ -181,7 +188,7 @@ class SparseMatrix(AutoPrinter):
         for index, item in enumerate(self.list):
             keys = item.split('.', 2)
 
-            if int(keys[1]) is i:
+            if int(keys[1]) == i:
                 if new_child >= 0:
                     if (int(keys[0]), new_child) in self:
                         to_delete.append(index)

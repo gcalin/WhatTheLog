@@ -50,7 +50,7 @@ class Graph(AutoPrinter):
         self.edges = SparseMatrix()
         self.states: Dict[int, State] = { 0: start_node }
         self.state_indices_by_id: Dict[int, int] = { id(start_node): 0 }
-        self.prop_by_hash: Dict[int, StateProperties] = {}
+        self.prop_by_hash: Dict[int, StateProperties] = { hash(start_node.properties): start_node.properties }
         self.start_node = start_node
 
     def get_state_by_id(self, state_id: int):
@@ -76,12 +76,17 @@ class Graph(AutoPrinter):
         else:
             return []
 
-    def __merge_states(self, state1: State, state2: State) -> None:
+    def merge_states(self, state1: State, state2: State) -> None:
         """
         This method merges two states and passes the properties from one state to the other.
         :param state1: The new 'merged' state
         :param state2: The state that will be deleted and which properties will be passed to state 1
         """
+
+        if state1 is None or state2 is None:
+            return
+
+        assert state1 in self and state2 in self, "State not in graph!"
 
         props = state1.properties.log_templates.copy()
 
@@ -111,35 +116,31 @@ class Graph(AutoPrinter):
         del self.state_indices_by_id[id(state2)]
         del state2
 
-    def merge_states(self, s1: State, s2: State):
+    def full_merge_states(self, s1: State, s2: State):
         """
         Fully merges two states and removes non-determinism.
         :param s1: One of the two states to merge.
         :param s2: One of the two states to merge.
         """
 
-        if s2 is None or s1 is None:
-            return
-
-        assert s1 in self and s2 in self, "State not in graph!"
-
         # Trivially merge the states
-        self.__merge_states(s1, s2)
+        self.merge_states(s1, s2)
 
-        # # Remove non-determinism in the merged state's children by merging them.
-        # current, changed = self.merge_equivalent_children(s1)
-        #
-        # # Get the current state's parent
-        # parents = self.get_incoming_states(current)
-        #
-        # # For each parent
-        # while len(parents) > 0:
-        #     # Remove non-determinism in the parent
-        #     current, changed = self.merge_equivalent_children(parents.pop())
-        #
-        #     # If a change occurred, update the list of parents
-        #     if changed:
-        #         parents = self.get_incoming_states(current)
+        # Remove non-determinism in the merged state's children by merging them.
+        current, changed = self.merge_equivalent_children(s1)
+
+        # Get the current state's parent
+        parents = self.get_incoming_states(current)
+
+        # For each parent
+        while len(parents) > 0:
+            # Remove non-determinism in the parent
+            current, changed = self.merge_equivalent_children(parents.pop())
+
+            # If a change occurred, update the list of parents
+            if changed:
+                current, changed = self.merge_equivalent_children(current)
+                parents = self.get_incoming_states(current)
 
     def add_state(self, state: State) -> None:
         """
@@ -195,12 +196,15 @@ class Graph(AutoPrinter):
         children = self.get_outgoing_states(current)
 
         # Get the log templates
-        children_templates: List[List[str]] = list(map(lambda x: x.properties.log_templates, children))
+        children_templates: List[List[str]] = list(
+            map(lambda x: x.properties.log_templates, children))
 
         # Get a list of duplicate states
         # Two states are duplicates if they have any template in common
         duplicates = [i for i, x in enumerate(children_templates)
                       if i != self.__equivalence_index(children_templates, x)]
+
+        has_nondeterminism = len(duplicates) > 0
 
         # While there are still duplicates left
         while len(duplicates) > 0:
@@ -210,21 +214,30 @@ class Graph(AutoPrinter):
 
                 for c in children:
                     # If a child has a common template with the duplicate, merge them
-                    if c.is_equivalent_weak(children[dup]) and c is not children[dup]:
+                    if c.is_equivalent_weak(children[dup]) and c is not \
+                            children[dup]:
                         if children[dup] is current:
                             current = c
-                        self.__merge_states(c, children[dup])
+                        self.merge_states(c, children[dup])
                         merged = True
                         break
 
             # Update the children and duplicates list
             children = self.get_outgoing_states(current)
             if children:
-                children_templates = list(map(lambda x: x.properties.log_templates, children))
+                children_templates = list(
+                    map(lambda x: x.properties.log_templates, children))
                 duplicates = [i for i, x in enumerate(children_templates)
-                              if i != self.__equivalence_index(children_templates, x)]
+                              if
+                              i != self.__equivalence_index(children_templates,
+                                                            x)]
             else:
                 duplicates = []
+
+        if has_nondeterminism:
+            children = self.get_outgoing_states_not_self(current)
+            for child in children:
+                self.merge_equivalent_children(child)
 
         return current, merged
 
@@ -423,6 +436,9 @@ class Graph(AutoPrinter):
             if len(successors) == 0:
                 # If none found, the trace cannot be matched
                 return None
+
+            # Pick a random suitable next node
+            current_state = random.choice(successors)
 
             res.append(successors[0])
 
