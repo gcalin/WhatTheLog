@@ -25,6 +25,7 @@ import tracemalloc
 from tqdm import tqdm
 
 from scripts.match_trace import match_trace
+from whatthelog.prefixtree.graph import Graph
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 
 sys.path.insert(0, "./../")
@@ -192,7 +193,7 @@ def process_file(input_file: str, output_file: str, tree: SyntaxTree) -> None:
         f.writelines(lines)
 
 
-def produce_false_trace(input_file: str, output_file: str, syntax_tree: SyntaxTree, state_model: PrefixTree) -> None:
+def produce_false_trace(input_file: str, output_file: str, syntax_tree: SyntaxTree, state_model: Graph) -> None:
     """
     Produces a log that guarantees a false trace will be created.
     :param input_file: The file containing the trace.
