@@ -183,7 +183,7 @@ class SparseMatrix:
         for index, item in enumerate(self.list):
             keys = item.split('.', 2)
 
-            if int(keys[1]) is i:
+            if int(keys[1]) == i:
                 if new_child >= 0:
                     if (int(keys[0]), new_child) in self:
                         to_delete.append(index)
