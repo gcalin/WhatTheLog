@@ -7,15 +7,13 @@
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 from __future__ import annotations
-
-from copy import deepcopy
 from typing import List, Union, Tuple
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Internal
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-from syntaxtree.syntax_tree import SyntaxTree
+from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 from whatthelog.prefixtree.edge_properties import EdgeProperties
 from whatthelog.prefixtree.graph import Graph
 from whatthelog.prefixtree.state import State
