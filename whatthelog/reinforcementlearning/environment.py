@@ -155,7 +155,15 @@ class GraphEnv(Env):
             if state.is_equivalent(outgoing_state) is False:
                 equivalent = False
 
-        value = str(int(equivalent)) + str(len(self.outgoing))
+        first_part = int(equivalent)
+
+        number_of_outgoing = len(outgoing)
+        if number_of_outgoing > self.MAX_OUTGOING_EDGES:
+            second_part = self.MAX_OUTGOING_EDGES + 1
+        else:
+            second_part = number_of_outgoing
+
+        value = str(first_part) + str(second_part)
 
         if value not in self.state_mapping:
             print("NEW VALUE: ", value)
