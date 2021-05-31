@@ -104,7 +104,7 @@ def test_add_state_properties_pointers():
     graph = Graph(None, state1)
     graph.add_state(state2)
 
-    assert graph.size() == 2
+    assert len(graph) == 2
     assert id(state1.properties) == id(state2.properties)
     assert id(state1) != id(state2)
 
@@ -127,7 +127,7 @@ def test_add_edge_incorrect(graph: Graph):
 
 
 def test_size(graph: Graph):
-    assert graph.size() == len(graph.states)
+    assert len(graph) == len(graph.states)
 
 
 def test_get_outgoing_props():

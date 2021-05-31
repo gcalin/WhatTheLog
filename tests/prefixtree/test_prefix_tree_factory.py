@@ -24,13 +24,13 @@ def test_one_trace(tree: PrefixTree):
     with open(PROJECT_ROOT.joinpath(traces_path).joinpath("xx1"), 'r') as file:
         lines = len(file.readlines())
 
-    assert tree.size() == lines + 2
+    assert len(tree) == lines + 2
 
     root = tree.get_root()
     assert root.properties.log_templates == [""]
 
     child2 = None
-    for i in range(tree.size() - 1):
+    for i in range(len(tree) - 1):
         if i == 2:
             child2 = root
         assert len(tree.get_children(root)) == 1
@@ -79,7 +79,7 @@ def test_remove_trivial_loops_single_file():
         PROJECT_ROOT.joinpath(traces_path),
         PROJECT_ROOT.joinpath("resources/config.json"),
         True)
-    assert tree.size() == 14  # 12 + root + terminal
+    assert len(tree) == 14  # 12 + root + terminal
 
 
 def test_remove_trivial_loops_several():
@@ -89,7 +89,7 @@ def test_remove_trivial_loops_several():
         PROJECT_ROOT.joinpath("resources/config.json"),
         True)
 
-    assert tree.size() == 41  # 35 + root + terminal * 5
+    assert len(tree) == 41  # 35 + root + terminal * 5
 
 
 

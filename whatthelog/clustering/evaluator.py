@@ -1,10 +1,13 @@
 import os
-from multiprocessing import Pool
+import sys
+
+from tqdm import tqdm
 
 from whatthelog.prefixtree.graph import Graph
+from whatthelog.auto_printer import AutoPrinter
 
 
-class Evaluator:
+class Evaluator(AutoPrinter):
     """
     Class containing methods for evaluating state models.
     """
@@ -82,46 +85,18 @@ class Evaluator:
         :param debug: Whether or not to print debug information to the console.
         """
 
-        # Initialize counters
-        tn: int = 0
-        fp: int = 0
-
         # Check if directory exists
         if not os.path.isdir(self.negative_traces_dir):
             raise NotADirectoryError("Log directory not found!")
 
-        # For each file in the directory
-        for filename in os.listdir(self.negative_traces_dir):
+        if debug:
+            self.print("Calculating specificity...")
 
-            # Open the file
-            with open(os.path.join(self.negative_traces_dir, filename), 'r') as f:
-
-                if debug:
-                    print(f"Opening file {filename} to evaluate specificity...")
-
-                # If the state model accepts the trace
-                if self.model.match_trace(f.readlines()):
-
-                    # Increase the false positives by one, should have been rejected
-                    fp += 1
-
-                    if debug:
-                        print("File incorrectly accepted")
-
-                # If the state model rejects the trace
-                else:
-
-                    # Increase the true negatives by one, correctly rejected
-                    tn += 1
-
-                    if debug:
-                        print("File correctly rejected")
+        tn = self.process_traces(self.negative_traces_dir, self.model, debug)
+        fp = len(os.listdir(self.negative_traces_dir)) - tn
 
         # Calculate the final result
         res: float = tn / (tn + fp)
-
-        if debug:
-            print(f"Final specificity score: {res}")
 
         return res
 
@@ -133,48 +108,33 @@ class Evaluator:
         :param debug: Whether or not to print debug information to the console.
         """
 
-        # Initialize counters
-        tp: int = 0
-        fn: int = 0
-
         # Check if directory exists
         if not os.path.isdir(self.positive_traces_dir):
             raise NotADirectoryError("Log directory not found!")
 
-        # For each file in the directory
-        for filename in os.listdir(self.positive_traces_dir):
+        if debug:
+            self.print("Calculating recall...")
 
-            # Open the file
-            with open(os.path.join(self.positive_traces_dir, filename), 'r') as f:
-
-                if debug:
-                    print(f"Opening file {filename} to evaluate recall...")
-
-                # If the state model accepts the trace
-                if self.model.match_trace(f.readlines()):
-
-                    # Increase the true positives by one, correctly accepted
-                    tp += 1
-
-                    if debug:
-                        print("File correctly accepted")
-
-                # If the state model rejects the trace
-                else:
-
-                    # Increase the false negatives by one, should have been rejected
-                    fn += 1
-
-                    if debug:
-                        print("File incorrectly rejected")
+        tp = self.process_traces(self.positive_traces_dir, self.model, debug)
+        fn = len(os.listdir(self.positive_traces_dir)) - tp
 
         # Calculate the final result
         res: float = tp / (tp + fn)
 
-        if debug:
-            print(f"Final recall score: {res}")
-
         return res
+
+    @staticmethod
+    def process_traces(trace_dir: str, model: Graph, debug: bool = False) -> int:
+
+        count = 0
+        for filename in tqdm(os.listdir(trace_dir), file=sys.stdout, leave=False, disable=not debug):
+
+            # Open the file
+            with open(os.path.join(trace_dir, filename), 'r') as f:
+                if model.match_trace(f.readlines()):
+                    count += 1
+
+        return count
 
     @staticmethod
     def match_trace(model: Graph, filename: str) -> bool:

@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
     PrefixTreeFactory.pickle_tree(pt, project_root.joinpath('out/testPrefixTree.p'))
 
-    print(f"Done! Parsed full tree of size: {pt.size()}")
+    print(f"Done! Parsed full tree of size: {len(pt)}")
     print(f"Time elapsed: {timedelta(seconds=time() - start_time)}")
 
     # snapshot = tracemalloc.take_snapshot()

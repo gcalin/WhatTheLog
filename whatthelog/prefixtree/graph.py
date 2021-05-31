@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 from copy import deepcopy
+from itertools import chain
 import random
 from typing import List, Union, Dict, Tuple
 
@@ -18,18 +19,10 @@ from typing import List, Union, Dict, Tuple
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 from whatthelog.prefixtree.state import State
 from whatthelog.auto_printer import AutoPrinter
-from whatthelog.exceptions import StateAlreadyExistsException, StateDoesNotExistException
+from whatthelog.exceptions import StateAlreadyExistsException, StateDoesNotExistException, UnidentifiedLogException
 from whatthelog.prefixtree.sparse_matrix import SparseMatrix
 from whatthelog.prefixtree.edge_properties import EdgeProperties
 from whatthelog.prefixtree.state_properties import StateProperties
-
-
-# ****************************************************************************************************
-# Utilities
-# ****************************************************************************************************
-
-def template_matches_state(template: str, state: State) -> bool:
-    return template in state.properties.log_templates
 
 
 # ****************************************************************************************************
@@ -241,14 +234,6 @@ class Graph(AutoPrinter):
 
         return current, merged
 
-    def size(self):
-        """
-        Method to get the size of the graph.
-
-        :return: Number of states
-        """
-        return len(self.states)
-
     def get_outgoing_props(self, state: State) -> Union[List[EdgeProperties], None]:
         """
         Method to get outgoing edges of a state.
@@ -311,7 +296,7 @@ class Graph(AutoPrinter):
             return True
         return False
 
-    def match_trace(self, trace: List[str]) -> Union[List[State], None]:
+    def match_trace(self, trace: List[str], debug: bool = False) -> bool:
         """
         Checks if a given trace matches a path in the graph.
         First, the first line is checked against the start node of the graph.
@@ -319,135 +304,114 @@ class Graph(AutoPrinter):
         is traversed recursively.
 
         :param trace: The lines to be matched against the tree.
+        :param debug: if True enables printing logs
         :return: If the trace corresponds to a sequence of states in the graph,
                  those states are returned in order. If no match is found, None is returned.
         """
 
+        # If the trace is empty, then it has been fully parsed
         if len(trace) == 0:
-            # If the trace is empty, then it has been fully parsed
-            return []
+            if debug: self.print("Trace is empty")
+            return False
+
+        if debug: self.print(f"Matching trace with {len(trace)} lines...")
 
         # Check which state the current line belongs to
         template = self.syntax_tree.search(trace[0])
 
-        # If no state is found, return None
+        # If template not found, raise exception
         if template is None:
-            return None
+            if debug: self.print(f"Template not found!")
+            raise UnidentifiedLogException()
 
-        # Get the root's children
-        root_children = list(
-        filter(lambda s: template_matches_state(template.name, s),
-               self.get_outgoing_states(self.start_node)))
-
-        # assert len(root_children) < 2, "Tree is non-deterministic!"
+        # Get the root's matching children
+        candidates = [state for state in self.get_outgoing_states(self.start_node)
+                      if template.name in state.properties.log_templates]
 
         # If no suitable option, return
-        if len(root_children) == 0:
-            return None
+        if len(candidates) == 0:
+            if debug: self.print("Failed matching first line!")
+            return False
 
-        # current_state = root_children[0]
+        # If the trace was only 1 line, check children straight away
+        if len(trace) == 1:
+            matches = [[1 for state in self.get_outgoing_states(candidate) if state.is_terminal]
+                       for candidate in candidates]
+            return sum(chain(*matches)) > 0
 
-        # Check if the template matches the root of the state tree
-        for current_state in root_children:
-            if template_matches_state(template.name, current_state):
+        # Check paths from every child
+        for current_state in candidates:
+            if self.__match_trace(current_state, trace[1:], debug):
+                return True
 
-                # If the trace is exactly one line long, return the root state if it is terminal
-                if len(trace) == 1:
-                    if [s for s in self.get_outgoing_states(current_state) if s.is_terminal]:
-                        return [current_state]
-                    else:
-                        continue
-                    # return [current_state] \
-                    #     if [s for s in self.get_outgoing_states(current_state) if s.is_terminal] \
-                    #     else None
+        return False
 
-                # Remove the checked line from trace
-                trace[:] = trace[1:]
-
-                # Find the state for the second line
-                template = self.syntax_tree.search(trace[0])
-
-                # If no state is found, raise an exception
-                if template is None:
-                    continue
-
-                # Check if any of the children of current node contain the template in their state
-                children: List[State] = self.get_outgoing_states(current_state)
-                successors: List[State] = list(filter(
-                    lambda next_state: template_matches_state(template.name, next_state),
-                    children))
-
-                # assert len(successors) < 2, "Tree is non-deterministic!"
-
-                if len(successors) == 0:
-                    # If none found, the trace cannot be matched
-                    continue
-
-                # # Pick a random suitable next node
-                # next_node: State = successors[0]
-
-                for next_node in successors:
-
-                    # Continue the search recursively
-                    tail: List[State] = self.match_trace_rec(next_node, trace[1:])
-
-                    if tail is None:
-                        # If the search failed, return none
-                        continue
-                    else:
-                        # If it was successful, prepend the current state
-                        tail.insert(0, current_state)
-                        return tail
-
-        return None
-
-    def match_trace_rec(self,
-            current_state: State,
-            trace: List[str]) -> Union[List[State], None]:
+    def __match_trace(self, state: State, trace: List[str], debug: bool = False) -> bool:
         """
         Recursive helper for the match_trace function. This function recursively
         finds the next state in the graph for the first line in the trace
         if any exists.
 
-        :param current_state: The current state of the graph
+        :param state: The current state of the graph
         :param trace: The lines to be matched against the tree.
+        :param debug: if True enables printing logs
         :return: If the trace corresponds to a sequence of states in the prefix tree,
                  those states are returned in order. If no match is found, None is returned.
         """
 
-        res = [current_state]
+        if debug: self.print("Matching path from root...")
 
-        while len(trace) != 0:
+        paths = []
+        curr_state = state
+        curr_trace = trace.copy()
+
+        # TODO: check if this works for traces with multiple possible paths
+        while len(curr_trace) != 0:
+
+            if debug:
+                self.print(f"paths={paths}")
+                self.print(f"curr_state={curr_state}")
+                self.print(f"curr_trace_length={len(curr_trace)}")
 
             # Find the template of the first line in the syntax tree
-            template = self.syntax_tree.search(trace[0])
+            template = self.syntax_tree.search(curr_trace[0])
 
-            # If no state is found, raise an exception
+            # If template not found, raise exception
             if template is None:
-                return None
+                raise UnidentifiedLogException()
+
+            if debug: self.print(f"template={template.name}")
 
             # Check if any of the children of current node contain the template in their state
-            children: List[State] = self.get_outgoing_states(current_state)
+            children: List[State] = self.get_outgoing_states(curr_state)
             successors: List[State] = list(
-                filter(lambda next_state: template_matches_state(template.name, next_state), children))
-
-            # assert len(successors) < 2, "Tree is non-deterministic!"
+                filter(lambda next_state: template.name in next_state.properties.log_templates, children))
 
             if len(successors) == 0:
                 # If none found, the trace cannot be matched
-                return None
+                if debug: self.print("\tNo successors found")
+                if paths:
+                    curr_state, curr_trace = paths.pop(0)
+                    continue
+                else:
+                    break
 
-            # Pick a random suitable next node
-            current_state = random.choice(successors)
+            if debug: self.print(f"\tFound {len(successors)} successors")
 
-            res.append(successors[0])
+            curr_trace.pop(0)
+            curr_state = successors[0]
+            if curr_trace:
+                if len(successors) > 1:
+                    for state in successors[1:]:
+                        paths.append((state, curr_trace.copy()))
+            else:
+                if debug: self.print(f"Trace finished, curr_state children: {self.get_outgoing_states(curr_state)}")
+                if [state.is_terminal for state in self.get_outgoing_states(curr_state) if state.is_terminal]:
+                    return True
+                if paths:
+                    curr_state, curr_trace = paths.pop(0)
 
-            # Remove first trace
-            trace = trace[1:]
-
-        if [state.is_terminal for state in self.get_outgoing_states(current_state) if state.is_terminal]:
-            return res
-        return None
+        return False
 
     def get_random_state(self) -> State:
         """
