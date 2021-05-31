@@ -345,3 +345,22 @@ def test_merge_child_into_parent():
     assert len(
         child2_children) == 2 and child1 in child2_children and child2 in child2_children
     assert start not in graph
+
+
+def test_merge_bug():
+    root = State(["366"])
+    child1 = State(["367"])
+    child2 = State(["368"])
+
+    graph = Graph(root)
+    graph.add_state(child1)
+    graph.add_state(child2)
+
+    graph.add_edge(root, child1)
+    graph.add_edge(root, root)
+    graph.add_edge(child1, child2)
+    graph.add_edge(child1, child1)
+
+    graph.merge_states(child1, root)
+
+    print(graph.get_outgoing_states(child1))

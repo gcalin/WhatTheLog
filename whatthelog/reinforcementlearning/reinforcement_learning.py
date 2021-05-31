@@ -1,15 +1,13 @@
 import random
-import time
 
-import pandas as pd
-import numpy as np
-from numpy.compat import long
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 
 from whatthelog.definitions import PROJECT_ROOT
-from whatthelog.prefixtree.evaluator import Evaluator
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.prefixtree.prefix_tree_factory import PrefixTreeFactory
+from whatthelog.prefixtree.visualizer import Visualizer
 from whatthelog.reinforcementlearning.environment import GraphEnv
 from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 
@@ -17,34 +15,29 @@ from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 if __name__ == '__main__':
     st = SyntaxTreeFactory().parse_file(
         PROJECT_ROOT.joinpath("resources/config.json"))
-    pt: PrefixTree = PrefixTreeFactory().get_prefix_tree(
-        PROJECT_ROOT.joinpath("resources/traces"),
-        PROJECT_ROOT.joinpath("resources/config.json"))
-
-    PrefixTreeFactory().pickle_tree(pt, PROJECT_ROOT.joinpath(
-        "out/prefixtree.pickle"))
-
-    evaluator = Evaluator(pt, st,
-                          PROJECT_ROOT.joinpath("resources/traces"),
-                          PROJECT_ROOT.joinpath(
-                              "resources/negative_traces"))
-    tree = PrefixTreeFactory().unpickle_tree(
-        PROJECT_ROOT.joinpath("out/prefixtree.pickle"))
-
-    env = GraphEnv(pt, st)
+    # pt: PrefixTree = PrefixTreeFactory().get_prefix_tree(
+    #     PROJECT_ROOT.joinpath("resources/data/traces"),
+    #     PROJECT_ROOT.joinpath("resources/config.json"), remove_trivial_loops=True)
+    #
+    # PrefixTreeFactory().pickle_tree(pt, PROJECT_ROOT.joinpath("resources/prefix_tree_trivial_loops.pickle"))
+    env = GraphEnv(PROJECT_ROOT.joinpath("resources/prefix_tree_trivial_loops.pickle"), st,
+                   PROJECT_ROOT.joinpath("resources/data/positive_traces"),
+                   PROJECT_ROOT.joinpath("resources/data/negative_traces"))
     q_table = np.zeros([env.observation_space.n, env.action_space.n])
 
     # Hyper-parameters
     alpha = 0.1
     gamma = 0.6
     epsilon = 0.1
-    epochs = 1000
+    epochs = 100
     iteration = 0
 
     total_rewards = []
 
     policy = [0, 1, 1, 1, 3, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1]
     follow_custom_policy = False
+
+    print(env.graph.size())
 
     for i in range(epochs):
         state = env.reset()
@@ -75,6 +68,7 @@ if __name__ == '__main__':
                     reward + gamma * max_q)
             state = next_state
             iteration += 1
+            print(iteration)
 
         total_rewards.append(total_reward)
         print(f"Epoch {i} completed with total reward: {total_reward}.")
@@ -86,7 +80,8 @@ if __name__ == '__main__':
     plt.legend()
     plt.tight_layout()
 
-    plt.savefig(PROJECT_ROOT.joinpath("out/plots/small tree 1000 epochs rewards.png"))
+    plt.savefig(
+        PROJECT_ROOT.joinpath("out/plots/small tree 1000 epochs rewards.png"))
     plt.show()
 
     pd.DataFrame(q_table).to_csv(PROJECT_ROOT.joinpath("out/q_table.csv"))

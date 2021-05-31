@@ -2,10 +2,7 @@ import numpy as np
 from gym import Env
 from gym.spaces import Discrete
 
-from whatthelog.definitions import PROJECT_ROOT
-from whatthelog.exceptions import StateDoesNotExistException
 from whatthelog.prefixtree.evaluator import Evaluator
-from whatthelog.prefixtree.graph import Graph
 from whatthelog.prefixtree.prefix_tree_factory import PrefixTreeFactory
 from whatthelog.prefixtree.state import State
 from whatthelog.reinforcementlearning.actionspace import ActionSpace, Actions
@@ -25,20 +22,24 @@ class GraphEnv(Env):
         # 1 for 0 edges and one for larger than
     }
 
-    def __init__(self, graph: Graph, syntax_tree: SyntaxTree):
-        self.graph = graph
+    def __init__(self, prefix_tree_pickle_path: str, syntax_tree: SyntaxTree,
+                 positive_traces_path: str, negative_traces_path: str):
+        self.prefix_tree_pickle_path = prefix_tree_pickle_path
+        self.positive_traces_path = positive_traces_path
+        self.negative_traces_path = negative_traces_path
+
+        self.graph = PrefixTreeFactory().unpickle_tree(
+            self.prefix_tree_pickle_path)
+        self.syntax_tree = syntax_tree
+        self.evaluator = Evaluator(self.graph, syntax_tree,
+                                   positive_traces_path, negative_traces_path)
+
         self.stack = list()
         self.state_mapping = {}
         self.__create_state_mapping()
         self.action_sequence = []
 
         self.visited = set()
-
-        self.evaluator = Evaluator(graph, syntax_tree,
-                                   PROJECT_ROOT.joinpath("resources/traces"),
-                                   PROJECT_ROOT.joinpath(
-                                       "resources/negative_traces"))
-        self.syntax_tree = syntax_tree
 
         self.action_space = ActionSpace(Actions)
 
@@ -92,10 +93,11 @@ class GraphEnv(Env):
 
         self.outgoing = self.graph.get_outgoing_states_not_self(self.state)
 
-        self.stack = list(filter(lambda x: x in self.graph and x not in self.visited, self.stack))
+        self.stack = list(
+            filter(lambda x: x in self.graph and x not in self.visited,
+                   self.stack))
         self.stack += list(
             filter(lambda x: x not in self.visited, self.outgoing))
-
 
         reward = self.__get_reward()
 
@@ -104,18 +106,13 @@ class GraphEnv(Env):
         return self.encode(self.state), reward, done, info
 
     def reset(self):
-        pt = PrefixTreeFactory().unpickle_tree(
-            PROJECT_ROOT.joinpath("out/prefixtree.pickle"))
-        for state in pt.states.values():
-            if state not in pt:
-                print("WRONG")
-                exit()
-        self.graph = pt
+        self.graph = PrefixTreeFactory().unpickle_tree(
+            self.prefix_tree_pickle_path)
         self.state = self.graph.start_node
         self.outgoing = self.graph.get_outgoing_states_not_self(self.state)
         self.evaluator = Evaluator(self.graph, self.syntax_tree,
-                                   PROJECT_ROOT.joinpath("resources/traces"),
-                                   PROJECT_ROOT.joinpath("resources/negative_traces"))
+                                   self.positive_traces_path,
+                                   self.negative_traces_path)
         self.stack = [] + self.outgoing
         self.visited = set()
         self.action_sequence = []
