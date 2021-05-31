@@ -8,6 +8,8 @@ import os
 import random
 import shutil
 from copy import deepcopy
+from datetime import timedelta
+from time import time
 from typing import List, Dict, Tuple
 
 import numpy as np
@@ -27,14 +29,12 @@ class MarkovChain:
     """
 
     def __init__(self, traces_dir: str, config_file: str = "resources/config.json", weight_size: float = 0.5,
-                 weight_accuracy: float = 0.5, eval_file: str = None, false_dir: str = 'out/false_traces/',
-                 true_dir: str = 'resources/true_traces/', true_test_dir: str = 'out/true_traces/'):
+                 weight_accuracy: float = 0.5, eval_file: str = None, eval_time: bool = False):
         self.maxLength = 0
         self.traces_dir = traces_dir
         self.config_file = config_file
-        self.false_dir = false_dir
-        self.true_dir = true_dir
-        self.true_test_dir = true_test_dir
+        self.false_traces = None
+        self.true_traces = None
 
         self.eval_file = eval_file
         if eval_file and not os.path.exists(eval_file):
@@ -66,7 +66,7 @@ class MarkovChain:
 
         print('[ markov.py ] - Chain ready.')
 
-    def generate_false_traces_from_prefix_tree(self, amount: int = 50) -> None:
+    def generate_false_traces_from_prefix_tree(self, false_dir, amount: int = 50) -> None:
         """
         This method will generate negative/false traces on a pre-specified location.
         It will also initialize a prefix tree.
@@ -74,10 +74,10 @@ class MarkovChain:
         """
         self.pt = PrefixTreeFactory.get_prefix_tree(self.traces_dir, self.config_file)
         print('[ markov.py ] - Generating false traces...')
-        self.generate_false_traces(amount)
+        self.generate_false_traces(false_dir, amount)
         print('[ markov.py ] - False traces generated')
 
-    def generate_false_traces(self, amount: int = 50) -> None:
+    def generate_false_traces(self, false_dir, amount: int = 50) -> None:
         """
         This method will generate negative/false traces on a pre-specified location.
         :param amount: Specifies the amount of negative/false traces to produce
@@ -85,7 +85,9 @@ class MarkovChain:
         for i in range(amount):
             produce_false_trace(os.path.join(self.traces_dir, os.listdir(self.traces_dir)
                                 [random.randint(0, len(os.listdir(self.traces_dir)) - 1)]),
-                                self.false_dir + '/false' + str(i), self.syntax_tree, self.pt)
+                                false_dir + '/false' + str(i), self.syntax_tree, self.pt)
+
+        self.false_traces = self.shorten_eval_traces_and_store_in_memory(false_dir)
 
     def get_all_states(self, syntax_tree: SyntaxTree) -> List[str]:
         """
@@ -343,36 +345,34 @@ class MarkovChain:
             states = self.states
 
         true_negative = 0
-        for file in os.listdir(self.false_dir):
-            with open(os.path.join(self.false_dir, file), 'r') as open_file:
-                current = states['root']
-                for line in open_file.readlines():
-                    next_node = states[self.syntax_tree.search(line).name]
-                    if matrix[current][next_node] < 1 / 1e10:  # Some small value close to 0
-                        true_negative += 1
-                        break
-                    current = next_node
+        for trace in self.false_traces:
+            current = states['root']
+            for state in trace:
+                next_node = states[state]
+                if matrix[current][next_node] < 1 / 1e10:  # Some small value close to 0
+                    true_negative += 1
+                    break
+                current = next_node
 
         true_positive = 0
-        for file in os.listdir(self.true_test_dir):
-            with open(os.path.join(self.true_test_dir, file), 'r') as open_file:
-                is_valid = True
-                current = states['root']
-                for line in open_file.readlines():
-                    if self.syntax_tree.search(line).name not in states:
-                        is_valid = False
-                        break
-                    next_node = states[self.syntax_tree.search(line).name]
-                    if matrix[current][next_node] < 1 / 1e10:  # Some small value close to 0
-                        is_valid = False
-                        break
-                    current = next_node
-                if is_valid:
-                    true_positive += 1
+        for trace in self.true_traces:
+            is_valid = True
+            current = states['root']
+            for state in trace:
+                if state not in states:
+                    is_valid = False
+                    break
+                next_node = states[state]
+                if matrix[current][next_node] < 1 / 1e10:  # Some small value close to 0
+                    is_valid = False
+                    break
+                current = next_node
+            if is_valid:
+                true_positive += 1
 
-        specificity = true_negative / len(os.listdir(self.false_dir))
-        recall = true_positive / len(os.listdir(self.true_test_dir))
-        precision = true_positive / (true_positive + (len(os.listdir(self.false_dir)) - true_negative))
+        specificity = true_negative / len(self.false_traces)
+        recall = true_positive / len(self.true_traces)
+        precision = true_positive / (true_positive + (len(self.false_traces) - true_negative))
 
         return specificity, recall, precision
 
@@ -403,6 +403,8 @@ class MarkovChain:
 
         previous_matrix = deepcopy(self.transitionMatrix)
         current_accuracy = 1
+
+        start_time = time()
 
         while len(self.transitionMatrix) > minimum_size and current_accuracy > minimum_accuracy:
             # Store the current matrix which is known to have the proper requirements
@@ -468,7 +470,8 @@ class MarkovChain:
                     file.write('<tr><td>' + str(1 - len(self.transitionMatrix) / self.initial_size) + '</td>')
                     file.write('<td>' + str(score[0]) + '</td>')
                     file.write('<td>' + str(score[1]) + '</td>')
-                    file.write('<td>' + str(score[2]) + '</td></tr>\n')
+                    file.write('<td>' + str(score[2]) + '</td>')
+                    file.write('<td>' + str(timedelta(seconds=time() - start_time).seconds) + '<td></tr>\n')
 
         if len(self.transitionMatrix) < minimum_size or current_accuracy < minimum_accuracy:
             self.transitionMatrix = previous_matrix
@@ -488,29 +491,66 @@ class MarkovChain:
 
         [print(i, aaa) for aaa, i in self.states.items()]
 
-    def select_true_traces(self, amount=50):
+    def select_true_traces(self, true_dir, true_test_dir, amount=50):
         """
         Selects random true traces on which the model will be evaluated.
         :param amount: The amount of true traces that should be selected.
         """
-        if os.path.exists(self.true_test_dir):
-            shutil.rmtree(self.true_test_dir)
-        os.mkdir(self.true_test_dir)
+        if os.path.exists(true_test_dir):
+            shutil.rmtree(true_test_dir)
+        os.mkdir(true_test_dir)
         for i in range(amount):
-            shutil.copy(os.path.join(self.true_dir, os.listdir(self.true_dir)
-                        [random.randint(0, len(os.listdir(self.true_dir)) - 1)]),
-                        os.path.join(self.true_test_dir, 'true' + str(i)))
+            shutil.copy(os.path.join(true_dir, os.listdir(true_dir)
+                        [random.randint(0, len(os.listdir(true_dir)) - 1)]),
+                        os.path.join(true_test_dir, 'true' + str(i)))
+
+        self.true_traces = self.shorten_eval_traces_and_store_in_memory(true_test_dir)
+
+    def shorten_eval_traces_and_store_in_memory(self, directory: str) -> List[List[str]]:
+        """
+        Shortens the evaluation traces. These traces often contain large blocks of duplicate log statements. This
+        method will modify these traces such that there will no longer be more than 2 equivalent subsequent statements
+        (the number 2 ensures that self-loops will still occur).
+
+        As the Markov chain is already trained when the model is evaluated, it will not change the results. This method
+        will only improve this algorithm's efficiency.
+        """
+        amount = 0
+        traces = []
+        for file in os.listdir(directory):
+            new_lines = []
+
+            with open(os.path.join(directory, file), 'r') as f:
+                previous = None
+                for line in f.readlines():
+                    if previous != self.syntax_tree.search(line).name:
+                        previous = None
+                        new_lines.append(self.syntax_tree.search(line).name)
+                        if len(new_lines) > 0:
+                            prev = new_lines[len(new_lines) - 1]
+                            current = self.syntax_tree.search(line).name
+                            if prev == current:
+                                previous = current
+                    else:
+                        amount += 1
+
+            os.remove(os.path.join(directory, file))
+            assert len(new_lines) > 1, "No log statements in the resulting trace"
+            traces.append(new_lines)
+        return traces
 
 
 if __name__ == '__main__':
-    random.seed(7)
-    for j in range(10):
-        print('current progress:', j + 1, '/ 10')
+    for length in [5, 10, 25, 50, 100]:
+        random.seed(5)
+        for j in range(10):
+            print('current progress:', j + 1, '/ 10, with length', length)
 
-        chain = MarkovChain('resources/traces' + str(j + 1) + '/', eval_file='out/eval/evaluation8')
-        chain.select_true_traces(100)
-        chain.generate_false_traces_from_prefix_tree(100)
-        chain.train()
-        chain.compress(1, -1)
+            chain = MarkovChain('resources/traces' + str(j + 1) + '/', eval_file='out/eval/evaluation11', eval_time=True)
+            chain.select_true_traces(true_dir='resources/true_traces/', true_test_dir='out/true_traces/', amount=length)
+            chain.generate_false_traces_from_prefix_tree(false_dir='out/false_traces/', amount=length)
+            chain.pt = None
+            chain.train()
+            chain.compress(1, -1)
 
     # Note that k-cross validation should be used when evaluating for a single size
