@@ -1,4 +1,5 @@
 from copy import deepcopy
+from random import randint
 from typing import List, Tuple
 
 from whatthelog.exceptions import StateDoesNotExistException
@@ -77,14 +78,14 @@ def graph_2():
 def test_get_state_by_id(graph: Graph):
     state = graph.states[0]
 
-    assert graph.get_state_by_id(id(state)) == state
+    assert graph.get_state_by_id(state.state_id) == state
 
 
 def test_get_state_by_hash_incorrect(graph: Graph):
     state = State(["other"])
 
     with pytest.raises(StateDoesNotExistException):
-        graph.get_state_by_id(id(state))
+        graph.get_state_by_id(state.state_id)
 
 
 def test_add_state(graph: Graph):
@@ -95,7 +96,7 @@ def test_add_state(graph: Graph):
 
     assert len(graph.states) == 6
     assert new_state in graph.states.values()
-    assert graph.get_state_by_id(id(new_state)) == new_state
+    assert graph.get_state_by_id(new_state.state_id) == new_state
 
 
 def test_add_state_properties_pointers():
@@ -108,7 +109,7 @@ def test_add_state_properties_pointers():
 
     assert graph.size() == 2
     assert id(state1.properties) == id(state2.properties)
-    assert id(state1) != id(state2)
+    assert state1.state_id != state2.state_id
 
 
 def test_add_edge(graph: Graph):
@@ -160,8 +161,8 @@ def test_merge_states(graph: Graph):
 
     assert len(graph.states) == 4
     assert state1.properties.log_templates == ["1", "3"]
-    assert graph.state_indices_by_id[id(state1)] == 1
-    assert id(state3) not in graph.state_indices_by_id.keys()
+    assert graph.state_indices_by_id[state1.state_id] == 1
+    assert state3.state_id not in graph.state_indices_by_id.keys()
     assert graph.get_outgoing_states(state1)[0] == state1
 
 
@@ -174,8 +175,8 @@ def test_merge_states2(graph: Graph):
 
     assert len(graph.states) == 4
     assert state3.properties.log_templates == ["3", "0"]
-    assert graph.state_indices_by_id[id(state3)] == 3
-    assert id(state0) not in graph.state_indices_by_id.keys()
+    assert graph.state_indices_by_id[state3.state_id] == 3
+    assert state0.state_id not in graph.state_indices_by_id.keys()
     assert graph.states[1] in graph.get_outgoing_states(state3)
     assert state3 not in graph.get_outgoing_states(state3)
     assert graph.get_outgoing_states(graph.states[1])[0] == state3
@@ -191,8 +192,8 @@ def test_merge_states3(graph: Graph):
 
     assert len(graph.states) == 4
     assert state2.properties.log_templates == ["2", "4"]
-    assert graph.state_indices_by_id[id(state2)] == 2
-    assert id(state4) not in graph.state_indices_by_id.keys()
+    assert graph.state_indices_by_id[state2.state_id] == 2
+    assert state4.state_id not in graph.state_indices_by_id.keys()
     assert state2 in graph.get_outgoing_states(graph.states[0])
 
 

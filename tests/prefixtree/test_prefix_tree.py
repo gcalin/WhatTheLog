@@ -72,25 +72,25 @@ def test_get_parent_of_root(tree: PrefixTree):
     assert tree.get_parent(tree.get_root()) is None
 
 
-def test_add_branch(tree: PrefixTree):
-    other = PrefixTree(State(["other"]))
-    child1 = State(["child1"])
-    other.add_child(child1, other.get_root())
-
-    tree.add_branch(other.get_root(), other, tree.get_root())
-
-    assert len(tree.get_children(tree.get_root())) == 1
-    assert len(tree.get_children(tree.get_children(tree.get_root())[0])) == 1
-
-
-def test_merge(tree: PrefixTree):
-    tree.add_child(State(["child1"]), tree.get_root())
-    other = PrefixTree(tree.get_root())
-    other.add_child(State(["child2"]), other.get_root())
-
-    tree.merge(other)
-
-    assert len(tree.get_children(tree.get_root())) == 2
+# def test_add_branch(tree: PrefixTree):
+#     other = PrefixTree(State(["other"]))
+#     child1 = State(["child1"])
+#     other.add_child(child1, other.get_root())
+#
+#     tree.add_branch(other.get_root(), other, tree.get_root())
+#
+#     assert len(tree.get_children(tree.get_root())) == 1
+#     assert len(tree.get_children(tree.get_children(tree.get_root())[0])) == 1
+#
+#
+# def test_merge(tree: PrefixTree):
+#     tree.add_child(State(["child1"]), tree.get_root())
+#     other = PrefixTree(tree.get_root())
+#     other.add_child(State(["child2"]), other.get_root())
+#
+#     tree.merge(other)
+#
+#     assert len(tree.get_children(tree.get_root())) == 2
 
 
 def test_merge_complex(tree: PrefixTree):
