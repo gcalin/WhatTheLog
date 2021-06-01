@@ -16,6 +16,7 @@ from whatthelog.datasetcreator.dataset_factory import DatasetFactory
 
 
 if __name__ == '__main__':
+    random.seed(4)
     st = SyntaxTreeFactory().parse_file(
         PROJECT_ROOT.joinpath("resources/config.json"))
 
@@ -28,17 +29,17 @@ if __name__ == '__main__':
     #     PROJECT_ROOT.joinpath("resources/config.json"), remove_trivial_loops=True)
     #
     # PrefixTreeFactory().pickle_tree(pt, PROJECT_ROOT.joinpath("resources/prefix_tree_trivial_loops.pickle"))
+
     env = GraphEnv(PROJECT_ROOT.joinpath("resources/prefix_tree.pickle"), st,
                    positive_traces,
                    negative_traces)
-    Visualizer(env.graph).visualize()
 
     q_table = np.zeros([env.observation_space.n, env.action_space.n])
     # Hyper-parameters
     alpha = 0.1
     gamma = 0.6
     epsilon = 0.1
-    epochs = 400
+    epochs = 3
     step = 0
 
     total_rewards = []
@@ -48,12 +49,14 @@ if __name__ == '__main__':
 
     print(env.graph.size())
 
+    x = [x in env.graph for x in env.graph.states.values()]
+
     for i in range(epochs):
         state = env.reset()
         total_reward = 0
         step = 0
         done = False
-        reward_while = []
+
         while not done:
             start_time = time()
             if follow_custom_policy:
@@ -70,8 +73,10 @@ if __name__ == '__main__':
                                  key=lambda x: x[1])[0]
 
             next_state, reward, done, info = env.step(action)
-            reward_while.append(reward)
+            # print(done)
             total_reward += reward
+
+            print(f"state: {state}, action: {action}, reward: {reward}")
 
             old_value = q_table[state][action]
             max_q = np.max(q_table[next_state])
@@ -80,23 +85,15 @@ if __name__ == '__main__':
             state = next_state
             step += 1
             # print(f"Step {step} done! Time elapsed: {timedelta(seconds=time() - start_time)}")
-
-        if i == epochs-1:
-            plt.rc('axes', labelsize=15)
-            plt.plot(list(range(step)), reward_while)
-            plt.ylabel("Total reward", labelpad=15)
-            plt.xlabel("Steps", labelpad=15)
-            plt.legend()
-            plt.tight_layout()
-
-
-            plt.show()
-
         total_rewards.append(total_reward)
         print(f"Epoch {i} completed with total reward: {total_reward}.")
-        # print(q_table)
+        Visualizer(env.graph).visualize(f"run/{i}.png")
+
+
+    print(env.graph.size())
+
     print(f"total_reward: {sum(total_rewards)}")
-    print(q_table)
+    # print(q_table)
     # plt.rc('axes', labelsize=15)
     # plt.plot(list(range(epochs)), total_rewards)
     # plt.ylabel("Total reward", labelpad=15)

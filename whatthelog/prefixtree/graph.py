@@ -166,6 +166,26 @@ class Graph(AutoPrinter):
         else:
             raise StateDoesNotExistException()
 
+    def update_edge(self, start: State, end: State, passes: int = 1):
+        """
+        Method to update an edge by adding a given number of passes (default is 1).
+        :param start: the start node of the edge
+        :param end: the end node of the edge
+        :param passes: the number of passes to update the edge with (default is 1)
+        :return: True if the update succeeded, else otherwise
+        """
+
+        if id(start) not in self.state_indices_by_id or id(end) not in self.state_indices_by_id:
+            return False
+
+        start_index = self.state_indices_by_id[id(start)]
+        end_index = self.state_indices_by_id[id(end)]
+        if (start_index, end_index) in self.edges:
+            print(self.edges[start_index, end_index])
+            self.edges[start_index, end_index] = int(self.edges[start_index, end_index]) + passes
+            return True
+        return False
+
     def full_merge_states(self, s1: State, s2: State) -> State:
         """
         Fully merges two states and removes non-determinism.
@@ -243,9 +263,12 @@ class Graph(AutoPrinter):
             self.state_indices_by_id[id(state2)],
             self.state_indices_by_id[id(state1)])
 
+
         del self.states[self.state_indices_by_id[id(state2)]]
         del self.state_indices_by_id[id(state2)]
         del state2
+
+
 
     def determinize(self, state: State) -> State:
         new_state, changed = self.merge_equivalent_children(state)

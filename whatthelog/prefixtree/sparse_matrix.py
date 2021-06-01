@@ -68,7 +68,7 @@ class SparseMatrix:
         :param coordinates: the coordinates of the entry to find.
         :return the value of the input entry, or None if no entry found.
         """
-        return self.get_values(self.find_index(coordinates))[2]
+        return self.get_values(self.list, self.find_index(coordinates))[2]
 
     def __find_children(self, search_list: List[str], item: int, new_parent: int = -1) -> Union[
         List[Tuple[int, str]], None]:

@@ -45,7 +45,10 @@ class GraphEnv(Env):
         self.__create_state_mapping()
         self.action_sequence = []
 
+        print(self.state_mapping)
+
         self.visited = set()
+        self.first_step = True
 
         self.action_space = ActionSpace(Actions)
 
@@ -57,6 +60,8 @@ class GraphEnv(Env):
         self.outgoing = self.graph.get_outgoing_states_not_self(self.state)
         self.encode(self.state)
         self.previous = 0
+
+        self.seen_terminal_node = False
 
         for out in self.outgoing:
             self.stack.append(out)
@@ -75,13 +80,16 @@ class GraphEnv(Env):
     def step(self, action: int):
         if self.is_valid_action(action) is False:
             return self.encode(self.state), 0, False, {}
+
+        if self.state.is_terminal is True:
+            self.seen_terminal_node = True
         self.action_sequence.append(action)
-        if len(self.stack) == 0:
+        if len(self.stack) == 0 and self.seen_terminal_node is True:
             done = True
         else:
             done = False
 
-        if action == Actions.DONT_MERGE.value:
+        if action == Actions.DONT_MERGE.value or self.state in self.visited:
             self.visited.add(self.state)
             if len(self.stack) != 0:
                 next_node = self.get_next_node()
@@ -117,9 +125,14 @@ class GraphEnv(Env):
             filter(lambda x: x not in self.visited, self.outgoing))
 
         temp_reward = self.__get_reward()
-        reward = temp_reward - self.previous
 
+        if self.first_step:
+            reward = 0
+            self.first_step = False
+        else:
+            reward = temp_reward - self.previous
         self.previous = temp_reward
+
         # highest reward?
 
         info = {}

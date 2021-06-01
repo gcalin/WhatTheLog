@@ -55,7 +55,7 @@ class PrefixTree(Graph):
         """
         return self.get_outgoing_states(state)
 
-    def add_child(self, state: State, parent: State, props: EdgeProperties = EdgeProperties([])):
+    def add_child(self, state: State, parent: State, props: EdgeProperties = EdgeProperties()):
         """
         Method to add a child in the tree.
         Requires that the parent be in the current tree.

@@ -2,9 +2,12 @@ from pprint import pprint
 from typing import Tuple, Dict, List
 
 import networkx as nx
+from pygraphviz import AGraph
+
 from whatthelog.prefixtree.graph import Graph
 from whatthelog.definitions import PROJECT_ROOT
 from whatthelog.auto_printer import AutoPrinter
+from tqdm import tqdm
 
 
 def print(msg): AutoPrinter.static_print(msg)
@@ -30,19 +33,26 @@ class Visualizer(AutoPrinter):
         :param file_path: Path to save the file, if None dont save
         :return: None
         """
+        print("Visualizing tree...")
         labels, branches, depth = self.__populate_graph()
-
+        # edge_labels = nx.get_edge_attributes(self.G,'weight')
+        #
+        # print(edge_labels.keys())
+        # print(edge_labels)
         A = nx.drawing.nx_agraph.to_agraph(self.G)
 
+        # for edge in A.edges():
+        #     edge.attr.update(label=formatted_edge_labels[edge])
         for node in A.nodes():
             node.attr.update(label=labels[int(node.name)])
+
+
 
         A.graph_attr.update(nodesep="0.5")
         A.graph_attr.update(pad="1")
         A.layout('dot')
         A.draw(str(PROJECT_ROOT.joinpath("out/" + file_name)))
         print("Visualization has been saved at: " + str(PROJECT_ROOT.joinpath("out/" + file_name)))
-        pprint(self.label_mapping)
 
     def __populate_graph(self) -> Tuple[Dict[int, str], int, int]:
         """
@@ -62,9 +72,7 @@ class Visualizer(AutoPrinter):
         queue = self.graph.get_outgoing_states(self.graph.start_node)
         branches = 1
         depth = 1
-
         visited = {self.graph.start_node}
-
         while len(queue) != 0:
             level_size = len(queue)
             while level_size > 0 and len(queue) != 0:
@@ -73,7 +81,7 @@ class Visualizer(AutoPrinter):
                     for parent in self.graph.get_incoming_states(state):
 
                         self.G.add_edge(id(parent),
-                                    id(state))
+                                    id(state), label=self.graph.edges[self.graph.state_indices_by_id[id(parent)], self.graph.state_indices_by_id[id(state)]])
                     visited.add(state)
                     labels[id(state)] = self.get_label(state.properties.log_templates)
 

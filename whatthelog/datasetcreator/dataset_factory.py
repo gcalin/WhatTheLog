@@ -7,6 +7,7 @@ from typing import Tuple, List
 
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.prefixtree.prefix_tree_factory import PrefixTreeFactory
+from whatthelog.prefixtree.visualizer import Visualizer
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 
 
@@ -33,7 +34,7 @@ class DatasetFactory:
         self.prefix_tree_pickle_path = prefix_tree_pickle_path
 
     def create_data_set(self, traces_amount: int, positive_traces_amount: int,
-                        negative_traces_amount: int) -> None:
+                        negative_traces_amount: int, remove_trivial_loops: bool = True, visualize_tree: bool = False) -> None:
         logs = os.listdir(self.all_traces_path)
         logs = [Path(self.all_traces_path).joinpath(line) for line in logs]
 
@@ -48,18 +49,24 @@ class DatasetFactory:
 
         syntax_tree = SyntaxTreeFactory().parse_file(self.config_file_path)
 
+        training_set = []
         # Create traces
         for i in range(traces_amount):
             rand = random.randint(0, len(logs) - 1)
             shutil.copy(logs[rand],
                         self.DATA_PATH.joinpath(f"traces/xx{i}"))
+            training_set.append(logs[rand])
             logs.remove(logs[rand])
 
-        prefix_tree = PrefixTreeFactory().get_prefix_tree(self.DATA_PATH.joinpath("traces"), self.config_file_path, remove_trivial_loops=True)
+        prefix_tree = PrefixTreeFactory().get_prefix_tree(self.DATA_PATH.joinpath("traces"),
+                                                          self.config_file_path,
+                                                          remove_trivial_loops=remove_trivial_loops)
         PrefixTreeFactory().pickle_tree(prefix_tree, PROJECT_ROOT.joinpath("resources/prefix_tree.pickle"))
+        if visualize_tree:
+            Visualizer(prefix_tree).visualize()
 
         self.__create_positive_traces(logs, positive_traces_amount)
-        self.__create_negative_traces(logs, negative_traces_amount, syntax_tree, prefix_tree)
+        self.__create_negative_traces(training_set, negative_traces_amount, syntax_tree, prefix_tree)
 
     def __create_positive_traces(self, traces_paths: List[str], amount: int) -> None:
         # Create positive traces

@@ -147,10 +147,15 @@ class PrefixTreeFactory(AutoPrinter):
                 if remove_trivial_loops and parent.properties.log_templates[0] == template:
                     # There will only be 1 template per state initially
                     if parent not in nodes:
-                        prefix_tree.add_edge(parent, parent, EdgeProperties([]))
+                        prefix_tree.add_edge(parent, parent, EdgeProperties())
+                    else:
+                        prefix_tree.update_edge(parent, parent)
                 else:
                     for node in nodes:
                         if template in node.properties.log_templates:
+                            # print(prefix_tree.edges)
+                            prefix_tree.update_edge(parent, node)
+                            # print(prefix_tree.edges)
                             parent = node
                             nodes = prefix_tree.get_children(parent)
                             exists = True

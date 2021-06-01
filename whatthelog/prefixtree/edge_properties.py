@@ -19,7 +19,7 @@ from typing import List
 @dataclass
 class EdgeProperties:
 
-    props: List[str] = field(default_factory=lambda: [])
+    props: List[str] = field(default=1)
 
     def __str__(self):
         return str(self.props)
