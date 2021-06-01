@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 from gym import Env
 from gym.spaces import Discrete
@@ -10,7 +12,9 @@ from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 
 
 class GraphEnv(Env):
-    MAX_OUTGOING_EDGES = 2
+    MAX_OUTGOING_EDGES = 3
+    MAX_INCOMING_EDGES = 3
+
     """
     Constant defining the state space. Each key is a property of the
     state and its value is the possible combinations of this properties.
@@ -18,21 +22,23 @@ class GraphEnv(Env):
     """
     STATE_OPTIONS = {
         'EQUAL_TEMPLATES': 2,
-        'OUTGOING_EDGES': MAX_OUTGOING_EDGES + 1 + 1
+        'OUTGOING_EDGES': MAX_OUTGOING_EDGES + 1 + 1,
+        'INCOMING_EDGES': MAX_INCOMING_EDGES + 1 + 1
+
         # 1 for 0 edges and one for larger than
     }
 
     def __init__(self, prefix_tree_pickle_path: str, syntax_tree: SyntaxTree,
-                 positive_traces_path: str, negative_traces_path: str):
+                 positive_traces: List[List[str]], negative_traces: List[List[str]]):
         self.prefix_tree_pickle_path = prefix_tree_pickle_path
-        self.positive_traces_path = positive_traces_path
-        self.negative_traces_path = negative_traces_path
+        self.positive_traces = positive_traces
+        self.negative_traces = negative_traces
 
         self.graph = PrefixTreeFactory().unpickle_tree(
             self.prefix_tree_pickle_path)
         self.syntax_tree = syntax_tree
         self.evaluator = Evaluator(self.graph, syntax_tree,
-                                   positive_traces_path, negative_traces_path)
+                                   positive_traces, negative_traces)
 
         self.stack = list()
         self.state_mapping = {}
@@ -50,6 +56,7 @@ class GraphEnv(Env):
         self.state = self.graph.start_node
         self.outgoing = self.graph.get_outgoing_states_not_self(self.state)
         self.encode(self.state)
+        self.previous = 0
 
         for out in self.outgoing:
             self.stack.append(out)
@@ -61,8 +68,9 @@ class GraphEnv(Env):
         # TODO: Generalize this
         for i in range(properties[0]):
             for j in range(properties[1]):
-                self.state_mapping[str(i) + str(j)] = len(
-                    self.state_mapping)
+                for k in range(properties[2]):
+                    self.state_mapping[str(i) + str(j) + str(k)] = len(
+                        self.state_mapping)
 
     def step(self, action: int):
         if self.is_valid_action(action) is False:
@@ -83,13 +91,22 @@ class GraphEnv(Env):
                     self.state = next_node
 
         elif action == Actions.MERGE_ALL.value:
-            self.state = self.graph.full_merge_states_all_children(self.state)
+            self.state = self.graph.full_merge_states_with_children(self.state)
         elif action == Actions.MERGE_FIRST.value:
             self.state = self.graph.full_merge_states(self.state,
                                                       self.outgoing[0])
         elif action == Actions.MERGE_SECOND.value:
             self.state = self.graph.full_merge_states(self.state,
                                                       self.outgoing[1])
+        elif action == Actions.MERGE_THIRD.value:
+            self.state = self.graph.full_merge_states(self.state,
+                                                      self.outgoing[2])
+        elif action == Actions.MERGE_FIRST_TWO:
+            self.state = self.graph.full_merge_states_with_children(self.state, list(range(len(self.outgoing)))[:2])
+        elif action == Actions.MERGE_LAST_TWO:
+            self.state = self.graph.full_merge_states_with_children(self.state, list(range(len(self.outgoing)))[:-2])
+        elif action == Actions.MERGE_FIRST_AND_LAST:
+            self.state = self.graph.full_merge_states_with_children(self.state, list(range(len(self.outgoing)))[0:1] + list(range(len(self.outgoing)))[-1])
 
         self.outgoing = self.graph.get_outgoing_states_not_self(self.state)
 
@@ -99,7 +116,11 @@ class GraphEnv(Env):
         self.stack += list(
             filter(lambda x: x not in self.visited, self.outgoing))
 
-        reward = self.__get_reward()
+        temp_reward = self.__get_reward()
+        reward = temp_reward - self.previous
+
+        self.previous = temp_reward
+        # highest reward?
 
         info = {}
 
@@ -111,8 +132,8 @@ class GraphEnv(Env):
         self.state = self.graph.start_node
         self.outgoing = self.graph.get_outgoing_states_not_self(self.state)
         self.evaluator = Evaluator(self.graph, self.syntax_tree,
-                                   self.positive_traces_path,
-                                   self.negative_traces_path)
+                                   self.positive_traces,
+                                   self.negative_traces)
         self.stack = [] + self.outgoing
         self.visited = set()
         self.action_sequence = []
@@ -150,6 +171,8 @@ class GraphEnv(Env):
         :return: The index of this state
         """
         outgoing = self.graph.get_outgoing_states_not_self(state)
+        incoming_amount = len(self.graph.get_incoming_states(state))
+
         equivalent = True
         for outgoing_state in outgoing:
             if state.is_equivalent(outgoing_state) is False:
@@ -163,7 +186,12 @@ class GraphEnv(Env):
         else:
             second_part = number_of_outgoing
 
-        value = str(first_part) + str(second_part)
+        if incoming_amount > 3:
+            third_part = 4
+        else:
+            third_part = incoming_amount
+
+        value = str(first_part) + str(second_part) + str(third_part)
 
         if value not in self.state_mapping:
             print("NEW VALUE: ", value)
@@ -184,3 +212,6 @@ class GraphEnv(Env):
             return True
         elif action == Actions.MERGE_FIRST.value or action == Actions.MERGE_SECOND.value:
             return len(self.outgoing) == 2
+        elif action == Actions.MERGE_THIRD.value or action == Actions.MERGE_FIRST_TWO.value \
+                or action == Actions.MERGE_LAST_TWO.value or action == Actions.MERGE_FIRST_AND_LAST.value:
+            return len(self.outgoing) == 3

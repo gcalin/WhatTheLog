@@ -27,6 +27,8 @@ class ActionSpace(Space):
             return self.actions[:2]
         elif outgoing_edges == 2:
             return self.actions[:4]
+        elif outgoing_edges == 3:
+            return self.actions
         else:
             return [Actions.DONT_MERGE.value]
 
@@ -36,5 +38,9 @@ class Actions(Enum):
     MERGE_ALL = 1
     MERGE_FIRST = 2
     MERGE_SECOND = 3
+    MERGE_THIRD = 4
+    MERGE_FIRST_TWO = 5
+    MERGE_LAST_TWO = 6
+    MERGE_FIRST_AND_LAST = 7
 
 

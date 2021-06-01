@@ -184,7 +184,7 @@ class Graph(AutoPrinter):
 
         return new_state
 
-    def full_merge_states_all_children(self, state: State) -> State:
+    def full_merge_states_with_children(self, state: State, children_indices: List[int] = None) -> State:
         """
         Merges all the children of a state into the current state.
 
@@ -193,11 +193,15 @@ class Graph(AutoPrinter):
         """
         if state not in self:
             raise StateDoesNotExistException()
-
+        if children_indices is not None:
+            print(children_indices)
         # Trivially merge all children into target state.
-        outgoing_states = self.get_outgoing_states(state)
-        for outgoing in outgoing_states:
-            if outgoing is not state and outgoing.is_terminal is False:
+        outgoing_states = self.get_outgoing_states_not_self(state)
+        for i, outgoing in enumerate(outgoing_states):
+            if children_indices is not None:
+                if i in children_indices and outgoing.is_terminal is False:
+                    self.merge_states(state, outgoing)
+            else:
                 self.merge_states(state, outgoing)
 
         # Remove non-determinism in the merged state's children by merging them.
@@ -314,6 +318,24 @@ class Graph(AutoPrinter):
                 self.merge_equivalent_children(child)
 
         return current, merged
+
+    def match_log_template_trace(self, trace: List[str]) -> bool:
+        node = self.start_node
+
+        for name in trace:
+            if node.is_terminal:
+                return False
+
+            outgoing = self.get_outgoing_states(node)
+            outgoing = list(filter(lambda x: self.template_matches_state(name, x), outgoing))
+
+            if len(outgoing) > 1:
+                raise NonDeterminismException()
+            elif len(outgoing) == 0:
+                return False
+            else:
+                node = outgoing[0]
+        return True
 
     def match_trace(self, trace: List[str], syntax_tree: SyntaxTree) -> bool:
         """

@@ -192,13 +192,14 @@ def process_file(input_file: str, output_file: str, tree: SyntaxTree) -> None:
         f.writelines(lines)
 
 
-def produce_false_trace(input_file: str, output_file: str, syntax_tree: SyntaxTree, state_model: PrefixTree) -> None:
+def produce_false_trace(input_file: str, output_file: str, syntax_tree: SyntaxTree, state_model: PrefixTree) -> List[str]:
     """
     Produces a log that guarantees a false trace will be created.
     :param input_file: The file containing the trace.
     :param output_file: The file in which the false trace should be written.
     :param syntax_tree: The syntax tree used to match an individual log entry.
     :param state_model: The state model used to validate a trace.
+    :return: Returns the log templates of the trace
     """
     with open(input_file, 'r') as f:
         lines = f.readlines()
@@ -222,6 +223,7 @@ def produce_false_trace(input_file: str, output_file: str, syntax_tree: SyntaxTr
     with open(output_file, 'w+') as f:
         f.writelines(lines)
 
+    return lines
 
 def main(argv):
     start_time = time()

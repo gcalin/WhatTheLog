@@ -1,5 +1,5 @@
 import os
-
+from typing import List
 
 from whatthelog.prefixtree.graph import Graph
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
@@ -13,16 +13,16 @@ class Evaluator:
     def __init__(self,
                  model: Graph,
                  syntax_tree: SyntaxTree,
-                 positive_traces_dir: str,
-                 negative_traces_dir: str,
+                 positive_traces: List[List[str]],
+                 negative_traces: List[List[str]],
                  initial_size: int = None,
                  weight_accuracy: float = 0.5,
                  weight_size: float = 0.5):
 
         self.model = model
         self.syntax_tree = syntax_tree
-        self.positive_traces_dir = positive_traces_dir
-        self.negative_traces_dir = negative_traces_dir
+        self.positive_traces = positive_traces
+        self.negative_traces = negative_traces
         self.initial_model_size = len(model) if initial_size is None else initial_size
         self.weight_accuracy = weight_accuracy
         self.weight_size = weight_size
@@ -69,7 +69,7 @@ class Evaluator:
         size: float = self.evaluate_size()
 
         # Compute the final result using weights
-        return w_accuracy * accuracy + w_size * size
+        return accuracy
 
     def calc_specificity(self, debug=False) -> float:
         """
@@ -79,43 +79,9 @@ class Evaluator:
         :param debug: Whether or not to print debug information to the console.
         """
 
-        # Initialize counters
-        tn: int = 0
-        fp: int = 0
+        results = list(map(lambda trace: self.model.match_log_template_trace(trace), self.negative_traces))
 
-        # Check if directory exists
-        if not os.path.isdir(self.negative_traces_dir):
-            raise NotADirectoryError("Log directory not found!")
-
-        # For each file in the directory
-        for filename in os.listdir(self.negative_traces_dir):
-
-            # Open the file
-            with open(os.path.join(self.negative_traces_dir, filename), 'r') as f:
-
-                if debug:
-                    print(f"Opening file {filename} to evaluate specificity...")
-
-                # If the state model accepts the trace
-                if self.model.match_trace(f.readlines(), self.syntax_tree):
-
-                    # Increase the false positives by one, should have been rejected
-                    fp += 1
-
-                    if debug:
-                        print("File incorrectly accepted")
-
-                # If the state model rejects the trace
-                else:
-
-                    # Increase the true negatives by one, correctly rejected
-                    tn += 1
-
-                    if debug:
-                        print("File correctly rejected")
-
-        # Calculate the final result
-        res: float = tn / (tn + fp)
+        res: float = (len(self.negative_traces) - sum(results)) / len(self.negative_traces)
 
         if debug:
             print(f"Final specificity score: {res}")
@@ -129,44 +95,10 @@ class Evaluator:
          Where TP = True Positive and FN = False Negative.
         :param debug: Whether or not to print debug information to the console.
         """
-
-        # Initialize counters
-        tp: int = 0
-        fn: int = 0
-
-        # Check if directory exists
-        if not os.path.isdir(self.positive_traces_dir):
-            raise NotADirectoryError("Log directory not found!")
-
-        # For each file in the directory
-        for filename in os.listdir(self.positive_traces_dir):
-
-            # Open the file
-            with open(os.path.join(self.positive_traces_dir, filename), 'r') as f:
-
-                if debug:
-                    print(f"Opening file {filename} to evaluate recall...")
-
-                # If the state model accepts the trace
-                if self.model.match_trace(f.readlines(), self.syntax_tree):
-
-                    # Increase the true positives by one, correctly accepted
-                    tp += 1
-
-                    if debug:
-                        print("File correctly accepted")
-
-                # If the state model rejects the trace
-                else:
-
-                    # Increase the false negatives by one, should have been rejected
-                    fn += 1
-
-                    if debug:
-                        print("File incorrectly rejected")
+        results = list(map(lambda trace: self.model.match_log_template_trace(trace), self.positive_traces))
 
         # Calculate the final result
-        res: float = tp / (tp + fn)
+        res: float = sum(results) / len(self.positive_traces)
 
         if debug:
             print(f"Final recall score: {res}")
