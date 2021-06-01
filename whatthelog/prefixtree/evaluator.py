@@ -66,7 +66,7 @@ class Evaluator:
             w_size = self.weight_size
 
         # Get the the accuracy
-        accuracy: float = self.evaluate()
+        accuracy: float = self.evaluate_accuracy()
 
         # Get the size
         size: float = self.evaluate_size()

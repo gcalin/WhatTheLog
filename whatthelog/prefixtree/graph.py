@@ -25,15 +25,13 @@ from whatthelog.prefixtree.edge_properties import EdgeProperties
 # ****************************************************************************************************
 from whatthelog.prefixtree.state_properties import StateProperties
 
-random.seed(os.environ['random_seed'] if 'random_seed' in os.environ else 5)
-
 
 class Graph(AutoPrinter):
     """
     Class implementing a graph
     """
 
-    __slots__ = ['edges', 'states', 'state_indices_by_id', 'prop_by_hash', 'start_node']
+    __slots__ = ['edges', 'states', 'state_indices_by_id', 'prop_by_hash', 'start_node', 'next_id']
 
     def __init__(self, start_node: State = None):
         self.edges = SparseMatrix()
@@ -41,6 +39,7 @@ class Graph(AutoPrinter):
         self.state_indices_by_id: Dict[int, int] = {}
         self.prop_by_hash: Dict[int, StateProperties] = {}
         self.start_node = start_node
+        self.next_id: int = 0
 
     def get_state_by_id(self, state_id: int):
         """
@@ -89,14 +88,14 @@ class Graph(AutoPrinter):
         else:
             self.prop_by_hash[state1.properties.get_prop_hash()] = state1.properties
 
-        self.edges.change_parent_of_children(self.state_indices_by_id[id(state1)],
-                                             self.state_indices_by_id[id(state2)])
+        self.edges.change_parent_of_children(self.state_indices_by_id[state1.state_id],
+                                             self.state_indices_by_id[state2.state_id])
 
-        self.edges.change_children_of_parents(self.state_indices_by_id[id(state2)],
-                                              self.state_indices_by_id[id(state1)])
+        self.edges.change_children_of_parents(self.state_indices_by_id[state2.state_id],
+                                              self.state_indices_by_id[state1.state_id])
 
-        del self.states[self.state_indices_by_id[id(state2)]]
-        del self.state_indices_by_id[id(state2)]
+        del self.states[self.state_indices_by_id[state2.state_id]]
+        del self.state_indices_by_id[state2.state_id]
         del state2
 
     def full_merge_states(self, s1: State, s2: State):
@@ -134,13 +133,15 @@ class Graph(AutoPrinter):
         :param state: State to add
         :raises StateAlreadyExistsException: if state already exists
         """
+        state.state_id = self.next_id
+        self.next_id += 1
 
         if state in self:
             raise StateAlreadyExistsException()
 
         curr_index = len(self.states)
         self.states[curr_index] = state
-        self.state_indices_by_id[id(state)] = curr_index
+        self.state_indices_by_id[state.state_id] = curr_index
 
         if state.properties.get_prop_hash() in self.prop_by_hash:
             state.properties = self.prop_by_hash[state.properties.get_prop_hash()]
@@ -158,11 +159,11 @@ class Graph(AutoPrinter):
         edge does not exist or edge already exists returns False else True.
         """
 
-        if id(start) not in self.state_indices_by_id or id(end) not in self.state_indices_by_id:
+        if start.state_id not in self.state_indices_by_id or end.state_id not in self.state_indices_by_id:
             return False
 
-        start_index = self.state_indices_by_id[id(start)]
-        end_index = self.state_indices_by_id[id(end)]
+        start_index = self.state_indices_by_id[start.state_id]
+        end_index = self.state_indices_by_id[end.state_id]
         if not (start_index, end_index) in self.edges:
             self.edges[start_index, end_index] = str(props)
             return True
@@ -241,7 +242,7 @@ class Graph(AutoPrinter):
         If state does not exist return None.
         """
         if state in self:
-            results = self.edges.find_children(self.state_indices_by_id[id(state)])
+            results = self.edges.find_children(self.state_indices_by_id[state.state_id])
             return [EdgeProperties.parse(result[1]) for result in results]
         else:
             return None
@@ -255,7 +256,7 @@ class Graph(AutoPrinter):
         If state does not exist return None.
         """
         if state in self:
-            results = self.edges.find_children(self.state_indices_by_id[id(state)])
+            results = self.edges.find_children(self.state_indices_by_id[state.state_id])
             return [self.states[result[0]] for result in results] if results is not None else []
         else:
             return None
@@ -269,7 +270,7 @@ class Graph(AutoPrinter):
                 If state does not exist return None.
                 """
         if state in self:
-            results = self.edges.get_parents(self.state_indices_by_id[id(state)])
+            results = self.edges.get_parents(self.state_indices_by_id[state.state_id])
             return [self.states[result] for result in results] if results else []
         else:
             return None
@@ -290,7 +291,7 @@ class Graph(AutoPrinter):
         return str(self.states)
 
     def __contains__(self, item: State):
-        return id(item) in self.state_indices_by_id
+        return item.state_id in self.state_indices_by_id
 
     def __len__(self):
         return len(self.states)

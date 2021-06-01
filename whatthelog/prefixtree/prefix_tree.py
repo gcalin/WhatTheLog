@@ -101,7 +101,7 @@ class PrefixTree(Graph):
         """
 
         assert state in self
-        parents = self.edges.get_parents(self.state_indices_by_id[id(state)])
+        parents = self.edges.get_parents(self.state_indices_by_id[state.state_id])
         assert len(parents) <= 1, "Edge has more than one parent!"
 
         if parents is None or len(parents) == 0:
