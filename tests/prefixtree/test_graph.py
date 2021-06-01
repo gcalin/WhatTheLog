@@ -314,7 +314,7 @@ def test_merge_with_all_children():
     graph.add_edge(start, child2, EdgeProperties())
 
     assert graph.size() == 3
-    graph.full_merge_states_all_children(start)
+    graph.full_merge_states_with_children(start)
     print(graph.edges)
     assert graph.size() == 1
 

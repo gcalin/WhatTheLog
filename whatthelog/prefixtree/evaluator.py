@@ -69,7 +69,7 @@ class Evaluator:
         size: float = self.evaluate_size()
 
         # Compute the final result using weights
-        return accuracy
+        return w_accuracy * accuracy + w_size * size
 
     def calc_specificity(self, debug=False) -> float:
         """
