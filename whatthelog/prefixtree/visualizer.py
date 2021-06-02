@@ -35,18 +35,10 @@ class Visualizer(AutoPrinter):
         """
         print("Visualizing tree...")
         labels, branches, depth = self.__populate_graph()
-        # edge_labels = nx.get_edge_attributes(self.G,'weight')
-        #
-        # print(edge_labels.keys())
-        # print(edge_labels)
         A = nx.drawing.nx_agraph.to_agraph(self.G)
 
-        # for edge in A.edges():
-        #     edge.attr.update(label=formatted_edge_labels[edge])
         for node in A.nodes():
             node.attr.update(label=labels[int(node.name)])
-
-
 
         A.graph_attr.update(nodesep="0.5")
         A.graph_attr.update(pad="1")

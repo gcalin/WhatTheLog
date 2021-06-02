@@ -24,11 +24,11 @@ class ActionSpace(Space):
 
     def get_valid_actions(self, outgoing_edges: int) -> List[int]:
         if outgoing_edges == 1:
-            return self.actions[:2]
+            return [0, 1]
         elif outgoing_edges == 2:
-            return self.actions[:4]
+            return [0, 1, 2, 3]
         elif outgoing_edges == 3:
-            return self.actions
+            return [0, 1, 2, 3, 4, 5, 6, 7]
         else:
             return [Actions.DONT_MERGE.value]
 

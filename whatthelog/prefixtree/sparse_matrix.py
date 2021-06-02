@@ -37,7 +37,7 @@ class SparseMatrix:
         """
         Checks if an edge exists.
         """
-        index: int = self.bisearch(self.list, str(item[0]) + self.separator + str(item[1]))
+        index: int = self.bisearch(self.list, str(item[0]) + self.separator + str(item[1]) + self.separator)
         if index != len(self.list):
             return True
         return False

@@ -1,12 +1,15 @@
+import json
 from typing import List
 
 import numpy as np
 from gym import Env
 from gym.spaces import Discrete
 
+from whatthelog.definitions import PROJECT_ROOT
 from whatthelog.prefixtree.evaluator import Evaluator
 from whatthelog.prefixtree.prefix_tree_factory import PrefixTreeFactory
 from whatthelog.prefixtree.state import State
+from whatthelog.prefixtree.visualizer import Visualizer
 from whatthelog.reinforcementlearning.actionspace import ActionSpace, Actions
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 
@@ -23,7 +26,6 @@ class GraphEnv(Env):
     STATE_OPTIONS = {
         'EQUAL_TEMPLATES': 2,
         'OUTGOING_EDGES': MAX_OUTGOING_EDGES + 1 + 1,
-        'INCOMING_EDGES': MAX_INCOMING_EDGES + 1 + 1
 
         # 1 for 0 edges and one for larger than
     }
@@ -45,7 +47,8 @@ class GraphEnv(Env):
         self.__create_state_mapping()
         self.action_sequence = []
 
-        print(self.state_mapping)
+        with open(PROJECT_ROOT.joinpath("resources/states.json"), 'w+') as f:
+            json.dump(self.state_mapping, f, indent=2)
 
         self.visited = set()
         self.first_step = True
@@ -73,13 +76,13 @@ class GraphEnv(Env):
         # TODO: Generalize this
         for i in range(properties[0]):
             for j in range(properties[1]):
-                for k in range(properties[2]):
-                    self.state_mapping[str(i) + str(j) + str(k)] = len(
+                self.state_mapping[str(i) + str(j)] = len(
                         self.state_mapping)
 
     def step(self, action: int):
         if self.is_valid_action(action) is False:
             return self.encode(self.state), 0, False, {}
+        print(action)
 
         if self.state.is_terminal is True:
             self.seen_terminal_node = True
@@ -109,12 +112,12 @@ class GraphEnv(Env):
         elif action == Actions.MERGE_THIRD.value:
             self.state = self.graph.full_merge_states(self.state,
                                                       self.outgoing[2])
-        elif action == Actions.MERGE_FIRST_TWO:
-            self.state = self.graph.full_merge_states_with_children(self.state, list(range(len(self.outgoing)))[:2])
-        elif action == Actions.MERGE_LAST_TWO:
-            self.state = self.graph.full_merge_states_with_children(self.state, list(range(len(self.outgoing)))[:-2])
-        elif action == Actions.MERGE_FIRST_AND_LAST:
-            self.state = self.graph.full_merge_states_with_children(self.state, list(range(len(self.outgoing)))[0:1] + list(range(len(self.outgoing)))[-1])
+        elif action == Actions.MERGE_FIRST_TWO.value:
+            self.state = self.graph.full_merge_states_with_children(self.state, [0, 1])
+        elif action == Actions.MERGE_LAST_TWO.value:
+            self.state = self.graph.full_merge_states_with_children(self.state, [len(self.outgoing) - 2, len(self.outgoing) - 1])
+        elif action == Actions.MERGE_FIRST_AND_LAST.value:
+            self.state = self.graph.full_merge_states_with_children(self.state, [0, len(self.outgoing) - 1])
 
         self.outgoing = self.graph.get_outgoing_states_not_self(self.state)
 
@@ -133,6 +136,9 @@ class GraphEnv(Env):
             reward = temp_reward - self.previous
         self.previous = temp_reward
 
+        if reward < 0:
+            done = True
+
         # highest reward?
 
         info = {}
@@ -140,6 +146,8 @@ class GraphEnv(Env):
         return self.encode(self.state), reward, done, info
 
     def reset(self):
+        self.previous = 0
+        self.first_step = True
         self.graph = PrefixTreeFactory().unpickle_tree(
             self.prefix_tree_pickle_path)
         self.state = self.graph.start_node
@@ -184,7 +192,6 @@ class GraphEnv(Env):
         :return: The index of this state
         """
         outgoing = self.graph.get_outgoing_states_not_self(state)
-        incoming_amount = len(self.graph.get_incoming_states(state))
 
         equivalent = True
         for outgoing_state in outgoing:
@@ -199,12 +206,7 @@ class GraphEnv(Env):
         else:
             second_part = number_of_outgoing
 
-        if incoming_amount > 3:
-            third_part = 4
-        else:
-            third_part = incoming_amount
-
-        value = str(first_part) + str(second_part) + str(third_part)
+        value = str(first_part) + str(second_part)
 
         if value not in self.state_mapping:
             print("NEW VALUE: ", value)
@@ -213,6 +215,22 @@ class GraphEnv(Env):
         return self.state_mapping[value]
 
     def get_valid_actions(self):
+        if self.graph.terminal_node in self.outgoing:
+            if len(self.outgoing) == 1 and self.outgoing[0].is_terminal:
+                return [Actions.DONT_MERGE.value]
+            elif len(self.outgoing) == 2:
+                if self.outgoing[0].is_terminal:
+                    return [Actions.DONT_MERGE.value, Actions.MERGE_SECOND.value]
+                elif self.outgoing[1].is_terminal:
+                    return [Actions.DONT_MERGE.value, Actions.MERGE_FIRST.value]
+            elif len(self.outgoing) == 3:
+                if self.outgoing[0].is_terminal:
+                    return [Actions.DONT_MERGE.value, Actions.MERGE_SECOND.value, Actions.MERGE_THIRD.value, Actions.MERGE_LAST_TWO.value]
+                elif self.outgoing[1].is_terminal:
+                    return [Actions.DONT_MERGE.value, Actions.MERGE_FIRST.value, Actions.MERGE_THIRD.value, Actions.MERGE_FIRST_AND_LAST.value]
+                elif self.outgoing[2].is_terminal:
+                    return [Actions.DONT_MERGE.value, Actions.MERGE_FIRST.value, Actions.MERGE_SECOND.value, Actions.MERGE_FIRST_TWO.value]
+
         if self.state.is_terminal is True:
             return [Actions.DONT_MERGE.value]
         if self.state == self.graph.start_node:

@@ -10,13 +10,14 @@ from whatthelog.definitions import PROJECT_ROOT
 
 sys.path.append("./../")
 
-random.seed(1)
+random.seed(4)
 
 
 def main():
-    DatasetFactory(PROJECT_ROOT.joinpath("resources/traces_5/")).create_data_set(5, 5, 5,
-                                                                                     remove_trivial_loops=False,
-                                                                                     visualize_tree=True)
+    DatasetFactory(PROJECT_ROOT.joinpath("resources/traces_large/")).create_data_set(10, 5, 5,
+                                                                                     remove_trivial_loops=True,
+                                                                                     visualize_tree=True,
+                                                                                     name_tree="prefix_tree_original.png")
     print("Finished!")
 
 

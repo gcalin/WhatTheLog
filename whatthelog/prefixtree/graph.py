@@ -166,6 +166,20 @@ class Graph(AutoPrinter):
         else:
             raise StateDoesNotExistException()
 
+    def get_incoming_states_not_self(self, state: State):
+        """
+        Method to get outgoing states of a state.
+
+        :param state: State to get outgoing states for
+        :return: List of outgoing edges from state.
+        If state does not exist raises StateDoesNotExistException.
+        """
+        incoming = self.get_incoming_states(state)
+        if incoming:
+            return list(filter(lambda x: x is not state, incoming))
+        else:
+            return []
+
     def update_edge(self, start: State, end: State, passes: int = 1):
         """
         Method to update an edge by adding a given number of passes (default is 1).

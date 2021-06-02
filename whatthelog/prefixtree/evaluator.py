@@ -23,7 +23,7 @@ class Evaluator:
         self.syntax_tree = syntax_tree
         self.positive_traces = positive_traces
         self.negative_traces = negative_traces
-        self.initial_model_size = len(model) if initial_size is None else initial_size
+        self.initial_model_size = model.size() if initial_size is None else initial_size
         self.weight_accuracy = weight_accuracy
         self.weight_size = weight_size
 
@@ -64,12 +64,13 @@ class Evaluator:
             w_size = self.weight_size
 
         # Get the the accuracy
-        accuracy: float = self.evaluate_accuracy()
-        # Get the size
-        size: float = self.evaluate_size()
-
-        # Compute the final result using weights
-        return w_accuracy * accuracy + w_size * size
+        # accuracy: float = self.evaluate_accuracy()
+        # # Get the size
+        # size: float = self.evaluate_size()
+        #
+        # # Compute the final result using weights
+        # return w_accuracy * accuracy + w_size * size
+        return self.calc_recall()
 
     def calc_specificity(self, debug=False) -> float:
         """

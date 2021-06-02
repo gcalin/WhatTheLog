@@ -34,7 +34,9 @@ class DatasetFactory:
         self.prefix_tree_pickle_path = prefix_tree_pickle_path
 
     def create_data_set(self, traces_amount: int, positive_traces_amount: int,
-                        negative_traces_amount: int, remove_trivial_loops: bool = True, visualize_tree: bool = False) -> None:
+                        negative_traces_amount: int, remove_trivial_loops: bool = True,
+                        visualize_tree: bool = False,
+                        name_tree: str = "prefix_tree_original.png") -> None:
         logs = os.listdir(self.all_traces_path)
         logs = [Path(self.all_traces_path).joinpath(line) for line in logs]
 
@@ -63,7 +65,7 @@ class DatasetFactory:
                                                           remove_trivial_loops=remove_trivial_loops)
         PrefixTreeFactory().pickle_tree(prefix_tree, PROJECT_ROOT.joinpath("resources/prefix_tree.pickle"))
         if visualize_tree:
-            Visualizer(prefix_tree).visualize()
+            Visualizer(prefix_tree).visualize(name_tree)
 
         self.__create_positive_traces(logs, positive_traces_amount)
         self.__create_negative_traces(training_set, negative_traces_amount, syntax_tree, prefix_tree)

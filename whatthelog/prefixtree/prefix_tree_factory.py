@@ -153,9 +153,7 @@ class PrefixTreeFactory(AutoPrinter):
                 else:
                     for node in nodes:
                         if template in node.properties.log_templates:
-                            # print(prefix_tree.edges)
                             prefix_tree.update_edge(parent, node)
-                            # print(prefix_tree.edges)
                             parent = node
                             nodes = prefix_tree.get_children(parent)
                             exists = True
