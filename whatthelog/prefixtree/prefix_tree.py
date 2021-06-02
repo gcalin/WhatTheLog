@@ -55,7 +55,7 @@ class PrefixTree(Graph):
         """
         return self.get_outgoing_states(state)
 
-    def add_child(self, state: State, parent: State, props: EdgeProperties = EdgeProperties()):
+    def add_child(self, state: State, parent: State, props: EdgeProperties = None):
         """
         Method to add a child in the tree.
         Requires that the parent be in the current tree.
@@ -68,7 +68,7 @@ class PrefixTree(Graph):
         assert parent in self, "Parent is not in the tree!"
 
         self.add_state(state)
-        self.add_edge(parent, state, props)
+        self.add_edge(parent, state, EdgeProperties())
 
     def add_branch(self, state: State, tree: PrefixTree, parent: State):
         """
@@ -104,13 +104,13 @@ class PrefixTree(Graph):
         """
 
         assert state in self
-        parents = self.edges.get_parents(self.state_indices_by_id[id(state)])
+        parents = self.get_incoming_states(state)
         assert len(parents) <= 1, "Edge has more than one parent!"
 
         if parents is None or len(parents) == 0:
             return None
         else:
-            return self.states[parents[0]]
+            return parents[0]
 
     def merge(self, other: PrefixTree):
         """

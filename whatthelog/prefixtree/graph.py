@@ -2,9 +2,8 @@ from typing import List, Union, Dict, Tuple
 
 from whatthelog.auto_printer import AutoPrinter
 from whatthelog.exceptions import StateAlreadyExistsException, \
-    StateDoesNotExistException, NonDeterminismException
+    StateDoesNotExistException, NonDeterminismException, InvalidEdgeException
 from whatthelog.prefixtree.edge_properties import EdgeProperties
-from whatthelog.prefixtree.sparse_matrix import SparseMatrix
 from whatthelog.prefixtree.state import State
 from whatthelog.prefixtree.state_properties import StateProperties
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
@@ -15,8 +14,8 @@ class Graph(AutoPrinter):
     Class implementing a graph
     """
 
-    __slots__ = ['edges', 'states', 'state_indices_by_id', 'prop_by_hash',
-                 'start_node', 'terminal_node']
+    __slots__ = ['states', 'state_indices_by_id', 'prop_by_hash',
+                 'start_node', 'terminal_node', 'outgoing_edges', 'incoming_edges']
 
     def __getstate__(self):
         return {slot: getattr(self, slot) for slot in self.__slots__}
@@ -32,9 +31,10 @@ class Graph(AutoPrinter):
             self.state_indices_by_id[id(s)] = index
 
     def __init__(self, start_node: State = None, terminal_node: State = None):
-        self.edges = SparseMatrix()
         self.states: Dict[int, State] = {}
         self.state_indices_by_id: Dict[int, int] = {}
+        self.outgoing_edges: Dict[State, Dict[State, EdgeProperties]] = {}
+        self.incoming_edges: Dict[State, Dict[State, EdgeProperties]] = {}
         self.prop_by_hash: Dict[int, StateProperties] = {}
         self.start_node = start_node
         self.terminal_node = terminal_node
@@ -91,12 +91,22 @@ class Graph(AutoPrinter):
                 end) not in self.state_indices_by_id:
             return False
 
-        start_index = self.state_indices_by_id[id(start)]
-        end_index = self.state_indices_by_id[id(end)]
-        if not (start_index, end_index) in self.edges:
-            self.edges[start_index, end_index] = str(props)
-            return True
-        return False
+        if start not in self.outgoing_edges:
+            self.outgoing_edges[start] = {end: props}
+        else:
+            if end in self.outgoing_edges[start]:
+                return False
+            else:
+                self.outgoing_edges[start][end] = props
+
+        if end not in self.incoming_edges:
+            self.incoming_edges[end] = {start: props}
+        else:
+            if start in self.incoming_edges[end]:
+                return False
+            self.incoming_edges[end][start] = props
+
+        return True
 
     def size(self):
         """
@@ -106,20 +116,20 @@ class Graph(AutoPrinter):
         """
         return len(self.states)
 
-    def get_outgoing_props(self, state: State) -> List[EdgeProperties]:
-        """
-        Method to get outgoing edges of a state.
-
-        :param state: State to get outgoing edges for
-        :return: List of outgoing edges from state.
-        If state does not exist raises StateDoesNotExistException.
-        """
-        if state in self:
-            results = self.edges.find_children(
-                self.state_indices_by_id[id(state)])
-            return [EdgeProperties.parse(result[1]) for result in results]
-        else:
-            raise StateDoesNotExistException
+    # def get_outgoing_props(self, state: State) -> List[EdgeProperties]:
+    #     """
+    #     Method to get outgoing edges of a state.
+    #
+    #     :param state: State to get outgoing edges for
+    #     :return: List of outgoing edges from state.
+    #     If state does not exist raises StateDoesNotExistException.
+    #     """
+    #     if state in self:
+    #         results = self.edges.find_children(
+    #             self.state_indices_by_id[id(state)])
+    #         return [EdgeProperties.parse(result[1]) for result in results]
+    #     else:
+    #         raise StateDoesNotExistException
 
     def get_outgoing_states(self, state: State) -> List[State]:
         """
@@ -130,10 +140,10 @@ class Graph(AutoPrinter):
         If state does not exist raises StateDoesNotExistException.
         """
         if state in self:
-            results = self.edges.find_children(
-                self.state_indices_by_id[id(state)])
-            return [self.states[result[0]] for result in
-                    results] if results is not None else []
+            if state not in self.outgoing_edges:
+                return []
+            else:
+                return list(self.outgoing_edges[state].keys())
         else:
             raise StateDoesNotExistException()
 
@@ -159,10 +169,10 @@ class Graph(AutoPrinter):
         If state does not exist raises StateDoesNotExistException.
         """
         if state in self:
-            results = self.edges.get_parents(
-                self.state_indices_by_id[id(state)])
-            return [self.states[result] for result in
-                    results] if results else []
+            if state not in self.incoming_edges:
+                return []
+            else:
+                return list(self.incoming_edges[state].keys())
         else:
             raise StateDoesNotExistException()
 
@@ -189,16 +199,16 @@ class Graph(AutoPrinter):
         :return: True if the update succeeded, else otherwise
         """
 
-        if id(start) not in self.state_indices_by_id or id(end) not in self.state_indices_by_id:
+        if start not in self or end not in self:
             return False
 
-        start_index = self.state_indices_by_id[id(start)]
-        end_index = self.state_indices_by_id[id(end)]
-        if (start_index, end_index) in self.edges:
-            print(self.edges[start_index, end_index])
-            self.edges[start_index, end_index] = int(self.edges[start_index, end_index]) + passes
-            return True
-        return False
+        if start not in self.outgoing_edges or end not in self.incoming_edges:
+            raise InvalidEdgeException()
+        elif end not in self.outgoing_edges[start] or start not in self.incoming_edges[end]:
+            raise InvalidEdgeException()
+        else:
+            self.outgoing_edges[start][end].props += passes
+
 
     def full_merge_states(self, s1: State, s2: State) -> State:
         """
@@ -269,20 +279,47 @@ class Graph(AutoPrinter):
             self.prop_by_hash[
                 state1.properties.get_prop_hash()] = state1.properties
 
-        self.edges.change_parent_of_children(
-            self.state_indices_by_id[id(state1)],
-            self.state_indices_by_id[id(state2)])
+        self.change_parent_of_children(
+            state2, state1)
 
-        self.edges.change_children_of_parents(
-            self.state_indices_by_id[id(state2)],
-            self.state_indices_by_id[id(state1)])
-
+        self.change_children_of_parents(
+            state2, state1)
 
         del self.states[self.state_indices_by_id[id(state2)]]
         del self.state_indices_by_id[id(state2)]
         del state2
 
+    def change_parent_of_children(self, old_parent: State, new_parent: State) -> None:
+        children = self.get_outgoing_states(old_parent)
+        for child in children:
+            old_edge = self.incoming_edges[child].pop(old_parent)
+            if child not in self.incoming_edges:
+                self.incoming_edges[child] = {new_parent: old_edge}
+            else:
+                self.incoming_edges[child][new_parent] = old_edge
+            if new_parent not in self.outgoing_edges:
+                self.outgoing_edges[new_parent] = {child: old_edge}
+            else:
+                self.outgoing_edges[new_parent][child] = old_edge
 
+        if old_parent in self.outgoing_edges:
+            del self.outgoing_edges[old_parent]
+
+    def change_children_of_parents(self, old_child: State, new_child: State) -> None:
+        parents = self.get_incoming_states(old_child)
+        for parent in parents:
+            old_edge = self.outgoing_edges[parent].pop(old_child)
+            if new_child not in self.incoming_edges:
+                self.incoming_edges[new_child] = {parent: old_edge}
+            else:
+                self.incoming_edges[new_child][parent] = old_edge
+            if parent not in self.outgoing_edges:
+                self.outgoing_edges[parent] = {new_child: old_edge}
+            else:
+                self.outgoing_edges[parent][new_child] = old_edge
+
+        if old_child in self.incoming_edges:
+            del self.incoming_edges[old_child]
 
     def determinize(self, state: State) -> State:
         new_state, changed = self.merge_equivalent_children(state)

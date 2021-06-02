@@ -28,7 +28,7 @@ class DatasetFactory:
                  config_file_path: str = PROJECT_ROOT.joinpath(
                      "resources/config.json"),
                  prefix_tree_pickle_path: str = PROJECT_ROOT.joinpath(
-                     "resources/prefix_tree_trivial_loops.pickle")) -> None:
+                     "resources/prefix_tree.pickle")) -> None:
         self.all_traces_path = all_traces_path
         self.config_file_path = config_file_path
         self.prefix_tree_pickle_path = prefix_tree_pickle_path
@@ -63,6 +63,8 @@ class DatasetFactory:
         prefix_tree = PrefixTreeFactory().get_prefix_tree(self.DATA_PATH.joinpath("traces"),
                                                           self.config_file_path,
                                                           remove_trivial_loops=remove_trivial_loops)
+        print(id(list(prefix_tree.outgoing_edges[prefix_tree.start_node].values())[0]))
+
         PrefixTreeFactory().pickle_tree(prefix_tree, PROJECT_ROOT.joinpath("resources/prefix_tree.pickle"))
         if visualize_tree:
             Visualizer(prefix_tree).visualize(name_tree)

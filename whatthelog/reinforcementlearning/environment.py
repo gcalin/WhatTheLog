@@ -82,7 +82,6 @@ class GraphEnv(Env):
     def step(self, action: int):
         if self.is_valid_action(action) is False:
             return self.encode(self.state), 0, False, {}
-        print(action)
 
         if self.state.is_terminal is True:
             self.seen_terminal_node = True

@@ -132,17 +132,17 @@ def test_size(graph: Graph):
     assert graph.size() == len(graph.states)
 
 
-def test_get_outgoing_props():
-    graph = Graph()
-    state1 = State(["1"])
-    state2 = State(["2"])
-    graph.add_state(state1)
-    graph.add_state(state2)
-
-    props = EdgeProperties(["50"])
-    graph.add_edge(state1, state2, props)
-
-    assert graph.get_outgoing_props(state1) == [props]
+# def test_get_outgoing_props():
+#     graph = Graph()
+#     state1 = State(["1"])
+#     state2 = State(["2"])
+#     graph.add_state(state1)
+#     graph.add_state(state2)
+#
+#     props = EdgeProperties(["50"])
+#     graph.add_edge(state1, state2, props)
+#
+#     assert graph.get_outgoing_props(state1) == [props]
 
 
 def test_get_outgoing_states(graph: Graph):
@@ -187,7 +187,6 @@ def test_merge_states3(graph: Graph):
     state4 = graph.states[4]
 
     graph.merge_states(state2, state4)
-    print(graph.edges.list)
 
     assert len(graph.states) == 4
     assert state2.properties.log_templates == ["2", "4"]
@@ -212,20 +211,18 @@ def test_complex_merge_1(fully_connected_graph: Graph):
 
 
 def test_complex_merge_2(graph_2: Graph):
-    graph_2.full_merge_states(graph_2.states[0],
-                              graph_2.states[1])
+    new_node = graph_2.full_merge_states(graph_2.states[0],
+                                graph_2.states[1])
 
-    new_node = graph_2.states[2]
 
     assert len(graph_2) == 3
     assert new_node.properties.log_templates == ["0", "1"]
 
 
 def test_complex_merge_3(graph_2: Graph):
-    graph_2.full_merge_states(graph_2.states[0],
+    new_node = graph_2.full_merge_states(graph_2.states[0],
                               graph_2.states[3])
 
-    new_node = graph_2.states[1]
 
     assert len(graph_2) == 1
     assert set(new_node.properties.log_templates) == {"0", "1", "2"}
@@ -237,9 +234,8 @@ def test_complex_merge_4(graph_2: Graph):
     graph_2.add_edge(s5, s5)
     graph_2.add_edge(s5, graph_2.states[0])
 
-    graph_2.full_merge_states(graph_2.states[0],
+    new_node = graph_2.full_merge_states(graph_2.states[0],
                               graph_2.states[3])
-    new_node = graph_2.states[4]
     assert len(graph_2) == 1
     assert set(new_node.properties.log_templates) == {"0", "1", "2"}
 
@@ -259,10 +255,9 @@ def test_complex_merge_5(graph_2: Graph):
     graph_2.add_edge(s7, s6)
     graph_2.add_edge(s7, s7)
 
-    graph_2.full_merge_states(graph_2.states[0],
+    new_node = graph_2.full_merge_states(graph_2.states[0],
                               graph_2.states[3])
 
-    new_node = list(graph_2.states.values())[0]
     assert len(graph_2) == 1
     assert set(new_node.properties.log_templates) == {"0", "1", "2"}
 
@@ -296,10 +291,10 @@ def test_merge_equivalent_children_self():
     graph.add_edge(state0, state1)
     graph.add_edge(state0, state0)
 
-    graph.merge_equivalent_children(state0)
+    new_node, changed = graph.merge_equivalent_children(state0)
 
     assert len(graph) == 1
-    assert "1" in state0.get_properties().log_templates
+    assert "1" in new_node.get_properties().log_templates
 
 
 def test_merge_with_all_children():
@@ -315,7 +310,6 @@ def test_merge_with_all_children():
 
     assert graph.size() == 3
     graph.full_merge_states_with_children(start)
-    print(graph.edges)
     assert graph.size() == 1
 
 

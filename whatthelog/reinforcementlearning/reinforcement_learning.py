@@ -63,8 +63,7 @@ if __name__ == '__main__':
                 action = policy[step]
             else:
                 actions = env.get_valid_actions()
-                if step == 2:
-                    print(actions)
+
                 if random.random() < epsilon:
                     index = random.randint(0, len(actions) - 1)
                     action = actions[index]

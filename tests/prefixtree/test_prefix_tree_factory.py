@@ -66,7 +66,6 @@ def test_pickle(tree: PrefixTree):
 
     pt = PrefixTreeFactory.unpickle_tree(pickle_file_path)
 
-    assert pt.edges.list == tree.edges.list
     for x, y in zip(tree.states.values(), pt.states.values()):
         assert x.is_equivalent(y)
 

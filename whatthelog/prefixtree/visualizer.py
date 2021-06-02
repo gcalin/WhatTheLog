@@ -73,7 +73,7 @@ class Visualizer(AutoPrinter):
                     for parent in self.graph.get_incoming_states(state):
 
                         self.G.add_edge(id(parent),
-                                    id(state), label=self.graph.edges[self.graph.state_indices_by_id[id(parent)], self.graph.state_indices_by_id[id(state)]])
+                                    id(state), label=self.graph.outgoing_edges[parent][state])
                     visited.add(state)
                     labels[id(state)] = self.get_label(state.properties.log_templates)
 

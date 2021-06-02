@@ -11,16 +11,16 @@ from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 
 
 def main():
-    # st = SyntaxTreeFactory().parse_file(
-    #     PROJECT_ROOT.joinpath("resources/config.json"))
+    st = SyntaxTreeFactory().parse_file(
+        PROJECT_ROOT.joinpath("resources/config.json"))
 
-    # print("Reading positive and negative traces..")
-    # positive_traces, negative_traces = DatasetFactory.get_evaluation_traces(st, PROJECT_ROOT.joinpath("resources/data"))
-    # print("Finished reading positive and negative traces..")
+    print("Reading positive and negative traces..")
+    positive_traces, negative_traces = DatasetFactory.get_evaluation_traces(st, PROJECT_ROOT.joinpath("resources/data"))
+    print("Finished reading positive and negative traces..")
 
     pt = PrefixTreeFactory().unpickle_tree(PROJECT_ROOT.joinpath("resources/prefix_tree.pickle"))
-    # Visualizer(pt).visualize()
-    dfs(pt)
+    Visualizer(pt).visualize()
+    # dfs(pt)
     # print(pt.terminal_node in pt)
     #
     # print(ev.evaluate())
