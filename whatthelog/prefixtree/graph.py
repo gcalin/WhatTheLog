@@ -1,8 +1,9 @@
-from typing import List, Union, Dict, Tuple
+from typing import List, Union, Dict, Tuple, Set
 
 from whatthelog.auto_printer import AutoPrinter
 from whatthelog.exceptions import StateAlreadyExistsException, \
-    StateDoesNotExistException, NonDeterminismException, InvalidEdgeException
+    StateDoesNotExistException, NonDeterminismException, InvalidEdgeException, \
+    TriedToMergeEndNodeException
 from whatthelog.prefixtree.edge_properties import EdgeProperties
 from whatthelog.prefixtree.state import State
 from whatthelog.prefixtree.state_properties import StateProperties
@@ -160,6 +161,15 @@ class Graph(AutoPrinter):
         else:
             return []
 
+    def get_outgoing_states_with_edges_no_self(self, state: State) -> List[Tuple[State, EdgeProperties]]:
+        if state in self:
+            if state not in self.outgoing_edges:
+                return []
+            else:
+                return list(filter(lambda x: x is not state, list(self.outgoing_edges[state].items())))
+        else:
+            raise StateDoesNotExistException()
+
     def get_incoming_states(self, state: State):
         """
         Method to get outgoing states of a state.
@@ -209,8 +219,7 @@ class Graph(AutoPrinter):
         else:
             self.outgoing_edges[start][end].props += passes
 
-
-    def full_merge_states(self, s1: State, s2: State) -> State:
+    def full_merge_states(self, s1: State, s2: State, visited: Set[State]) -> State:
         """
         Fully merges two states and removes non-determinism.
         :param s1: One of the two states to merge.
@@ -221,14 +230,14 @@ class Graph(AutoPrinter):
             return
 
         # Trivially merge the states
-        self.merge_states(s1, s2)
+        self.merge_states(s1, s2, visited)
 
         # Remove non-determinism in the merged state's children by merging them.
-        new_state = self.determinize(s1)
+        new_state = self.determinize(s1, visited)
 
         return new_state
 
-    def full_merge_states_with_children(self, state: State, children_indices: List[int] = None) -> State:
+    def full_merge_states_with_children(self, state: State, visited: Set[State], children_indices: List[int] = None) -> State:
         """
         Merges all the children of a state into the current state.
 
@@ -237,29 +246,37 @@ class Graph(AutoPrinter):
         """
         if state not in self:
             raise StateDoesNotExistException()
-        if children_indices is not None:
-            print(children_indices)
+
         # Trivially merge all children into target state.
         outgoing_states = self.get_outgoing_states_not_self(state)
         for i, outgoing in enumerate(outgoing_states):
             if children_indices is not None:
                 if i in children_indices and outgoing.is_terminal is False:
-                    self.merge_states(state, outgoing)
+                    self.merge_states(state, outgoing, visited)
             else:
-                self.merge_states(state, outgoing)
+                if outgoing is not self.terminal_node:
+                    self.merge_states(state, outgoing, visited)
 
         # Remove non-determinism in the merged state's children by merging them.
-        new_state = self.determinize(state)
+        new_state = self.determinize(state, visited)
 
         return new_state
 
-    def merge_states(self, state1: State, state2: State) -> None:
+    def merge_states(self, state1: State, state2: State, visited: Set[State]) -> None:
         """
         This method merges two states and passes the properties from one state to the other.
         :param state1: The new 'merged' state
         :param state2: The state that will be deleted and which properties will be passed to state 1
         """
+        if state1 in visited and state2 not in visited:
+            visited.remove(state1)
+        elif state1 not in visited and state2 in visited:
+            visited.remove(state2)
+
         props = state1.properties.log_templates.copy()
+
+        if state1.is_terminal or state2.is_terminal:
+            raise TriedToMergeEndNodeException()
 
         for temp in state2.properties.log_templates:
             if temp not in state1.properties.log_templates:
@@ -321,8 +338,8 @@ class Graph(AutoPrinter):
         if old_child in self.incoming_edges:
             del self.incoming_edges[old_child]
 
-    def determinize(self, state: State) -> State:
-        new_state, changed = self.merge_equivalent_children(state)
+    def determinize(self, state: State, visited: Set[State]) -> State:
+        new_state, changed = self.merge_equivalent_children(state, visited)
 
         # Get the current state's parent
         parents = self.get_incoming_states(new_state)
@@ -331,7 +348,7 @@ class Graph(AutoPrinter):
         # TODO: Dont include self in parents in case of self loops
         while len(parents) > 0:
             # Remove non-determinism in the parent
-            current, changed = self.merge_equivalent_children(parents.pop())
+            current, changed = self.merge_equivalent_children(parents.pop(), visited)
 
             # If a change occurred, update the list of parents
             if changed:
@@ -340,7 +357,7 @@ class Graph(AutoPrinter):
 
         return new_state
 
-    def merge_equivalent_children(self, current: State) -> Tuple[State, bool]:
+    def merge_equivalent_children(self, current: State, visited: Set[State]) -> Tuple[State, bool]:
         """
         Merge all equivalent children, such that the resulting automaton remains deterministic while merging.
         :param current: The state of which we want to merge the children
@@ -371,7 +388,7 @@ class Graph(AutoPrinter):
 
             if s1 is current:
                 current = s2
-            self.merge_states(s2, s1)
+            self.merge_states(s2, s1, visited)
             merged = True
 
             # Update the children and duplicates list
@@ -389,7 +406,7 @@ class Graph(AutoPrinter):
         if has_nondeterminism:
             children = self.get_outgoing_states_not_self(current)
             for child in children:
-                self.merge_equivalent_children(child)
+                self.merge_equivalent_children(child, visited)
 
         return current, merged
 

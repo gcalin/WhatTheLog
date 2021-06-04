@@ -29,3 +29,8 @@ class NonDeterminismException(Exception):
 @dataclass(frozen=True)
 class InvalidEdgeException(Exception):
     message: str = field(default="Edge was missing from 1 of 2 dicts")
+
+
+@dataclass(frozen=True)
+class TriedToMergeEndNodeException(Exception):
+    message: str = field(default="Tried to merge terminal node")

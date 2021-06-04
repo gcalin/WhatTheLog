@@ -11,31 +11,31 @@ from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 
 
 def main():
-    st = SyntaxTreeFactory().parse_file(
-        PROJECT_ROOT.joinpath("resources/config.json"))
-
-    print("Reading positive and negative traces..")
-    positive_traces, negative_traces = DatasetFactory.get_evaluation_traces(st, PROJECT_ROOT.joinpath("resources/data"))
-    print("Finished reading positive and negative traces..")
-
-    pt = PrefixTreeFactory().unpickle_tree(PROJECT_ROOT.joinpath("resources/prefix_tree.pickle"))
-    Visualizer(pt).visualize()
-    # dfs(pt)
-    # print(pt.terminal_node in pt)
+    # st = SyntaxTreeFactory().parse_file(
+    #     PROJECT_ROOT.joinpath("resources/config.json"))
+    #
+    # print("Reading positive and negative traces..")
+    # positive_traces, negative_traces = DatasetFactory.get_evaluation_traces(st, PROJECT_ROOT.joinpath("resources/data"))
+    # print("Finished reading positive and negative traces..")
+    #
+    pt = PrefixTreeFactory().unpickle_tree("C:/Users/Pandelis/Projects/WhatTheLog/finaltree_0.8925072690673228.pickle")
+    # # Visualizer(pt).visualize()
+    # # dfs(pt)
+    # ev = Evaluator(pt, st, positive_traces, negative_traces)
     #
     # print(ev.evaluate())
-    #
+    # #
     # start = pt.start_node
     #
-    # for _ in range(100000):
+    # for _ in range(20):
     #     first = pt.get_outgoing_states(start)[0]
     #     pt.full_merge_states_with_children(first)
     #
-    #
-    # print(pt.get_outgoing_states(first))
-    # Visualizer(pt).visualize("one_merge.png")
+    # #
     # print(ev.evaluate())
     #
+    # print(pt.get_outgoing_states(first))
+    Visualizer(pt).visualize("finaltree_0.8925072690673228.png")
 
 
 def dfs(pt: Graph):
@@ -65,8 +65,6 @@ def dfs(pt: Graph):
     print(nodes)
     print(pt.size())
     print(f"Finished! Time elapsed: {timedelta(seconds=time() - start)}")
-
-
 
 
 if __name__ == '__main__':

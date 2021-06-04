@@ -64,13 +64,13 @@ class Evaluator:
             w_size = self.weight_size
 
         # Get the the accuracy
-        # accuracy: float = self.evaluate_accuracy()
-        # # Get the size
-        # size: float = self.evaluate_size()
-        #
-        # # Compute the final result using weights
-        # return w_accuracy * accuracy + w_size * size
-        return self.calc_recall()
+        accuracy: float = self.evaluate_accuracy()
+        # Get the size
+        size: float = self.evaluate_size()
+
+        # Compute the final result using weights
+        return w_accuracy * accuracy + w_size * size
+
 
     def calc_specificity(self, debug=False) -> float:
         """

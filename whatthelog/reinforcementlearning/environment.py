@@ -83,10 +83,8 @@ class GraphEnv(Env):
         if self.is_valid_action(action) is False:
             return self.encode(self.state), 0, False, {}
 
-        if self.state.is_terminal is True:
-            self.seen_terminal_node = True
         self.action_sequence.append(action)
-        if len(self.stack) == 0 and self.seen_terminal_node is True:
+        if len(self.stack) == 0:
             done = True
         else:
             done = False
@@ -101,22 +99,22 @@ class GraphEnv(Env):
                     self.state = next_node
 
         elif action == Actions.MERGE_ALL.value:
-            self.state = self.graph.full_merge_states_with_children(self.state)
+            self.state = self.graph.full_merge_states_with_children(self.state, self.visited)
         elif action == Actions.MERGE_FIRST.value:
             self.state = self.graph.full_merge_states(self.state,
-                                                      self.outgoing[0])
+                                                      self.outgoing[0], self.visited)
         elif action == Actions.MERGE_SECOND.value:
             self.state = self.graph.full_merge_states(self.state,
-                                                      self.outgoing[1])
+                                                      self.outgoing[1], self.visited)
         elif action == Actions.MERGE_THIRD.value:
             self.state = self.graph.full_merge_states(self.state,
-                                                      self.outgoing[2])
+                                                      self.outgoing[2], self.visited)
         elif action == Actions.MERGE_FIRST_TWO.value:
-            self.state = self.graph.full_merge_states_with_children(self.state, [0, 1])
+            self.state = self.graph.full_merge_states_with_children(self.state, self.visited, [0, 1])
         elif action == Actions.MERGE_LAST_TWO.value:
-            self.state = self.graph.full_merge_states_with_children(self.state, [len(self.outgoing) - 2, len(self.outgoing) - 1])
+            self.state = self.graph.full_merge_states_with_children(self.state, self.visited, [len(self.outgoing) - 2, len(self.outgoing) - 1])
         elif action == Actions.MERGE_FIRST_AND_LAST.value:
-            self.state = self.graph.full_merge_states_with_children(self.state, [0, len(self.outgoing) - 1])
+            self.state = self.graph.full_merge_states_with_children(self.state, self.visited, [0, len(self.outgoing) - 1])
 
         self.outgoing = self.graph.get_outgoing_states_not_self(self.state)
 
@@ -178,7 +176,7 @@ class GraphEnv(Env):
         return node
 
     def __get_reward(self):
-        return self.evaluator.evaluate(0.5, 0.5)
+        return self.evaluator.evaluate(0.75, 0.25)
 
     def encode(self, state: State) -> int:
         """
@@ -190,10 +188,15 @@ class GraphEnv(Env):
         :param outgoing_edges: Number of outgoing edges of this node
         :return: The index of this state
         """
-        outgoing = self.graph.get_outgoing_states_not_self(state)
+        outgoing = self.graph.get_outgoing_states_with_edges_no_self(state)
+        outgoing_states = list(map(lambda x: x[0], outgoing))
+        passes = list(map(lambda x: x[1].props, outgoing))
+
+        total_passes = sum(passes)
+        frequencies = list(map(lambda x: self.round(x / total_passes), passes))
 
         equivalent = True
-        for outgoing_state in outgoing:
+        for outgoing_state in outgoing_states:
             if state.is_equivalent(outgoing_state) is False:
                 equivalent = False
 
@@ -207,11 +210,13 @@ class GraphEnv(Env):
 
         value = str(first_part) + str(second_part)
 
-        if value not in self.state_mapping:
-            print("NEW VALUE: ", value)
-            self.state_mapping[value] = len(self.state_mapping)
-
         return self.state_mapping[value]
+
+    def round(self, frequency):
+        if 0 <= frequency <= 0.2:
+            return 0
+        else:
+            return 1
 
     def get_valid_actions(self):
         if self.graph.terminal_node in self.outgoing:

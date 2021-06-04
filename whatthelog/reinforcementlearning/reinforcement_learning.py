@@ -39,7 +39,7 @@ if __name__ == '__main__':
     alpha = 0.1
     gamma = 1
     epsilon = 0.1
-    epochs = 20
+    epochs = 300
     step = 1
 
     total_rewards = []
@@ -47,6 +47,7 @@ if __name__ == '__main__':
     follow_custom_policy = False
 
     print(env.graph.size())
+    best_fitness = 0
 
     x = [x in env.graph for x in env.graph.states.values()]
 
@@ -87,13 +88,17 @@ if __name__ == '__main__':
             # Visualizer(env.graph).visualize(f"run/{step}.png")
             # print(env.action_sequence)
             step += 1
+
+        fitness = env.evaluator.evaluate(0.5, 0.5)
+        if fitness > best_fitness:
+            PrefixTreeFactory().pickle_tree(env.graph, PROJECT_ROOT.joinpath(f"finaltree_{fitness}.pickle"))
+            print(f"saved: fitness: {fitness}")
         total_rewards.append(total_reward)
-        print(env.action_sequence)
         # print(q_table)
         print(f"Epoch {i} completed with total reward: {total_reward}.")
 
     Visualizer(env.graph).visualize("final.png")
-    fitness = env.evaluator.evaluate(0.5, 0.5)
+    fitness = env.evaluator.evaluate(0.75, 0.25)
     print("fitness: ", fitness)
 
     print(f"total_reward: {sum(total_rewards)}")
