@@ -66,7 +66,7 @@ def test_pickle(tree: PrefixTree):
 
     pt = PrefixTreeFactory.unpickle_tree(pickle_file_path)
 
-    assert pt.edges.list == tree.edges.list
+    # assert pt.edges.list == tree.edges.list
     for x, y in zip(tree.states.values(), pt.states.values()):
         assert x.is_equivalent(y)
 
@@ -91,6 +91,24 @@ def test_remove_trivial_loops_several():
 
     assert tree.size() == 41  # 35 + root + terminal * 5
 
+
+def test_compact_tree_1():
+    traces_path = "tests/resources/traces_single"
+    tree = PrefixTreeFactory().get_prefix_tree(
+        PROJECT_ROOT.joinpath(traces_path),
+        PROJECT_ROOT.joinpath("resources/config.json"),
+        one_state_per_template=True)
+    assert tree.size() == 12  # 10 + root + terminal
+
+
+def test_compact_tree_2():
+    traces_path = "tests/resources/testlogs"
+    tree = PrefixTreeFactory().get_prefix_tree(
+        PROJECT_ROOT.joinpath(traces_path),
+        PROJECT_ROOT.joinpath("resources/config.json"),
+        one_state_per_template=True)
+
+    assert tree.size() == 12  # 35 + root + terminal * 5
 
 
 

@@ -24,9 +24,12 @@ class RandomSelection(Selection):
 
     def select(self) -> Tuple[State, State]:
         state = self.model.get_random_state()
+
+        while len(self.model.get_outgoing_states_not_self(state)) == 0:
+            state = self.model.get_random_state()
+
         neighbour = self.model.get_random_child(state)
-        if neighbour is not None:
-            return state, neighbour
+        return state, neighbour
 
 
 class RouletteWheelSelection(Selection):

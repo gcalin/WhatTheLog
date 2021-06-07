@@ -148,8 +148,6 @@ def test_match_trace_traversal_1(state_tree, traces_t1, syntax_tree):
     """
     Tests the match_trace function on an accepted longer trace
     """
-    t0 = state_tree.get_children(state_tree.get_root())[0]
-    t1 = state_tree.get_children(t0)[1]
 
     for count, t in enumerate(traces_t1):
         res = match_trace(state_tree, t, syntax_tree)
@@ -160,8 +158,8 @@ def test_match_trace_traversal_no_terminal_1(state_tree, traces_t1, syntax_tree)
     """
     Tests the match_trace function on a real trace that does not end in a terminal state
     """
-    t0 = state_tree.get_children(state_tree.get_root())[0]
-    t1 = state_tree.get_children(t0)[1]
+    t0 = state_tree.states[1]
+    t1 = state_tree.states[3]
 
     expected_path = [[t0, t1]] * 2
 
@@ -188,8 +186,7 @@ def test_match_trace_single_traversal_no_terminal_2(state_tree, traces_t2, synta
     """
     Tests the match_trace function on an accepted longer trace that does not end in a terminal state
     """
-    t0 = state_tree.get_children(state_tree.get_root())[0]
-    t2 = state_tree.get_children(t0)[0]
+    t0 = state_tree.states[1]
     for count, t in enumerate(traces_t2):
         res = match_trace(state_tree, t, syntax_tree)
         assert res is None, "Failed multi-state traversal"
@@ -199,8 +196,8 @@ def test_match_trace_single_traversal_2(state_tree, traces_t2, syntax_tree):
     """
     Tests the match_trace function on an accepted longer trace
     """
-    t0 = state_tree.get_children(state_tree.get_root())[0]
-    t2 = state_tree.get_children(t0)[0]
+    t0 = state_tree.states[1]
+    t2 = state_tree.states[2]
     expected_path = [[t0, t2]]
 
     state_tree.add_child(State(["terminal"], True), t2)
@@ -226,10 +223,6 @@ def test_match_trace_traversal_no_terminal_3(state_tree, traces_t3, syntax_tree)
     """
     Tests the match_trace function on an accepted longer trace that does not end in a terminal state
     """
-    root: State = state_tree.get_root()
-    t0 = state_tree.get_children(root)[0]
-    t2 = state_tree.get_children(t0)[0]
-    t3 = state_tree.get_children(t2)[0]
 
     for count, t in enumerate(traces_t3):
         res = match_trace(state_tree, t, syntax_tree)
@@ -240,10 +233,9 @@ def test_match_trace_traversal_3(state_tree, traces_t3, syntax_tree):
     """
     Tests the match_trace function on an accepted longer trace
     """
-    root: State = state_tree.get_root()
-    t0 = state_tree.get_children(root)[0]
-    t2 = state_tree.get_children(t0)[0]
-    t3 = state_tree.get_children(t2)[0]
+    t0 = state_tree.states[1]
+    t2 = state_tree.states[2]
+    t3 = state_tree.states[4]
 
     state_tree.add_child(State(["terminal"], True), t3)
 
@@ -279,10 +271,7 @@ def test_match_trace_no_successor_rec_2(state_tree, syntax_tree):
     """
     Tests the match_trace function on a trace that has no successor state after a later line
     """
-    root: State = state_tree.get_root()
-    t0 = state_tree.get_children(root)[0]
-    t2: State = state_tree.get_children(t0)[0]
-    t3: State = state_tree.get_children(t2)[0]
+    t3: State = state_tree.states[4]
     t4: State = State(["p0p1"])
     state_tree.add_child(t4, t3)
     trace = ["[p0][p1]", "[p0][p4][p1]", "[p0][p4][p0]", "[p0][p4][p1]"]

@@ -20,7 +20,7 @@ def train_test_validation_split(syntax_tree: SyntaxTree,
                             syntax_file_path: str,
                             debug=False) -> Tuple[str, str, str, str, str, Graph]:
 
-    assert train_proportion + validation_proportion < 1
+    # assert train_proportion + validation_proportion < 1
 
     if debug:
         print("Entering data split phase")
@@ -69,15 +69,15 @@ def train_test_validation_split(syntax_tree: SyntaxTree,
                                                      config_file_path=syntax_file_path, remove_trivial_loops=False)
 
     # For each validation trace
-    for test_trace_name in validation_traces:
+    for validation_trace_name in validation_traces:
 
         # Create new name
-        old_name = os.path.join(logs_dir, test_trace_name)
-        new_name = os.path.join(validation_dir_true, test_trace_name)
+        old_name = os.path.join(logs_dir, validation_trace_name)
+        new_name = os.path.join(validation_dir_true, validation_trace_name)
 
         # Create a false trace
         produce_false_trace(old_name,
-                            os.path.join(validation_dir_false, test_trace_name),
+                            os.path.join(validation_dir_false, validation_trace_name),
                             syntax_tree,
                             model)
 

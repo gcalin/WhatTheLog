@@ -27,13 +27,13 @@ class SimpleSchedule(CoolingSchedule):
         self.temperature = initial_temperature
         self.a = a
 
-    def initial_temperature(self, *args, **kwargs) -> float:
+    def initial_temperature(self) -> float:
         return self.initial_temperature
 
-    def chain_length(self, *args, **kwargs) -> int:
+    def chain_length(self) -> int:
         return self.chain_length
 
-    def update_temperature(self, *args, **kwargs):
+    def update_temperature(self):
         self.temperature *= self.a
         return self.temperature
 
@@ -46,16 +46,18 @@ class BonomiLuttonSchedule(SimpleSchedule):
 
 
 class LundySchedule(CoolingSchedule):
-    def __init__(self, alpha: float):
+    def __init__(self, alpha: float, neighborhood_size: float, sample_ratio: float = 1):
         super().__init__()
+        self.neighborhood_size = neighborhood_size
+        self.sample_ratio = sample_ratio
         self.alpha = alpha
-        self.temperature = 0.5
+        self.temperature = 1
 
     def initial_temperature(self) -> float:
-        return 0.5
+        return 1
 
     def chain_length(self) -> int:
-        return 6
+        return max(2, int(self.neighborhood_size * self.sample_ratio))
 
     def update_temperature(self, deviation: float) -> float:
         self.temperature /= (1 + self.alpha * self.temperature)
@@ -63,23 +65,26 @@ class LundySchedule(CoolingSchedule):
 
 
 class AartsSchedule(CoolingSchedule):
-    def __init__(self, avg_increase: float,
+    def __init__(self,
                  neighborhood_size: int,
+                 sample_ratio: float,
                  delta: float,
-                 acceptance_ratio: float = 0.8):
+                 acceptance_ratio: float = 0.8,
+                 avg_increase: float = 1):
         super().__init__()
-        self.avg_increase = avg_increase
-        self.acceptance_ratio = acceptance_ratio
         self.neighborhood_size = neighborhood_size
+        self.sample_ratio = sample_ratio
         self.delta = delta
-        self.temperature = self.avg_increase / log(e, 1 / self.acceptance_ratio)
+        self.acceptance_ratio = acceptance_ratio
+        self.avg_increase = avg_increase
+        self.temperature = 100000  # self.avg_increase / log(e, 1 / self.acceptance_ratio)
 
     def initial_temperature(self) -> float:
-        return self.avg_increase / log(e, 1 / self.acceptance_ratio)
+        return 100000  # self.avg_increase / log(e, 1 / self.acceptance_ratio)
 
     def chain_length(self) -> int:
-        return self.neighborhood_size
+        return max(2, int(self.neighborhood_size * self.sample_ratio))
 
     def update_temperature(self, deviation: float) -> float:
-        self.temperature = self.temperature / ((1 + self.temperature * log(e, self.delta + 1)) / (3 * deviation))
+        self.temperature = self.temperature / ((1 + self.temperature * log(self.delta + 1)) / (3 * deviation))
         return self.temperature
