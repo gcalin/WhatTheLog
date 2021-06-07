@@ -16,7 +16,6 @@ from typing import List, Union
 from whatthelog.prefixtree.edge_properties import EdgeProperties
 from whatthelog.prefixtree.graph import Graph
 from whatthelog.prefixtree.state import State
-from whatthelog.exceptions import InvalidTreeException
 
 
 #****************************************************************************************************

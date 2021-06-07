@@ -36,16 +36,16 @@ class StateProperties(AutoPrinter):
 
     __slots__ = ['log_templates']
 
-    log_templates: List[str]
+    log_templates: List[List[str]]
 
     def get_prop_hash(self) -> int:
-        return hash(tuple(self.log_templates))
+        return hash(tuple(map(lambda x: tuple(x), self.log_templates)))
 
     def __hash__(self):
         return self.get_prop_hash()
 
     def __eq__(self, other):
-        return set(self.log_templates) == set(other.log_templates)
+        return sorted(self.log_templates) == sorted(other.log_templates)
 
     def __len__(self):
         return len(self.log_templates)

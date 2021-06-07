@@ -27,7 +27,7 @@ def test_one_trace(tree: PrefixTree):
     assert tree.size() == lines + 2
 
     root = tree.get_root()
-    assert root.properties.log_templates == [""]
+    assert root.properties.log_templates == [[""]]
 
     child2 = None
     for i in range(tree.size() - 1):

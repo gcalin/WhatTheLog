@@ -7,7 +7,7 @@ from whatthelog.prefixtree.prefix_tree import State
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 
 
-def template_matches_state(template: str, state: State) -> bool:
+def template_matches_state(template: List[str], state: State) -> bool:
     return template in state.properties.log_templates
 
 

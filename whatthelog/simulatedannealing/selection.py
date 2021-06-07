@@ -85,8 +85,7 @@ class TournamentSelection(Selection):
 
         for _ in range(self.k):
             # Select at random a state and its neighbour
-            state = self.model.get_random_state()
-            neighbour = self.model.get_random_child(state)
+            state, neighbour = self.model.get_non_terminal_state_and_child()
 
             # Calculate the score between 0 and 1 (higher is better) and store in array
             score: float = 1 / len(self.model.get_outgoing_states(state))

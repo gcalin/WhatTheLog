@@ -151,7 +151,7 @@ class Evaluator:
         fp: int = 0
 
         for trace in tree_traces:
-            if self.model.matches(trace):
+            if self.model.matches_unique_states(trace):
                 fp += 1
             else:
                 tn += 1
@@ -225,7 +225,7 @@ class Evaluator:
         fn: int = 0
 
         for trace in tree_traces:
-            if self.model.matches(trace):
+            if self.model.matches_unique_states(trace):
                 tp += 1
             else:
                 fn += 1

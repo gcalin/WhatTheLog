@@ -6,101 +6,10 @@ from typing import Tuple, List
 
 from scripts.log_scrambler import produce_false_trace
 from whatthelog.prefixtree.evaluator import Evaluator
-from whatthelog.prefixtree.graph import Graph
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.prefixtree.prefix_tree_factory import PrefixTreeFactory
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
-
-
-def train_test_validation_split(syntax_tree: SyntaxTree,
-                            logs_dir: str,
-                            train_proportion: float,
-                            validation_proportion: float,
-                            syntax_file_path: str,
-                            debug=False) -> Tuple[str, str, str, str, str, Graph]:
-
-    # assert train_proportion + validation_proportion < 1
-
-    if debug:
-        print("Entering data split phase")
-
-    # Check if log directory exists
-    if not os.path.isdir(logs_dir):
-        raise NotADirectoryError("Log directory not found!")
-
-    # Create directory names
-    train_dir: str = logs_dir + "_train"
-
-    validation_dir: str = logs_dir + "_validation"
-    validation_dir_true: str = validation_dir + "_true"
-    validation_dir_false: str = validation_dir + "_false"
-
-    test_dir: str = logs_dir + "_test"
-    test_dir_true: str = test_dir + "_true"
-    test_dir_false: str = test_dir + "_false"
-
-    os.mkdir(test_dir_true)
-    os.mkdir(test_dir_false)
-    os.mkdir(validation_dir_true)
-    os.mkdir(validation_dir_false)
-    os.mkdir(train_dir)
-
-    # Split traces
-    traces: List[str] = os.listdir(logs_dir)
-    train_traces_num: int = int(len(traces) * train_proportion)
-    validation_traces_num: int = int(len(traces) * validation_proportion)
-
-    train_traces = traces[:train_traces_num]
-    validation_traces = traces[train_traces_num:train_traces_num + validation_traces_num]
-    test_traces = traces[train_traces_num + validation_traces_num:]
-
-    # For each train trace
-    for train_trace in train_traces:
-
-        # Create new name
-        old_name = os.path.join(logs_dir, train_trace)
-        new_name = os.path.join(train_dir, train_trace)
-
-        # Move the trace
-        os.rename(old_name, new_name)
-
-    model: Graph = PrefixTreeFactory.get_prefix_tree(traces_dir=train_dir,
-                                                     config_file_path=syntax_file_path, remove_trivial_loops=False)
-
-    # For each validation trace
-    for validation_trace_name in validation_traces:
-
-        # Create new name
-        old_name = os.path.join(logs_dir, validation_trace_name)
-        new_name = os.path.join(validation_dir_true, validation_trace_name)
-
-        # Create a false trace
-        produce_false_trace(old_name,
-                            os.path.join(validation_dir_false, validation_trace_name),
-                            syntax_tree,
-                            model)
-
-        # Move the trace
-        os.rename(old_name, new_name)
-
-    # For each test trace
-    for test_trace_name in test_traces:
-
-        # Create new names
-        old_name = os.path.join(logs_dir, test_trace_name)
-        new_name = os.path.join(test_dir_true, test_trace_name)
-
-        # Produce a false trace
-        produce_false_trace(old_name,
-                            os.path.join(test_dir_false, test_trace_name),
-                            syntax_tree,
-                            model)
-
-        # Move the trace
-        os.rename(old_name, new_name)
-
-    return logs_dir, validation_dir_true, validation_dir_false, test_dir_true, test_dir_false, model
 
 
 def k_fold_cross_validation(syntax_tree: SyntaxTree,

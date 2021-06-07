@@ -6,6 +6,7 @@
 # External
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 import random
+from copy import deepcopy
 from typing import List, Union, Dict, Tuple, Set
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -79,18 +80,27 @@ class Graph(AutoPrinter):
 
         return new_state
 
-    def merge_states(self, state1: State, state2: State) -> None:
+    def merge_states(self, state1: State, state2: State, or_merge = True) -> None:
         """
         This method merges two states and passes the properties from one state to the other.
         :param state1: The new 'merged' state
         :param state2: The state that will be deleted and which properties will be passed to state 1
         """
 
-        props = state1.properties.log_templates.copy()
+        props = []
 
-        for temp in state2.properties.log_templates:
-            if temp not in state1.properties.log_templates:
-                props.append(temp)
+        if or_merge:
+            props = state1.properties.log_templates.copy()
+            for temp_sequence in state2.properties.log_templates:
+                if temp_sequence not in state1.properties.log_templates:
+                    props.append(temp_sequence)
+        else:
+            for temp_sequence in state2.properties.log_templates:
+                for original_sequence in state1.properties.log_templates:
+                    new_sequence = deepcopy(original_sequence)
+                    new_sequence.extend(deepcopy(temp_sequence))
+                    props.append(new_sequence)
+
         state1.properties = StateProperties(props)
 
         if state2.is_terminal:
@@ -428,8 +438,6 @@ class Graph(AutoPrinter):
             matching_children = list(filter(lambda state: state.is_equivalent_weak(state_tree),
                                             self.get_outgoing_states(state_graph)))
             if any(matching_children):
-                if len(matching_children) > 1:
-                    print("nondeterminism")
                 state_graph = matching_children[0]
                 state_tree = tree.get_outgoing_states_not_self(state_tree)[0]
             else:
@@ -437,3 +445,63 @@ class Graph(AutoPrinter):
 
         return any(filter(lambda state: state.is_equivalent_weak(state_tree),
                           self.get_outgoing_states(state_graph)))
+
+    def matches_unique_states(self, tree):
+        # Only works under the assumption that states in this graph are unique!
+        state_graph: State = self.start_node
+        state_tree: State = tree.get_outgoing_states_not_self(tree.start_node)[0]
+
+        while not state_tree.is_terminal:
+            # Get the current template
+            current_template: str = state_tree.get_properties().log_templates[0][0]
+            # Find matching children in the graph
+            found, state_graph, template_sequence = self.matching_children(state_graph, current_template)
+
+            # If there is no child, return false
+            if not found:
+                return False
+
+            # While the current sequence is not empty
+            while template_sequence:
+                # If the next element in the sequence does not match the current tree node
+                current_elem_in_sequence: str = template_sequence.pop(0)
+                prefix_tree_elem: str = state_tree.properties.log_templates[0][0]
+                if  current_elem_in_sequence != prefix_tree_elem:
+                    return False
+                # Get the next tree node
+                state_tree: State = tree.get_outgoing_states_not_self(state_tree)[0]
+
+                # If it is a terminal node, check if the sequence is empty and if there is a terminal child
+                if state_tree.is_terminal:
+                    return len(template_sequence) == 0 and self.has_terminal_child(state_graph)
+
+        return False
+
+    def matching_children(self, state: State, template: str) -> Tuple[bool, State, List[str]]:
+        for child in self.get_outgoing_states(state):
+            for template_sequence in child.get_properties().log_templates:
+                if template_sequence[0] == template:
+                    return True, child, deepcopy(template_sequence)
+
+        return False, State([]), []
+
+    def has_terminal_child(self, state: State):
+        return any(map(lambda s: s.is_terminal, self.get_outgoing_states(state)))
+
+    def get_non_terminal_state_and_child(self) -> Union[Tuple[State, State], None]:
+        if len(self.states) <= 3:
+            return None
+
+        state: State = self.get_random_state()
+        children: List[State] = self.get_outgoing_states_not_self(state)
+        while state.is_terminal or (len(children) == 1 and children[0].is_terminal) \
+                or (len(children) == 0) or state is self.start_node:
+            state = self.get_random_state()
+            children: List[State] = self.get_outgoing_states_not_self(state)
+
+        child = self.get_random_child(state)
+        while child.is_terminal:
+            child = self.get_random_child(state)
+
+        return state, child
+
