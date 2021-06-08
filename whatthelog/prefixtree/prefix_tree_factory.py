@@ -181,16 +181,12 @@ class PrefixTreeFactory(AutoPrinter):
         nodes = prefix_tree.get_children(parent)
 
         with open(tracepath, 'r') as file:
-            x: int = 0
             for log in file:
-                x += 1
                 tree = syntax_tree.search(log)
                 if tree is None:
                     raise UnidentifiedLogException(
                         log + " was not identified as a valid log.")
                 template: str = tree.name
-                if x == 9:
-                    pass
                 if template in template_dict:
                     exists = False
                     for node in nodes:
