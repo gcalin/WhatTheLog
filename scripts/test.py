@@ -18,8 +18,9 @@ def main():
     # positive_traces, negative_traces = DatasetFactory.get_evaluation_traces(st, PROJECT_ROOT.joinpath("resources/data"))
     # print("Finished reading positive and negative traces..")
     #
-    pt = PrefixTreeFactory().unpickle_tree("C:/Users/Pandelis/Projects/WhatTheLog/finaltree_0.8925072690673228.pickle")
-    # # Visualizer(pt).visualize()
+    # pt = PrefixTreeFactory().unpickle_tree("C:/Users/Pandelis/Projects/WhatTheLog/finaltree.pickle")
+    pt = PrefixTreeFactory().get_prefix_tree(PROJECT_ROOT.joinpath("resources/paper_examples"), PROJECT_ROOT.joinpath("resources/config.json"))
+    Visualizer(pt).visualize()
     # # dfs(pt)
     # ev = Evaluator(pt, st, positive_traces, negative_traces)
     #
@@ -35,7 +36,7 @@ def main():
     # print(ev.evaluate())
     #
     # print(pt.get_outgoing_states(first))
-    Visualizer(pt).visualize("finaltree_0.8925072690673228.png")
+    # Visualizer(pt).visualize("finaltree_0.6869565217391305.png")
 
 
 def dfs(pt: Graph):

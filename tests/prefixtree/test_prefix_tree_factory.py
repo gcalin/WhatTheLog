@@ -14,7 +14,7 @@ def tree() -> PrefixTree:
     traces_path = "tests/resources/traces_single"
     tree = PrefixTreeFactory().get_prefix_tree(
         PROJECT_ROOT.joinpath(traces_path),
-        PROJECT_ROOT.joinpath("resources/config.json"))
+        PROJECT_ROOT.joinpath("resources/config.json"), unique_graph=False)
     return tree
 
 
@@ -43,7 +43,7 @@ def test_one_trace(tree: PrefixTree):
 
 def test_multiple_traces():
     traces_path = "tests/resources/traces"
-    pt = PrefixTreeFactory().get_prefix_tree(PROJECT_ROOT.joinpath(traces_path), PROJECT_ROOT.joinpath("resources/config.json"))
+    pt = PrefixTreeFactory().get_prefix_tree(PROJECT_ROOT.joinpath(traces_path), PROJECT_ROOT.joinpath("resources/config.json"), unique_graph=False)
 
     root = pt.get_root()
     for _ in range(4):
@@ -77,7 +77,8 @@ def test_remove_trivial_loops_single_file():
     tree = PrefixTreeFactory().get_prefix_tree(
         PROJECT_ROOT.joinpath(traces_path),
         PROJECT_ROOT.joinpath("resources/config.json"),
-        True)
+        unique_graph=False,
+        remove_trivial_loops=True)
     assert tree.size() == 14  # 12 + root + terminal
 
 
@@ -86,7 +87,7 @@ def test_remove_trivial_loops_several():
     tree = PrefixTreeFactory().get_prefix_tree(
         PROJECT_ROOT.joinpath(traces_path),
         PROJECT_ROOT.joinpath("resources/config.json"),
-        True)
+        unique_graph=False, remove_trivial_loops=True)
 
     assert tree.size() == 37  # 35 + root + terminal
 

@@ -26,6 +26,9 @@ class GraphEnv(Env):
     STATE_OPTIONS = {
         'EQUAL_TEMPLATES': 2,
         'OUTGOING_EDGES': MAX_OUTGOING_EDGES + 1 + 1,
+        'FREQUENCY_FIRST': 3,
+        'FREQUENCY_SECOND': 3,
+        'FREQUENCY_THIRD': 3
 
         # 1 for 0 edges and one for larger than
     }
@@ -76,8 +79,10 @@ class GraphEnv(Env):
         # TODO: Generalize this
         for i in range(properties[0]):
             for j in range(properties[1]):
-                self.state_mapping[str(i) + str(j)] = len(
-                        self.state_mapping)
+                # for k in range(properties[2]):
+                #     for l in range(properties[3]):
+                #         for m in range(properties[4]):
+                self.state_mapping[str(i) + str(j)] = len(self.state_mapping)
 
     def step(self, action: int):
         if self.is_valid_action(action) is False:
@@ -176,7 +181,7 @@ class GraphEnv(Env):
         return node
 
     def __get_reward(self):
-        return self.evaluator.evaluate(0.75, 0.25)
+        return self.evaluator.evaluate(0.66, 0.33)
 
     def encode(self, state: State) -> int:
         """
@@ -189,11 +194,16 @@ class GraphEnv(Env):
         :return: The index of this state
         """
         outgoing = self.graph.get_outgoing_states_with_edges_no_self(state)
-        outgoing_states = list(map(lambda x: x[0], outgoing))
-        passes = list(map(lambda x: x[1].props, outgoing))
 
-        total_passes = sum(passes)
-        frequencies = list(map(lambda x: self.round(x / total_passes), passes))
+        outgoing_states = list(map(lambda x: x[0], outgoing))
+        # passes = list(map(lambda x: x[1].props, outgoing))
+        #
+        # total_passes = sum(passes)
+        # frequencies = list(map(lambda x: self.round(x / total_passes), passes))
+        # if len(frequencies) > 3:
+        #     frequencies = []
+        # while len(frequencies) < 3:
+        #     frequencies.append(0)
 
         equivalent = True
         for outgoing_state in outgoing_states:
@@ -210,11 +220,16 @@ class GraphEnv(Env):
 
         value = str(first_part) + str(second_part)
 
+        # for f in frequencies:
+        #     value += str(f)
+
         return self.state_mapping[value]
 
     def round(self, frequency):
         if 0 <= frequency <= 0.2:
             return 0
+        elif 0.8 <= frequency <= 1:
+            return 2
         else:
             return 1
 

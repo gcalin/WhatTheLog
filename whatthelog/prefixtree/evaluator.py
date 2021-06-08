@@ -62,7 +62,7 @@ class Evaluator:
 
         if w_size is None:
             w_size = self.weight_size
-
+        #
         # Get the the accuracy
         accuracy: float = self.evaluate_accuracy()
         # Get the size
