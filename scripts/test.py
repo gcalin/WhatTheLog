@@ -9,34 +9,36 @@ from whatthelog.prefixtree.prefix_tree_factory import PrefixTreeFactory
 from whatthelog.prefixtree.visualizer import Visualizer
 from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 
+import copy
 
 def main():
-    # st = SyntaxTreeFactory().parse_file(
-    #     PROJECT_ROOT.joinpath("resources/config.json"))
-    #
-    # print("Reading positive and negative traces..")
-    # positive_traces, negative_traces = DatasetFactory.get_evaluation_traces(st, PROJECT_ROOT.joinpath("resources/data"))
-    # print("Finished reading positive and negative traces..")
-    #
-    # pt = PrefixTreeFactory().unpickle_tree("C:/Users/Pandelis/Projects/WhatTheLog/finaltree.pickle")
-    pt = PrefixTreeFactory().get_prefix_tree(PROJECT_ROOT.joinpath("resources/paper_examples"), PROJECT_ROOT.joinpath("resources/config.json"))
-    Visualizer(pt).visualize()
-    # # dfs(pt)
+    st = SyntaxTreeFactory().parse_file(
+        PROJECT_ROOT.joinpath("resources/config.json"))
+
+    print("Reading positive and negative traces..")
+    positive_traces, negative_traces = DatasetFactory.get_evaluation_traces(st, PROJECT_ROOT.joinpath("resources/data"))
+    print("Finished reading positive and negative traces..")
+
+    pt = PrefixTreeFactory().unpickle_tree(PROJECT_ROOT.joinpath("resources/prefix_tree.pickle"))
+
+    new_tree = copy.deepcopy(pt)
+
+
     # ev = Evaluator(pt, st, positive_traces, negative_traces)
     #
     # print(ev.evaluate())
     # #
     # start = pt.start_node
     #
-    # for _ in range(20):
+    # for _ in range(40):
     #     first = pt.get_outgoing_states(start)[0]
-    #     pt.full_merge_states_with_children(first)
+    #     pt.full_merge_states_with_children(first, set())
     #
     # #
     # print(ev.evaluate())
-    #
+
     # print(pt.get_outgoing_states(first))
-    # Visualizer(pt).visualize("finaltree_0.6869565217391305.png")
+    Visualizer(new_tree).visualize("finaltree.png")
 
 
 def dfs(pt: Graph):

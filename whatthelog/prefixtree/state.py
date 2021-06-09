@@ -27,9 +27,9 @@ class State:
     represented by this state.
     """
 
-    __slots__ = ['properties', 'is_terminal']
+    __slots__ = ['properties', 'is_terminal', 'state_id']
 
-    def __init__(self, log_templates: List[str], is_terminal: bool = False):
+    def __init__(self, log_templates: List[str], is_terminal: bool = False, state_id: int = -1):
         """
         State constructor.
 
@@ -37,6 +37,7 @@ class State:
         """
         self.properties = StateProperties(log_templates)
         self.is_terminal = is_terminal
+        self.state_id = state_id
 
     def is_equivalent(self, other: State) -> bool:
         """

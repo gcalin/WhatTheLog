@@ -74,6 +74,8 @@ class PrefixTreeFactory(AutoPrinter):
         with open(file, 'wb+') as f:
             pickle.dump(tree, f)
 
+        print(f"Prefix tree pickle has been saved at: {file}")
+
     @staticmethod
     def unpickle_tree(file: str) -> PrefixTree:
         """

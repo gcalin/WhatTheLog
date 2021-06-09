@@ -15,7 +15,7 @@ class Graph(AutoPrinter):
     Class implementing a graph
     """
 
-    __slots__ = ['states', 'state_indices_by_id', 'prop_by_hash',
+    __slots__ = ['states', 'next_id', 'prop_by_hash',
                  'start_node', 'terminal_node', 'outgoing_edges', 'incoming_edges']
 
     def __getstate__(self):
@@ -26,19 +26,15 @@ class Graph(AutoPrinter):
         for slot in state:
             setattr(self, slot, state[slot])
 
-        # --- Rebuild state indices table ---
-        self.state_indices_by_id = {}
-        for index, s in self.states.items():
-            self.state_indices_by_id[id(s)] = index
-
     def __init__(self, start_node: State = None, terminal_node: State = None):
         self.states: Dict[int, State] = {}
-        self.state_indices_by_id: Dict[int, int] = {}
         self.outgoing_edges: Dict[State, Dict[State, EdgeProperties]] = {}
         self.incoming_edges: Dict[State, Dict[State, EdgeProperties]] = {}
         self.prop_by_hash: Dict[int, StateProperties] = {}
         self.start_node = start_node
         self.terminal_node = terminal_node
+        self.next_id: int = 0
+
         if start_node is not None:
             self.add_state(start_node)
         if terminal_node is not None:
@@ -50,9 +46,9 @@ class Graph(AutoPrinter):
         :param state_id: the hash of the state to fetch
         :return: the state object
         """
-        if state_id not in self.state_indices_by_id:
+        if state_id not in self.states:
             raise StateDoesNotExistException()
-        return self.states[self.state_indices_by_id[state_id]]
+        return self.states[state_id]
 
     def add_state(self, state: State) -> None:
         """
@@ -61,13 +57,13 @@ class Graph(AutoPrinter):
         :param state: State to add
         :raises StateAlreadyExistsException: if state already exists
         """
+        state.state_id = self.next_id
+        self.next_id += 1
 
         if state in self:
             raise StateAlreadyExistsException()
 
-        curr_index = len(self.states)
-        self.states[curr_index] = state
-        self.state_indices_by_id[id(state)] = curr_index
+        self.states[state.state_id] = state
 
         if state.properties.get_prop_hash() in self.prop_by_hash:
             state.properties = self.prop_by_hash[
@@ -88,8 +84,7 @@ class Graph(AutoPrinter):
         edge does not exist or edge already exists returns False else True.
         """
 
-        if id(start) not in self.state_indices_by_id or id(
-                end) not in self.state_indices_by_id:
+        if start not in self or end not in self:
             return False
 
         if start not in self.outgoing_edges:
@@ -116,21 +111,6 @@ class Graph(AutoPrinter):
         :return: Number of states
         """
         return len(self.states)
-
-    # def get_outgoing_props(self, state: State) -> List[EdgeProperties]:
-    #     """
-    #     Method to get outgoing edges of a state.
-    #
-    #     :param state: State to get outgoing edges for
-    #     :return: List of outgoing edges from state.
-    #     If state does not exist raises StateDoesNotExistException.
-    #     """
-    #     if state in self:
-    #         results = self.edges.find_children(
-    #             self.state_indices_by_id[id(state)])
-    #         return [EdgeProperties.parse(result[1]) for result in results]
-    #     else:
-    #         raise StateDoesNotExistException
 
     def get_outgoing_states(self, state: State) -> List[State]:
         """
@@ -302,8 +282,7 @@ class Graph(AutoPrinter):
         self.change_children_of_parents(
             state2, state1)
 
-        del self.states[self.state_indices_by_id[id(state2)]]
-        del self.state_indices_by_id[id(state2)]
+        del self.states[state2.state_id]
         del state2
 
     def change_parent_of_children(self, old_parent: State, new_parent: State) -> None:
@@ -575,7 +554,7 @@ class Graph(AutoPrinter):
         return str(self.states)
 
     def __contains__(self, item: State):
-        return id(item) in self.state_indices_by_id
+        return item.state_id in self.states
 
     def __len__(self):
         return len(self.states)
