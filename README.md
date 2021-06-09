@@ -146,7 +146,7 @@ Where `R` is the placeholder root and `T` are the placeholder termination nodes.
 
 ### The Graph
 
-The Prefix Tree is represented internally as directed graph, which is implemented in the [`Graph`](whatthelog/prefixtree/graph.py) class. This graph implementation stores the following fields:
+The Prefix Tree is represented internally as directed graph, which is implemented in the [`StateGraph`](whatthelog/prefixtree/state_graph.py) class. This graph implementation stores the following fields:
 
 ```
 self.edges = SparseMatrix()

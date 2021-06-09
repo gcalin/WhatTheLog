@@ -3,7 +3,7 @@ from typing import List, Tuple
 
 from whatthelog.exceptions import StateDoesNotExistException
 from whatthelog.prefixtree.edge_properties import EdgeProperties
-from whatthelog.prefixtree.graph import Graph
+from whatthelog.prefixtree.state_graph import StateGraph
 import pytest
 
 from whatthelog.prefixtree.state import State
@@ -17,7 +17,7 @@ def graph():
     state3 = State(["3"])
     state4 = State(["4"])
 
-    graph = Graph(None, state0)
+    graph = StateGraph(None, state0)
 
     graph.add_state(state1)
     graph.add_state(state2)
@@ -37,7 +37,7 @@ def fully_connected_graph():
     # A fully connected 4 state graph.
     states: List[State] = [State(["0"]), State(["1"]), State(["2"]), State(["3"])]
 
-    graph: Graph = Graph(None, states[0])
+    graph: StateGraph = StateGraph(None, states[0])
 
     for state in states[1:]:
         graph.add_state(state)
@@ -59,7 +59,7 @@ def graph_2():
 
     states: List[State] = [s0, s1, s2, s3, s4]
 
-    graph: Graph = Graph(None, states[0])
+    graph: StateGraph = StateGraph(None, states[0])
 
     for state in states[1:]:
         graph.add_state(state)
@@ -73,20 +73,20 @@ def graph_2():
     return graph
 
 
-def test_get_state_by_id(graph: Graph):
+def test_get_state_by_id(graph: StateGraph):
     state = graph.states[0]
 
     assert graph.get_state_by_id(id(state)) == state
 
 
-def test_get_state_by_hash_incorrect(graph: Graph):
+def test_get_state_by_hash_incorrect(graph: StateGraph):
     state = State(["other"])
 
     with pytest.raises(StateDoesNotExistException):
         graph.get_state_by_id(id(state))
 
 
-def test_add_state(graph: Graph):
+def test_add_state(graph: StateGraph):
     new_state = State(["5"])
 
     assert len(graph.states) == 5
@@ -101,7 +101,7 @@ def test_add_state_properties_pointers():
     state1 = State(["prop"])
     state2 = State(["prop"])
 
-    graph = Graph(None, state1)
+    graph = StateGraph(None, state1)
     graph.add_state(state2)
 
     assert len(graph) == 2
@@ -109,7 +109,7 @@ def test_add_state_properties_pointers():
     assert id(state1) != id(state2)
 
 
-def test_add_edge(graph: Graph):
+def test_add_edge(graph: StateGraph):
     state1 = graph.states[1]
     state2 = graph.states[2]
     assert state2 not in graph.get_outgoing_states(state1)
@@ -119,21 +119,21 @@ def test_add_edge(graph: Graph):
     assert state2 in graph.get_outgoing_states(state1)
 
 
-def test_add_edge_incorrect(graph: Graph):
+def test_add_edge_incorrect(graph: StateGraph):
     state1 = State(["other"])
 
     assert graph.add_edge(state1, graph.states[0], EdgeProperties()) is False
     assert graph.add_edge(graph.states[0], state1, EdgeProperties()) is False
 
 
-def test_size(graph: Graph):
+def test_size(graph: StateGraph):
     assert len(graph) == len(graph.states)
 
 
 def test_get_outgoing_props():
     state1 = State(["1"])
     state2 = State(["2"])
-    graph = Graph(None, state1)
+    graph = StateGraph(None, state1)
     graph.add_state(state2)
 
     props = EdgeProperties(50)
@@ -142,14 +142,14 @@ def test_get_outgoing_props():
     assert graph.get_outgoing_props(state1) == [props]
 
 
-def test_get_outgoing_states(graph: Graph):
+def test_get_outgoing_states(graph: StateGraph):
     state0 = graph.states[0]
 
     assert len(graph.get_outgoing_states(state0)) == 3
     assert graph.states[1] in graph.get_outgoing_states(state0)
 
 
-def test_merge_states(graph: Graph):
+def test_merge_states(graph: StateGraph):
     state1 = graph.states[1]
     state3 = graph.states[3]
 
@@ -162,7 +162,7 @@ def test_merge_states(graph: Graph):
     assert graph.get_outgoing_states(state1)[0] == state1
 
 
-def test_merge_states2(graph: Graph):
+def test_merge_states2(graph: StateGraph):
     state0 = graph.states[0]
     state3 = graph.states[3]
 
@@ -179,7 +179,7 @@ def test_merge_states2(graph: Graph):
     assert graph.start_node == state3
 
 
-def test_merge_states3(graph: Graph):
+def test_merge_states3(graph: StateGraph):
     state2 = graph.states[2]
     state4 = graph.states[4]
 
@@ -193,7 +193,7 @@ def test_merge_states3(graph: Graph):
     assert state2 in graph.get_outgoing_states(graph.states[0])
 
 
-def test_complex_merge_1(fully_connected_graph: Graph):
+def test_complex_merge_1(fully_connected_graph: StateGraph):
     fully_connected_graph.merge_states(fully_connected_graph.states[0],
                                        fully_connected_graph.states[1])
 
@@ -207,7 +207,7 @@ def test_complex_merge_1(fully_connected_graph: Graph):
             assert state in fully_connected_graph.get_outgoing_states(other_state)
 
 
-def test_complex_merge_2(graph_2: Graph):
+def test_complex_merge_2(graph_2: StateGraph):
     graph_2.full_merge_states(graph_2.states[0], graph_2.states[1])
 
     new_node = graph_2.states[2]
@@ -216,7 +216,7 @@ def test_complex_merge_2(graph_2: Graph):
     assert new_node.properties.log_templates == ["0", "1"]
 
 
-def test_complex_merge_3(graph_2: Graph):
+def test_complex_merge_3(graph_2: StateGraph):
     graph_2.full_merge_states(graph_2.states[0], graph_2.states[3])
 
     new_node = graph_2.states[1]
@@ -225,7 +225,7 @@ def test_complex_merge_3(graph_2: Graph):
     assert set(new_node.properties.log_templates) == {"0", "1", "2"}
 
 
-def test_complex_merge_4(graph_2: Graph):
+def test_complex_merge_4(graph_2: StateGraph):
     s5: State = State(["1"])
     graph_2.add_state(s5)
     graph_2.add_edge(s5, s5)
@@ -237,7 +237,7 @@ def test_complex_merge_4(graph_2: Graph):
     assert set(new_node.properties.log_templates) == {"0", "1", "2"}
 
 
-def test_complex_merge_5(graph_2: Graph):
+def test_complex_merge_5(graph_2: StateGraph):
     s5: State = State(["1"])
     s6: State = State(["2"])
     s7: State = State(["0"])
@@ -263,7 +263,7 @@ def test_merge_equivalent_children_self():
     state0 = State(["0"])
     state1 = State(["1", "0"])
 
-    graph: Graph = Graph(None, state0)
+    graph: StateGraph = StateGraph(None, state0)
     graph.add_state(state1)
 
     graph.add_edge(state0, state1)

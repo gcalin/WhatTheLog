@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 from copy import deepcopy
-from itertools import chain
 import random
 from typing import List, Union, Dict, Tuple
 
@@ -18,18 +17,18 @@ from typing import List, Union, Dict, Tuple
 
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 from whatthelog.prefixtree.state import State
-from whatthelog.auto_printer import AutoPrinter
-from whatthelog.exceptions import StateAlreadyExistsException, StateDoesNotExistException, UnidentifiedLogException
+from whatthelog.exceptions import StateAlreadyExistsException, StateDoesNotExistException
+from whatthelog.prefixtree.matchable_graph import MatchableGraph
 from whatthelog.prefixtree.sparse_matrix import SparseMatrix
 from whatthelog.prefixtree.edge_properties import EdgeProperties
 from whatthelog.prefixtree.state_properties import StateProperties
 
 
 # ****************************************************************************************************
-# Graph
+# StateGraph
 # ****************************************************************************************************
 
-class Graph(AutoPrinter):
+class StateGraph(MatchableGraph):
     """
     Class implementing a graph
     """
@@ -38,13 +37,11 @@ class Graph(AutoPrinter):
 
     def __init__(self, syntax_tree: SyntaxTree, start_node: State):
 
-        assert start_node is not None, "Start node is None!"
-        self.syntax_tree = syntax_tree
+        super().__init__(syntax_tree, start_node)
         self.edges = SparseMatrix()
         self.states: Dict[int, State] = { 0: start_node }
         self.state_indices_by_id: Dict[int, int] = { id(start_node): 0 }
         self.prop_by_hash: Dict[int, StateProperties] = { hash(start_node.properties): start_node.properties }
-        self.start_node = start_node
 
     def get_state_by_id(self, state_id: int):
         """
@@ -296,123 +293,6 @@ class Graph(AutoPrinter):
             return True
         return False
 
-    def match_trace(self, trace: List[str], debug: bool = False) -> bool:
-        """
-        Checks if a given trace matches a path in the graph.
-        First, the first line is checked against the start node of the graph.
-        If it fits, a successor that matches the next line is picked and the list
-        is traversed recursively.
-
-        :param trace: The lines to be matched against the tree.
-        :param debug: if True enables printing logs
-        :return: If the trace corresponds to a sequence of states in the graph,
-                 those states are returned in order. If no match is found, None is returned.
-        """
-
-        # If the trace is empty, then it has been fully parsed
-        if len(trace) == 0:
-            if debug: self.print("Trace is empty")
-            return False
-
-        if debug: self.print(f"Matching trace with {len(trace)} lines...")
-
-        # Check which state the current line belongs to
-        template = self.syntax_tree.search(trace[0])
-
-        # If template not found, raise exception
-        if template is None:
-            if debug: self.print(f"Template not found!")
-            raise UnidentifiedLogException()
-
-        # Get the root's matching children
-        candidates = [state for state in self.get_outgoing_states(self.start_node)
-                      if template.name in state.properties.log_templates]
-
-        # If no suitable option, return
-        if len(candidates) == 0:
-            if debug: self.print("Failed matching first line!")
-            return False
-
-        # If the trace was only 1 line, check children straight away
-        if len(trace) == 1:
-            matches = [[1 for state in self.get_outgoing_states(candidate) if state.is_terminal]
-                       for candidate in candidates]
-            return sum(chain(*matches)) > 0
-
-        # Check paths from every child
-        for current_state in candidates:
-            if self.__match_trace(current_state, trace[1:], debug):
-                return True
-
-        return False
-
-    def __match_trace(self, state: State, trace: List[str], debug: bool = False) -> bool:
-        """
-        Recursive helper for the match_trace function. This function recursively
-        finds the next state in the graph for the first line in the trace
-        if any exists.
-
-        :param state: The current state of the graph
-        :param trace: The lines to be matched against the tree.
-        :param debug: if True enables printing logs
-        :return: If the trace corresponds to a sequence of states in the prefix tree,
-                 those states are returned in order. If no match is found, None is returned.
-        """
-
-        if debug: self.print("Matching path from root...")
-
-        paths = []
-        curr_state = state
-        curr_trace = trace.copy()
-
-        # TODO: check if this works for traces with multiple possible paths
-        while len(curr_trace) != 0:
-
-            if debug:
-                self.print(f"paths={paths}")
-                self.print(f"curr_state={curr_state}")
-                self.print(f"curr_trace_length={len(curr_trace)}")
-
-            # Find the template of the first line in the syntax tree
-            template = self.syntax_tree.search(curr_trace[0])
-
-            # If template not found, raise exception
-            if template is None:
-                raise UnidentifiedLogException()
-
-            if debug: self.print(f"template={template.name}")
-
-            # Check if any of the children of current node contain the template in their state
-            children: List[State] = self.get_outgoing_states(curr_state)
-            successors: List[State] = list(
-                filter(lambda next_state: template.name in next_state.properties.log_templates, children))
-
-            if len(successors) == 0:
-                # If none found, the trace cannot be matched
-                if debug: self.print("\tNo successors found")
-                if paths:
-                    curr_state, curr_trace = paths.pop(0)
-                    continue
-                else:
-                    break
-
-            if debug: self.print(f"\tFound {len(successors)} successors")
-
-            curr_trace.pop(0)
-            curr_state = successors[0]
-            if curr_trace:
-                if len(successors) > 1:
-                    for state in successors[1:]:
-                        paths.append((state, curr_trace.copy()))
-            else:
-                if debug: self.print(f"Trace finished, curr_state children: {self.get_outgoing_states(curr_state)}")
-                if [state.is_terminal for state in self.get_outgoing_states(curr_state) if state.is_terminal]:
-                    return True
-                if paths:
-                    curr_state, curr_trace = paths.pop(0)
-
-        return False
-
     def get_random_state(self) -> State:
         """
         Gets a random state in the graph.
@@ -447,7 +327,7 @@ class Graph(AutoPrinter):
         for index, state in self.states.items():
             self.state_indices_by_id[id(state)] = index
 
-    def __deepcopy__(self, memodict={}) -> Graph:
+    def __deepcopy__(self, memodict={}) -> StateGraph:
 
         edges = deepcopy(self.edges)
         states = deepcopy(self.states)
@@ -456,7 +336,7 @@ class Graph(AutoPrinter):
         start_index = self.state_indices_by_id[id(self.start_node)]
         new_start = states[start_index]
 
-        output = Graph(deepcopy(self.syntax_tree), new_start)
+        output = StateGraph(deepcopy(self.syntax_tree), new_start)
         output.edges = edges
         output.states = states
         output.prop_by_hash = prop_by_hash

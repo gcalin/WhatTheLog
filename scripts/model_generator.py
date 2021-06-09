@@ -86,7 +86,7 @@ if __name__ == '__main__':
     pt = PrefixTreeFactory.unpickle_tree(project_root.joinpath('out/testPrefixTree.p'))
 
     factory = StateModelFactory(pt)
-    specificity, recall = factory.eval_model(factory.tree)
+    specificity, recall = factory.eval_model(factory.evaluator)
     print(f"Initial specificity: {specificity}, initial recall: {recall}")
 
     model, data = factory.run_clustering('louvain')

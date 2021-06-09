@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from networkx.drawing.nx_pydot import graphviz_layout
 
-from whatthelog.prefixtree.graph import Graph
+from whatthelog.prefixtree.state_graph import StateGraph
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 
 
@@ -15,10 +15,10 @@ class Visualizer:
     Class to visualize Prefix Tree.
     """
 
-    def __init__(self, graph: Graph):
+    def __init__(self, graph: StateGraph):
         """
         Visualizer constructor.
-        :param graph: Graph to visualize
+        :param graph: StateGraph to visualize
         """
         self.graph = graph
         self.G = nx.DiGraph()

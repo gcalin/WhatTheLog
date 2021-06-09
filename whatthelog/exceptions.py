@@ -23,3 +23,13 @@ class StateDoesNotExistException(Exception):
 @dataclass(frozen=True)
 class InvalidPropertiesException(Exception):
     message: str = field(default="Serialized edge properties are not a tuple")
+
+@dataclass(frozen=True)
+class NonDeterminismException(Exception):
+    message: str = field(default="Tree is non-deterministic")
+
+
+@dataclass(frozen=True)
+class InvalidEdgeException(Exception):
+    message: str = field(default="Edge was missing from 1 of 2 dicts")
+

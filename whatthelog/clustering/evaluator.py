@@ -1,10 +1,13 @@
 import os
 import sys
+from typing import List
 
 from tqdm import tqdm
 
-from whatthelog.prefixtree.graph import Graph
+from whatthelog.syntaxtree.syntax_tree import SyntaxTree
+from whatthelog.prefixtree.matchable_graph import MatchableGraph
 from whatthelog.auto_printer import AutoPrinter
+from whatthelog.exceptions import UnidentifiedLogException
 
 
 class Evaluator(AutoPrinter):
@@ -15,7 +18,7 @@ class Evaluator(AutoPrinter):
     pool_size_default = 16
 
     def __init__(self,
-                 model: Graph,
+                 model: MatchableGraph,
                  positive_traces_dir: str,
                  negative_traces_dir: str,
                  initial_size: int = None,
@@ -28,12 +31,86 @@ class Evaluator(AutoPrinter):
         self.initial_model_size = len(model) if initial_size is None else initial_size
         self.weight_accuracy = weight_accuracy
         self.weight_size = weight_size
+        self.positive_templates = None
+        self.negative_templates = None
 
-    def update(self, new_model: Graph):
+    def update(self, new_model: MatchableGraph):
         """
         Updates the model to test
         """
         self.model = new_model
+
+    def build_cache(self, force_rebuild: bool = False, debug: bool = False):
+        """
+        Processes the trace files and stores them in memory as lists of templates
+        in order to speed-up evaluation.
+
+        :param force_rebuild: if True forces the rebuilding of the cache
+                              even if a previous cache is already built.
+        :param debug: if True enables printing logs and progressbar to the console.
+        """
+
+        assert os.path.isdir(self.positive_traces_dir), f"Invalid directory for positive traces! " \
+                                                        f"Directory {self.positive_traces_dir} not found."
+
+        syntax_tree: SyntaxTree = self.model.syntax_tree
+
+        # --- Check if positive traces cache already exists or force rebuild enabled ---
+        if debug: self.print("Building cache of positive traces...")
+        if not self.positive_templates or force_rebuild:
+
+            self.positive_templates: List[List[str]] = []
+
+            # --- Iter files ---
+            for filename in tqdm(os.listdir(self.positive_traces_dir),
+                                 file=sys.stdout, leave=False, disable=not debug):
+
+                with open(os.path.join(self.positive_traces_dir, filename), 'r') as f:
+
+                    trace: List[str] = []
+                    lines: List[str] = f.readlines()
+
+                    # --- Iter lines ---
+                    for line in lines:
+
+                        # --- Find line template name or throw exception if not found ---
+                        name: str = syntax_tree.search(line).name
+                        if not name:
+                            raise UnidentifiedLogException()
+
+                        trace.append(name)
+
+                    self.positive_templates.append(trace)
+
+        assert os.path.isdir(self.negative_traces_dir), f"Invalid directory for negative traces! " \
+                                                        f"Directory {self.negative_traces_dir} not found."
+
+        # --- Check if negative traces cache already exists or force rebuild enabled ---
+        if debug: self.print("Building cache of negative traces...")
+        if not self.negative_templates or force_rebuild:
+
+            self.negative_templates: List[List[str]] = []
+
+            # --- Iter files ---
+            for filename in tqdm(os.listdir(self.negative_traces_dir),
+                                 file=sys.stdout, leave=False, disable=not debug):
+
+                with open(os.path.join(self.negative_traces_dir, filename), 'r') as f:
+
+                    trace: List[str] = []
+                    lines: List[str] = f.readlines()
+
+                    # --- Iter lines ---
+                    for line in lines:
+
+                        # --- Find line template name or throw exception if not found ---
+                        name: str = syntax_tree.search(line).name
+                        if not name:
+                            raise UnidentifiedLogException()
+
+                        trace.append(name)
+
+                    self.negative_templates.append(trace)
 
     def evaluate_accuracy(self, debug=False) -> float:
         """
@@ -90,10 +167,12 @@ class Evaluator(AutoPrinter):
             raise NotADirectoryError("Log directory not found!")
 
         if debug:
-            self.print("Calculating specificity...")
+            self.print(f"Calculating specificity for {len(os.listdir(self.negative_traces_dir))} test traces...")
 
-        tn = self.process_traces(self.negative_traces_dir, self.model, debug)
-        fp = len(os.listdir(self.negative_traces_dir)) - tn
+        fp = self.process_templates(self.negative_templates, self.model, debug) \
+            if self.negative_templates \
+            else self.process_traces(self.negative_traces_dir, self.model, debug)
+        tn = len(os.listdir(self.negative_traces_dir)) - fp
 
         # Calculate the final result
         res: float = tn / (tn + fp)
@@ -113,9 +192,11 @@ class Evaluator(AutoPrinter):
             raise NotADirectoryError("Log directory not found!")
 
         if debug:
-            self.print("Calculating recall...")
+            self.print(f"Calculating recall for {len(os.listdir(self.positive_traces_dir))} test traces......")
 
-        tp = self.process_traces(self.positive_traces_dir, self.model, debug)
+        tp = self.process_templates(self.positive_templates, self.model, debug) \
+            if self.positive_templates \
+            else self.process_traces(self.positive_traces_dir, self.model, debug)
         fn = len(os.listdir(self.positive_traces_dir)) - tp
 
         # Calculate the final result
@@ -124,7 +205,7 @@ class Evaluator(AutoPrinter):
         return res
 
     @staticmethod
-    def process_traces(trace_dir: str, model: Graph, debug: bool = False) -> int:
+    def process_traces(trace_dir: str, model: MatchableGraph, debug: bool = False) -> int:
 
         count = 0
         for filename in tqdm(os.listdir(trace_dir), file=sys.stdout, leave=False, disable=not debug):
@@ -137,7 +218,18 @@ class Evaluator(AutoPrinter):
         return count
 
     @staticmethod
-    def match_trace(model: Graph, filename: str) -> bool:
+    def process_templates(traces: List[List[str]], model: MatchableGraph, debug: bool = False) -> int:
+
+        count = 0
+        for trace in tqdm(traces, file=sys.stdout, leave=False, disable=not debug):
+
+            if model.match_templates(trace, debug):
+                count += 1
+
+        return count
+
+    @staticmethod
+    def match_trace(model: MatchableGraph, filename: str) -> bool:
 
         with open(filename, 'r') as f:
             return model.match_trace(f.readlines()) is not None

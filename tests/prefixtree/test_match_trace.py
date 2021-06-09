@@ -1,9 +1,13 @@
 import pytest
+from typing import List
 
+from whatthelog.prefixtree.edge_properties import EdgeProperties
 from whatthelog.prefixtree.prefix_tree import PrefixTree, State
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 from whatthelog.exceptions import UnidentifiedLogException
-from typing import List
+from whatthelog.auto_printer import AutoPrinter
+
+def print(msg): AutoPrinter.static_print(msg)
 
 
 def syntax_tree() -> SyntaxTree:
@@ -17,6 +21,7 @@ def syntax_tree() -> SyntaxTree:
     tp4.insert(SyntaxTree("p0p4p1", "[p1]", False))
     tp4.insert(SyntaxTree("p0p4p2", "[p2]", False))
     tp4.insert(SyntaxTree("p0p4p3", "[p3]", False))
+    tp4.insert(SyntaxTree("p0p4p5", "[p5]", False))
 
     assert t.search("[p0][p1]") == SyntaxTree("p0p1", "[p1]", False), "Invalid Prefix Tree implementation"
     assert t.search("[p0][p2]") == SyntaxTree("p0p2", "[p2]", False), "Invalid Prefix Tree implementation"
@@ -37,14 +42,6 @@ def state_tree() -> PrefixTree:
     p_tree.add_child(t2, t0)
     p_tree.add_child(t1, t0)
     p_tree.add_child(t3, t2)
-
-    # t0: PrefixTree = PrefixTree(State([0]), None)
-    # t1: PrefixTree = PrefixTree(State([1, 2]), t0)
-    # t0.add_child(t1)
-    # t2: PrefixTree = PrefixTree(State([3]), t1)
-    # t0.add_child(t2)
-    # t3: PrefixTree = PrefixTree(State([4, 6, 5]), t2)
-    # t2.add_child(t3)
 
     """
             Graph structure:
@@ -132,7 +129,7 @@ def test_match_trace_root(state_tree, traces_t0):
         state_tree.add_child(State(["terminal"], True), t0)
 
         # There should now be a matching path that ends in a terminal state
-        assert state_tree.match_trace(t), "Failed to match the first line to the root"
+        assert state_tree.match_trace(t, debug=True), "Failed to match the first line to the root"
 
 
 def test_match_trace_traversal_1(state_tree, traces_t1):

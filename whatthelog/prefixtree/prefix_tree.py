@@ -15,7 +15,7 @@ from typing import List, Union, Tuple
 
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 from whatthelog.prefixtree.edge_properties import EdgeProperties
-from whatthelog.prefixtree.graph import Graph
+from whatthelog.prefixtree.adjacency_graph import AdjacencyGraph
 from whatthelog.prefixtree.state import State
 from whatthelog.exceptions import InvalidTreeException
 
@@ -24,10 +24,13 @@ from whatthelog.exceptions import InvalidTreeException
 # Prefix Tree
 #****************************************************************************************************
 
-class PrefixTree(Graph):
+class PrefixTree(AdjacencyGraph):
     """
     Prefix tree implemented using an adjacency map-based graph.
     """
+
+    __slots__ = ['syntax_tree', 'states', 'state_indices_by_id', 'prop_by_hash',
+                 'start_node', 'outgoing_edges', 'incoming_edges']
 
     def __init__(self, syntax_tree: SyntaxTree, root: State):
         super().__init__(syntax_tree, root)
@@ -92,19 +95,18 @@ class PrefixTree(Graph):
         """
         Method to get the parent of a state.
         WARNING: This method is O(n) were n is the number of edges in the tree!
-
         :param state: State to get parent of
         :return: Parent of state. If None state is the root.
         """
 
         assert state in self
-        parents = self.edges.get_parents(self.state_indices_by_id[id(state)])
+        parents = self.get_incoming_states(state)
         assert len(parents) <= 1, "Edge has more than one parent!"
 
         if parents is None or len(parents) == 0:
             return None
         else:
-            return self.states[parents[0]]
+            return parents[0]
 
     def merge(self, other: PrefixTree):
         """
@@ -151,7 +153,28 @@ class PrefixTree(Graph):
         :return: the adjacency matrix for the prefix tree
         """
 
-        return self.edges.get_weights_list(remove_self_loops)
+        adjacency = []
+        for state, children in self.outgoing_edges.items():
+
+            if state == self.start_node: continue
+
+            state_idx = self.state_indices_by_id[id(state)]
+            edges = []
+            for child, props in children.items():
+
+                if child.is_terminal: continue
+
+                child_idx = self.state_indices_by_id[id(child)]
+                if remove_self_loops and child_idx == state_idx: continue
+
+                edges.append((child_idx, props.passes))
+
+            total = sum(i for _, i in edges)
+
+            for child_idx, passes in edges:
+                adjacency.append((state_idx, child_idx, 1 - (passes/total)))
+
+        return adjacency
 
 
 #****************************************************************************************************
