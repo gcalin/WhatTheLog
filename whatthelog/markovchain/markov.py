@@ -7,6 +7,7 @@ import multiprocessing
 import os
 import random
 import shutil
+import sys
 from copy import deepcopy
 from datetime import timedelta
 from time import time
@@ -22,6 +23,8 @@ from whatthelog.prefixtree.state import State
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 
+ROOT_DIR = os.path.dirname('requirements.txt')
+
 
 class MarkovChain:
     """
@@ -29,12 +32,14 @@ class MarkovChain:
     """
 
     def __init__(self, traces_dir: str, config_file: str = "resources/config.json", weight_size: float = 0.5,
-                 weight_accuracy: float = 0.5, eval_file: str = None, eval_time: bool = False):
+                 weight_accuracy: float = 0.5, eval_file: str = None, random_candidates: bool = False):
         self.maxLength = 0
         self.traces_dir = traces_dir
         self.config_file = config_file
         self.false_traces = None
         self.true_traces = None
+
+        self.random_candidates = random_candidates
 
         self.eval_file = eval_file
         if eval_file and not os.path.exists(eval_file):
@@ -71,20 +76,23 @@ class MarkovChain:
         This method will generate negative/false traces on a pre-specified location.
         It will also initialize a prefix tree.
         :param amount: Specifies the amount of negative/false traces to produce
+        :param false_dir: Specifies the directory in which the false traces should temporarily be stored.
         """
         self.pt = PrefixTreeFactory.get_prefix_tree(self.traces_dir, self.config_file)
         print('[ markov.py ] - Generating false traces...')
         self.generate_false_traces(false_dir, amount)
         print('[ markov.py ] - False traces generated')
+        self.pt = None
 
     def generate_false_traces(self, false_dir, amount: int = 50) -> None:
         """
         This method will generate negative/false traces on a pre-specified location.
-        :param amount: Specifies the amount of negative/false traces to produce
+        :param amount: Specifies the amount of negative/false traces to produce.
+        :param false_dir: Specifies the directory in which the false traces should temporarily be stored.
         """
         for i in range(amount):
             produce_false_trace(os.path.join(self.traces_dir, os.listdir(self.traces_dir)
-                                [random.randint(0, len(os.listdir(self.traces_dir)) - 1)]),
+            [random.randint(0, len(os.listdir(self.traces_dir)) - 1)]),
                                 false_dir + '/false' + str(i), self.syntax_tree, self.pt)
 
         self.false_traces = self.shorten_eval_traces_and_store_in_memory(false_dir)
@@ -284,17 +292,17 @@ class MarkovChain:
         """
         graph_nodes = dict()
         graph_nodes[0] = State(['root'])
-        graph = Graph(graph_nodes[0])
-        graph.add_state(graph_nodes[0])
+        graph_nodes[1] = State(['terminal'])
+        graph = Graph(graph_nodes[0], graph_nodes[1])
         for k, v in self.states.items():
-            if k != 'root':
+            if k != 'root' and k != 'terminal':
                 graph_nodes[v] = State([k])
                 graph.add_state(graph_nodes[v])
 
         for r in range(len(self.transitionMatrix)):
             for c in range(len(self.transitionMatrix)):
                 if self.transitionMatrix[r][c] > 0:
-                    graph.add_edge(graph_nodes[r], graph_nodes[c], EdgeProperties([]))
+                    graph.add_edge(graph_nodes[r], graph_nodes[c], EdgeProperties([str(self.transitionMatrix[r][c])]))
         return graph
 
     def process_candidate_list(self, candidate: List[int], matrix=None, states=None) -> None:
@@ -327,7 +335,7 @@ class MarkovChain:
             score = self.calculate_accuracy(matrix, states)
             specificity, recall, _ = score
             return self.weight_size * current_length / self.maxLength + self.weight_accuracy * \
-                np.mean([specificity, recall]), score
+                   np.mean([specificity, recall]), score
 
     def calculate_accuracy(self, matrix: List[List[float]] = None, states: Dict[str, int] = None) \
             -> Tuple[float, float, float]:
@@ -348,6 +356,9 @@ class MarkovChain:
         for trace in self.false_traces:
             current = states['root']
             for state in trace:
+                if state not in states:
+                    true_negative += 1
+                    break
                 next_node = states[state]
                 if matrix[current][next_node] < 1 / 1e10:  # Some small value close to 0
                     true_negative += 1
@@ -381,6 +392,15 @@ class MarkovChain:
         Retrieves all candidates based on a threshold.
         :param threshold: The threshold of which candidates can converge from the requirements.
         """
+        if self.random_candidates:
+            result = list()
+            result.append([random.randint(0, len(self.transitionMatrix) - 1)])
+            next_candidate = random.randint(0, len(self.transitionMatrix) - 1)
+            while next_candidate == result[0][0]:
+                next_candidate = random.randint(0, len(self.transitionMatrix) - 1)
+            result[0].append(next_candidate)
+            return result
+
         # Duplicate rows
         candidates = list(map(lambda x: sorted(x), self.find_duplicates(threshold)))
         # Duplicate columns
@@ -392,19 +412,18 @@ class MarkovChain:
 
         return candidates
 
-    def compress(self, minimum_size: int, minimum_accuracy: int) -> None:
+    def compress(self, minimum_size: int, minimum_accuracy: float, store_intermediate: bool = False) -> None:
         """
         Compresses a transition matrix until either the minimum size or minimum accuracy is reached.
         :param minimum_size: The minimum size of the matrix. The transition matrix should not become smaller than this.
         :param minimum_accuracy: The minimum accuracy of the matrix. The transition should not become less accurate than
                                  this.
+        :param store_intermediate: Indicates whether intermediate results should be stored
         """
         assert minimum_size > 0, 'Can not have a size of 0'
 
         previous_matrix = deepcopy(self.transitionMatrix)
-        current_accuracy = 1
-
-        start_time = time()
+        current_accuracy = 1.0
 
         while len(self.transitionMatrix) > minimum_size and current_accuracy > minimum_accuracy:
             # Store the current matrix which is known to have the proper requirements
@@ -465,13 +484,14 @@ class MarkovChain:
             else:
                 score = self.calculate_accuracy()
             current_accuracy = np.mean(score)
-            if self.eval_file:
+            if self.eval_file and store_intermediate:
                 with open(self.eval_file, 'a') as file:
                     file.write('<tr><td>' + str(1 - len(self.transitionMatrix) / self.initial_size) + '</td>')
                     file.write('<td>' + str(score[0]) + '</td>')
                     file.write('<td>' + str(score[1]) + '</td>')
                     file.write('<td>' + str(score[2]) + '</td>')
-                    file.write('<td>' + str(timedelta(seconds=time() - start_time).seconds) + '<td></tr>\n')
+                    file.write('<td>' + str(timedelta(seconds=time() - start_time).seconds) + '.' +
+                               str(timedelta(seconds=time() - start_time).microseconds) + '<td></tr>\n')
 
         if len(self.transitionMatrix) < minimum_size or current_accuracy < minimum_accuracy:
             self.transitionMatrix = previous_matrix
@@ -495,16 +515,20 @@ class MarkovChain:
         """
         Selects random true traces on which the model will be evaluated.
         :param amount: The amount of true traces that should be selected.
+        :param true_dir: the directory which is guaranteed to contain a large amount of valid traces
+        :param true_test_dir: the directory which should be automatically filled with random traces from the true_dir.
         """
+        print('[ markov.py ] - Start selecting true traces...')
         if os.path.exists(true_test_dir):
             shutil.rmtree(true_test_dir)
         os.mkdir(true_test_dir)
         for i in range(amount):
             shutil.copy(os.path.join(true_dir, os.listdir(true_dir)
-                        [random.randint(0, len(os.listdir(true_dir)) - 1)]),
+            [random.randint(0, len(os.listdir(true_dir)) - 1)]),
                         os.path.join(true_test_dir, 'true' + str(i)))
 
         self.true_traces = self.shorten_eval_traces_and_store_in_memory(true_test_dir)
+        print('[ markov.py ] - Selecting true traces done.')
 
     def shorten_eval_traces_and_store_in_memory(self, directory: str) -> List[List[str]]:
         """
@@ -515,7 +539,6 @@ class MarkovChain:
         As the Markov chain is already trained when the model is evaluated, it will not change the results. This method
         will only improve this algorithm's efficiency.
         """
-        amount = 0
         traces = []
         for file in os.listdir(directory):
             new_lines = []
@@ -523,34 +546,101 @@ class MarkovChain:
             with open(os.path.join(directory, file), 'r') as f:
                 previous = None
                 for line in f.readlines():
-                    if previous != self.syntax_tree.search(line).name:
+                    current = self.syntax_tree.search(line).name
+                    if previous != current:
                         previous = None
-                        new_lines.append(self.syntax_tree.search(line).name)
-                        if len(new_lines) > 0:
-                            prev = new_lines[len(new_lines) - 1]
-                            current = self.syntax_tree.search(line).name
-                            if prev == current:
-                                previous = current
-                    else:
-                        amount += 1
+                        new_lines.append(current.strip())
+                        if len(new_lines) >= 2 and new_lines[len(new_lines) - 2] == current:
+                            previous = current
 
             os.remove(os.path.join(directory, file))
-            assert len(new_lines) > 1, "No log statements in the resulting trace"
-            traces.append(new_lines)
+            if len(new_lines) >= 1:  # It is possible to that the only line was deleted due to mutations.
+                traces.append(new_lines)
         return traces
+
+    def run_test(self, true_dir, true_test_dir,
+                 false_dir, amount_test_files=100,
+                 store_intermediate=False):
+        """
+        Runs a test and stores the results in specified file.
+        :param true_dir: The directory which is known to contain a large amount of true traces.
+        :param true_test_dir: The directory in which a subset of the files in true_dir will be stored temporarily.
+        :param false_dir: The directory in which false traces will be stored temporarily.
+        :param amount_test_files: Indicates the amount of test files that should be used to evaluate merge candidates.
+        :param store_intermediate: Indicates whether intermediate results should be stored.
+        """
+        self.train()
+        self.select_true_traces(true_dir=true_dir, true_test_dir=true_test_dir, amount=amount_test_files)
+        self.generate_false_traces_from_prefix_tree(false_dir=false_dir, amount=amount_test_files)
+        self.compress(1, -1, store_intermediate)
+        if not store_intermediate and self.eval_file:
+            with open(self.eval_file, 'a') as file:
+                file.write('<tr><td>' + str(amount_test_files) + '<td>')
+                file.write('<td>' + str(timedelta(seconds=time() - start_time).seconds) + '.' +
+                           str(timedelta(seconds=time() - start_time).microseconds) + '<td></tr>\n')
 
 
 if __name__ == '__main__':
-    for length in [5, 10, 25, 50, 100]:
-        random.seed(5)
-        for j in range(10):
-            print('current progress:', j + 1, '/ 10, with length', length)
+    if len(sys.argv) != 2 or not sys.argv[1].startswith('--type=') or sys.argv[1].split('=')[1] not in ['accuracy',
+                                                                                                        'runtime',
+                                                                                                        'random']:
+        print('Usage:\n'
+              '    --type=[TYPE]    Indicates the type of evaluation to be performed.\n'
+              '                     TYPE can be either: ''accuracy'', ''runtime'', or ''random.\n')
+        sys.exit(0)
 
-            chain = MarkovChain('resources/traces' + str(j + 1) + '/', eval_file='out/eval/evaluation11', eval_time=True)
-            chain.select_true_traces(true_dir='resources/true_traces/', true_test_dir='out/true_traces/', amount=length)
-            chain.generate_false_traces_from_prefix_tree(false_dir='out/false_traces/', amount=length)
-            chain.pt = None
-            chain.train()
-            chain.compress(1, -1)
+    if sys.argv[1].split('=')[1] == 'accuracy':
+        for index, seed in enumerate([5, 6, 7, 8, 9]):
+            random.seed(seed)
+            for j in range(10):
+                print('current progress accuracy:', j + 1, '/ 10, and', index + 1, '/ 5')
 
-    # Note that k-cross validation should be used when evaluating for a single size
+                start_time = time()
+                chain = MarkovChain(os.path.join(ROOT_DIR, 'resources/traces' + str(j + 1) + '/'),
+                                    eval_file=os.path.join(ROOT_DIR, 'out/eval/accuracy_results2'))
+                chain.run_test(true_dir=os.path.join(ROOT_DIR, 'resources/true_traces/'),
+                               true_test_dir=os.path.join(ROOT_DIR, 'out/true_traces/'),
+                               false_dir=os.path.join(ROOT_DIR, 'out/false_traces/'),
+                               amount_test_files=100,
+                               store_intermediate=True)
+    elif sys.argv[1].split('=')[1] == 'runtime':
+        for index, length in enumerate([100, 250, 500, 750, 1000]):
+            random.seed(5)
+            for j in range(10):
+                print('current progress runtime:', j + 1, '/ 10, and', index + 1, '/ 5')
+
+                # Selecting random files
+                if os.path.exists(os.path.join(ROOT_DIR, 'resources/temp_files/')):
+                    shutil.rmtree(os.path.join(ROOT_DIR, 'resources/temp_files/'))
+                os.mkdir(os.path.join(ROOT_DIR, 'resources/temp_files/'))
+                for number in range(length):
+                    shutil.copy(os.path.join(ROOT_DIR, 'resources/traces/',
+                                             os.listdir(os.path.join(ROOT_DIR, 'resources/traces/'))
+                                             [random.randint(0, len(
+                                                 os.listdir(os.path.join(ROOT_DIR, 'resources/traces/'))) - 1)]),
+                                os.path.join(os.path.join(ROOT_DIR, 'resources/temp_files/trace' + str(number))))
+
+                start_time = time()
+                chain = MarkovChain(os.path.join(ROOT_DIR, 'resources/temp_files/'),
+                                    eval_file=os.path.join(ROOT_DIR, 'out/eval/runtime_results2'))
+                chain.run_test(true_dir=os.path.join(ROOT_DIR, 'resources/true_traces/'),
+                               true_test_dir=os.path.join(ROOT_DIR, 'out/true_traces/'),
+                               false_dir=os.path.join(ROOT_DIR, 'out/false_traces/'),
+                               amount_test_files=length)
+    elif sys.argv[1].split('=')[1] == 'random':
+        for index, seed in enumerate([5, 6, 7, 8, 9]):
+            random.seed(seed)
+            for j in range(10):
+                print('current progress random:', j + 1, '/ 10, and', index + 1, '/ 5')
+
+                start_time = time()
+                chain = MarkovChain(os.path.join(ROOT_DIR, 'resources/traces' + str(j + 1) + '/'),
+                                    eval_file=os.path.join(ROOT_DIR, 'out/eval/random_results'),
+                                    random_candidates=True)
+                chain.run_test(true_dir=os.path.join(ROOT_DIR, 'resources/true_traces/'),
+                               true_test_dir=os.path.join(ROOT_DIR, 'out/true_traces/'),
+                               false_dir=os.path.join(ROOT_DIR, 'out/false_traces/'),
+                               amount_test_files=100,
+                               store_intermediate=True)
+    else:
+        print('Operation not recognized')
