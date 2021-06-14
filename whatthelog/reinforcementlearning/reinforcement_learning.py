@@ -1,21 +1,25 @@
+import os
 import random
 import sys
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+sys.path.append(Path(os.path.abspath(__file__)).parent.parent.parent.__str__())
+print(sys.path)
+
 from whatthelog.datasetcreator.dataset_factory import DatasetFactory
 from whatthelog.definitions import PROJECT_ROOT
 from whatthelog.prefixtree.prefix_tree_factory import PrefixTreeFactory
-from whatthelog.prefixtree.visualizer import Visualizer
 from whatthelog.reinforcementlearning.environment import GraphEnv
 from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 
 
 if __name__ == '__main__':
     seed = random.randrange(sys.maxsize)
-    random.seed(seed)
+    random.seed(1)
     st = SyntaxTreeFactory().parse_file(
         PROJECT_ROOT.joinpath("resources/config.json"))
 
@@ -26,19 +30,17 @@ if __name__ == '__main__':
     print("Finished reading positive and negative traces..")
 
     # Hyper-parameters
-    alpha = 0.05
-    gamma = 0.5
+    alpha = 0.2
+    gamma = 0.6
     epsilon = 0.1
-    epochs = 40
+    epochs = 150
 
-    w_accuracy = 0.5
-    w_size = 0.5
+    w_accuracy = 0.66
+    w_size = 0.33
 
     env = GraphEnv(PROJECT_ROOT.joinpath("resources/prefix_tree.pickle"), st,
                    positive_traces,
-                   negative_traces,
-                   w_accuracy, w_size)
-
+                   negative_traces, w_accuracy, w_size)
     q_table = np.zeros([env.observation_space.n, env.action_space.n])
 
     total_fitnesses = []
@@ -51,8 +53,7 @@ if __name__ == '__main__':
         state = env.reset()
         total_reward = 0
         done = False
-        if i == 1:
-            print("it 1")
+
         while not done:
             actions = env.get_valid_actions()
 
@@ -75,7 +76,7 @@ if __name__ == '__main__':
                     reward + gamma * max_q)
             state = next_state
 
-        fitness = env.evaluator.evaluate(w_accuracy, w_size)
+        fitness = env.evaluator.evaluate()
         total_rewards.append(total_reward)
         total_fitnesses.append(fitness)
         if fitness > best_fitness:
@@ -84,11 +85,11 @@ if __name__ == '__main__':
             print(f"saved: fitness: {fitness}")
             best_fitness = fitness
 
-        print(pd.DataFrame(q_table))
         print(f"Epoch {i} completed with total reward: {total_reward}.")
 
+    print(pd.DataFrame(q_table))
     pt = PrefixTreeFactory().unpickle_tree(PROJECT_ROOT.joinpath("finaltree.pickle"))
-    Visualizer(pt).visualize("finaltree.png")
+    # Visualizer(pt).visualize("finaltree.png")
 
     plt.rc('axes', labelsize=15)
     plt.plot(list(range(epochs)), total_rewards)
@@ -98,7 +99,7 @@ if __name__ == '__main__':
     plt.tight_layout()
 
     plt.savefig(
-        PROJECT_ROOT.joinpath("out/plots/small tree 1000 epochs rewards.png"))
+        PROJECT_ROOT.joinpath("out/plots/rewards.png"))
     plt.show()
 
     plt.rc('axes', labelsize=15)
@@ -109,7 +110,8 @@ if __name__ == '__main__':
     plt.tight_layout()
 
     plt.savefig(
-        PROJECT_ROOT.joinpath("out/plots/small tree 1000 epochs fitnesses.png"))
+        PROJECT_ROOT.joinpath("out/plots/itnesses.png"))
     plt.show()
 
     pd.DataFrame(q_table).to_csv(PROJECT_ROOT.joinpath("out/q_table.csv"))
+

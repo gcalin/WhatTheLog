@@ -7,7 +7,6 @@ from typing import Tuple, List
 
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.prefixtree.prefix_tree_factory import PrefixTreeFactory
-from whatthelog.prefixtree.visualizer import Visualizer
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 
 
@@ -65,12 +64,18 @@ class DatasetFactory:
                                                           unique_graph=unique_graph,
                                                           remove_trivial_loops=remove_trivial_loops)
 
-        PrefixTreeFactory().pickle_tree(prefix_tree, PROJECT_ROOT.joinpath("resources/prefix_tree.pickle"))
-        if visualize_tree:
-            Visualizer(prefix_tree).visualize(name_tree)
-
         self.__create_positive_traces(logs, positive_traces_amount)
         self.__create_negative_traces(training_set, negative_traces_amount, syntax_tree, prefix_tree)
+
+        prefix_tree = PrefixTreeFactory().get_prefix_tree(self.DATA_PATH.joinpath("traces"),
+                                                          self.config_file_path,
+                                                          unique_graph=True,
+                                                          remove_trivial_loops=remove_trivial_loops)
+        PrefixTreeFactory().pickle_tree(prefix_tree, PROJECT_ROOT.joinpath("resources/prefix_tree.pickle"))
+
+        # if visualize_tree:
+        #     Visualizer(prefix_tree).visualize(name_tree)
+
 
     def __create_positive_traces(self, traces_paths: List[str], amount: int) -> None:
         # Create positive traces

@@ -22,7 +22,9 @@ class ActionSpace(Space):
             return False
         return 0 <= as_int < self.n
 
-    def get_valid_actions(self, outgoing_edges: int) -> List[int]:
+    def get_valid_actions(self, outgoing_edges: int, entropy_d: int) -> List[int]:
+        if entropy_d < 1:
+            return [8]
         if outgoing_edges == 1:
             return [0, 1]
         elif outgoing_edges == 2:
@@ -42,5 +44,6 @@ class Actions(Enum):
     MERGE_FIRST_TWO = 5
     MERGE_LAST_TWO = 6
     MERGE_FIRST_AND_LAST = 7
+    MERGE_TRIVIAL = 8
 
 

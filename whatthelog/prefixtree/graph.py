@@ -73,7 +73,7 @@ class Graph(AutoPrinter):
                 state.properties.get_prop_hash()] = state.properties
 
     def add_edge(self, start: State, end: State,
-                 props: EdgeProperties = EdgeProperties()) -> bool:
+                 props: EdgeProperties = None) -> bool:
         """
         Method to add an edge to the graph
 
@@ -84,6 +84,8 @@ class Graph(AutoPrinter):
         edge does not exist or edge already exists returns False else True.
         """
 
+        if props is None:
+            props = EdgeProperties()
         if start not in self or end not in self:
             return False
 
@@ -146,7 +148,7 @@ class Graph(AutoPrinter):
             if state not in self.outgoing_edges:
                 return []
             else:
-                return list(filter(lambda x: x is not state, list(self.outgoing_edges[state].items())))
+                return list(filter(lambda x: x[0] is not state, list(self.outgoing_edges[state].items())))
         else:
             raise StateDoesNotExistException()
 

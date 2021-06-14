@@ -46,7 +46,8 @@ class PrefixTreeFactory(AutoPrinter):
     """
 
     @staticmethod
-    def get_prefix_tree(traces_dir: str, config_file_path: str, unique_graph: bool = True,
+    def get_prefix_tree(traces_dir: str, config_file_path: str,
+                        unique_graph: bool = True,
                         remove_trivial_loops: bool = False) -> PrefixTree:
         """
         Parses a full tree from a set of log traces in a common directory,
@@ -59,7 +60,8 @@ class PrefixTreeFactory(AutoPrinter):
         """
 
         return PrefixTreeFactory.__generate_prefix_tree(traces_dir,
-                                                        config_file_path, unique_graph,
+                                                        config_file_path,
+                                                        unique_graph,
                                                         remove_trivial_loops)
 
     @staticmethod
@@ -93,7 +95,8 @@ class PrefixTreeFactory(AutoPrinter):
         return tree
 
     @staticmethod
-    def __generate_prefix_tree(log_dir: str, config_file: str, unique_graph: bool,
+    def __generate_prefix_tree(log_dir: str, config_file: str,
+                               unique_graph: bool,
                                remove_trivial_loops: bool) -> PrefixTree:
         """
         Script to parse log file into prefix tree.
@@ -122,11 +125,14 @@ class PrefixTreeFactory(AutoPrinter):
         for filename in pbar:
             filepath = str(Path(log_dir).joinpath(filename)).strip()
             if unique_graph:
-                PrefixTreeFactory.parse_trace_unique_nodes(filepath, syntax_tree, prefix_tree,
-                                                           mapping)
+                PrefixTreeFactory.__parse_trace_unique_nodes(filepath,
+                                                             syntax_tree,
+                                                             prefix_tree,
+                                                             mapping)
             else:
-                PrefixTreeFactory.__parse_trace(filepath, syntax_tree, prefix_tree,
-                                                           remove_trivial_loops)
+                PrefixTreeFactory.__parse_trace(filepath, syntax_tree,
+                                                prefix_tree,
+                                                remove_trivial_loops)
 
         return prefix_tree
 
@@ -192,10 +198,10 @@ class PrefixTreeFactory(AutoPrinter):
         return prefix_tree
 
     @staticmethod
-    def parse_trace_unique_nodes(tracepath: str,
-                                 syntax_tree: SyntaxTree,
-                                 prefix_tree: PrefixTree,
-                                 node_to_template_map: Dict[str, State]):
+    def __parse_trace_unique_nodes(tracepath: str,
+                                   syntax_tree: SyntaxTree,
+                                   prefix_tree: PrefixTree,
+                                   node_to_template_map: Dict[str, State]):
         parent = prefix_tree.get_root()
         nodes = prefix_tree.get_children(parent)
 
@@ -220,7 +226,8 @@ class PrefixTreeFactory(AutoPrinter):
 
                 if not exists:
                     if template in node_to_template_map:
-                        prefix_tree.add_edge(parent, node_to_template_map[template])
+                        prefix_tree.add_edge(parent,
+                                             node_to_template_map[template])
                         parent = node_to_template_map[template]
                         nodes = prefix_tree.get_children(parent)
                     else:
@@ -234,4 +241,3 @@ class PrefixTreeFactory(AutoPrinter):
         prefix_tree.add_edge(parent, prefix_tree.get_terminal(),
                              EdgeProperties())
         return prefix_tree
-
