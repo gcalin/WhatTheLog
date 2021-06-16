@@ -143,12 +143,12 @@ class Graph(AutoPrinter):
         else:
             return []
 
-    def get_outgoing_states_with_edges_no_self(self, state: State) -> List[Tuple[State, EdgeProperties]]:
+    def get_outgoing_states_with_edges_no_self_no_terminal(self, state: State) -> List[Tuple[State, EdgeProperties]]:
         if state in self:
             if state not in self.outgoing_edges:
                 return []
             else:
-                return list(filter(lambda x: x[0] is not state, list(self.outgoing_edges[state].items())))
+                return list(filter(lambda x: x[0] is not state and x[0].is_terminal is False, list(self.outgoing_edges[state].items())))
         else:
             raise StateDoesNotExistException()
 

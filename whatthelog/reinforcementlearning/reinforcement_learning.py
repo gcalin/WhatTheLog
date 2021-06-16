@@ -19,7 +19,7 @@ from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 
 if __name__ == '__main__':
     seed = random.randrange(sys.maxsize)
-    random.seed(1)
+    random.seed(4)
     st = SyntaxTreeFactory().parse_file(
         PROJECT_ROOT.joinpath("resources/config.json"))
 
@@ -30,10 +30,11 @@ if __name__ == '__main__':
     print("Finished reading positive and negative traces..")
 
     # Hyper-parameters
-    alpha = 0.2
+    alpha = 0.1
     gamma = 0.6
     epsilon = 0.1
-    epochs = 150
+
+    epochs = 100
 
     w_accuracy = 0.66
     w_size = 0.33
@@ -46,8 +47,6 @@ if __name__ == '__main__':
     total_fitnesses = []
     total_rewards = []
     best_fitness = 0
-
-    x = [x in env.graph for x in env.graph.states.values()]
 
     for i in range(epochs):
         state = env.reset()
@@ -76,7 +75,7 @@ if __name__ == '__main__':
                     reward + gamma * max_q)
             state = next_state
 
-        fitness = env.evaluator.evaluate()
+        fitness = env.evaluator.evaluate_f_measure()
         total_rewards.append(total_reward)
         total_fitnesses.append(fitness)
         if fitness > best_fitness:
@@ -104,13 +103,13 @@ if __name__ == '__main__':
 
     plt.rc('axes', labelsize=15)
     plt.plot(list(range(epochs)), total_fitnesses)
-    plt.ylabel("Total reward", labelpad=15)
+    plt.ylabel("Fitness", labelpad=15)
     plt.xlabel("Epoch", labelpad=15)
     plt.legend()
     plt.tight_layout()
 
     plt.savefig(
-        PROJECT_ROOT.joinpath("out/plots/itnesses.png"))
+        PROJECT_ROOT.joinpath("out/plots/fitnesses.png"))
     plt.show()
 
     pd.DataFrame(q_table).to_csv(PROJECT_ROOT.joinpath("out/q_table.csv"))

@@ -13,7 +13,7 @@ random.seed(5)
 def main():
     # pt = PrefixTreeFactory().get_prefix_tree(PROJECT_ROOT.joinpath("resources/test/"), PROJECT_ROOT.joinpath("resources/config.json"))
     DatasetFactory(
-        PROJECT_ROOT.joinpath("resources/traces_large/")).create_data_set(15, 5, 5,
+        PROJECT_ROOT.joinpath("resources/traces_large/")).create_data_set(100, 20, 20,
                                                                       unique_graph=True,
                                                                       remove_trivial_loops=False,
                                                                       visualize_tree=True,

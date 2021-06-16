@@ -65,6 +65,7 @@ class GraphEnv(Env):
         self.__set_current_node(self.graph.start_node)
         self.__encode_current_node()
         self.previous = 0
+        self.previous_accuracy = 0
 
         self.previous_tree = copy.deepcopy(self.graph)
         self.previous_current_node = self.current_node.state_id
@@ -74,7 +75,7 @@ class GraphEnv(Env):
 
     def __set_current_node(self, node: State):
         self.current_node = node
-        outgoing = self.graph.get_outgoing_states_with_edges_no_self(node)
+        outgoing = self.graph.get_outgoing_states_with_edges_no_self_no_terminal(node)
         self.outgoing = [out[0] for out in outgoing]
 
         passes = [out[1].props for out in outgoing]
@@ -117,43 +118,65 @@ class GraphEnv(Env):
             if action == Actions.MERGE_ALL.value:
                 self.current_node = self.graph.full_merge_states_with_children(self.current_node, self.visited)
             elif action == Actions.MERGE_FIRST.value:
-                self.current_node = self.graph.full_merge_states(self.current_node,
-                                                                 self.outgoing[0], self.visited)
-            elif action == Actions.MERGE_SECOND.value:
-                self.current_node = self.graph.full_merge_states(self.current_node,
-                                                                 self.outgoing[1], self.visited)
-            elif action == Actions.MERGE_THIRD.value:
-                self.current_node = self.graph.full_merge_states(self.current_node,
-                                                                 self.outgoing[2], self.visited)
-            elif action == Actions.MERGE_FIRST_TWO.value:
-                self.current_node = self.graph.full_merge_states_with_children(self.current_node, self.visited, [0, 1])
-            elif action == Actions.MERGE_LAST_TWO.value:
-                self.current_node = self.graph.full_merge_states_with_children(self.current_node, self.visited, [len(self.outgoing) - 2, len(self.outgoing) - 1])
-            elif action == Actions.MERGE_FIRST_AND_LAST.value:
-                self.current_node = self.graph.full_merge_states_with_children(self.current_node, self.visited, [0, len(self.outgoing) - 1])
-            elif action == Actions.MERGE_TRIVIAL.value:
                 index = np.argmax(self.frequencies)
+                self.current_node = self.graph.full_merge_states(self.current_node,
+                                                                 self.outgoing[index], self.visited)
+            elif action == Actions.MERGE_SECOND.value:
+                index = np.argsort(self.frequencies, axis=0)[-2]
+                self.current_node = self.graph.full_merge_states(self.current_node,
+                                                                 self.outgoing[index], self.visited)
+            elif action == Actions.MERGE_THIRD.value:
+                index = np.argsort(self.frequencies, axis=0)[-3]
+                self.current_node = self.graph.full_merge_states(self.current_node,
+                                                                 self.outgoing[index], self.visited)
+            elif action == Actions.MERGE_FIRST_TWO.value:
+                indexes = np.argsort(self.frequencies, axis=0)[-2:]
+                self.current_node = self.graph.full_merge_states_with_children(self.current_node, self.visited, indexes)
+            elif action == Actions.MERGE_LAST_TWO.value:
+                indexes = np.argsort(self.frequencies, axis=0)[:2]
+                self.current_node = self.graph.full_merge_states_with_children(self.current_node, self.visited, indexes)
+            elif action == Actions.MERGE_FIRST_AND_LAST.value:
+                indexes = np.argsort(self.frequencies, axis=0)
+                indexes = [indexes[0], indexes[-1]]
+                self.current_node = self.graph.full_merge_states_with_children(self.current_node, self.visited, indexes)
 
-                self.current_node = self.graph.full_merge_states(self.current_node, self.outgoing[index], self.visited)
         self.__set_current_node(self.current_node)
+
+        accuracy = self.evaluator.evaluate_f_measure()
+
+        if self.first_step:
+            reward = 0
+            self.first_step = False
+            self.previous_accuracy = accuracy
+        else:
+            if self.previous_accuracy > accuracy:
+                # negative reward
+                reward = accuracy - self.previous_accuracy
+            else:
+                # larger reward for accuracy
+                reward = (accuracy - self.previous_accuracy) * 10 + 1
+
+        # reward = temp_reward - self.previous
+        # self.previous = temp_reward
+        self.previous_accuracy = accuracy
+
+        if reward < 0:
+            self.graph = copy.deepcopy(self.previous_tree)
+            self.current_node = self.graph.get_state_by_id(self.previous_current_node)
+
+            self.__set_current_node(self.current_node)
+            # self.outgoing = self.graph.get_outgoing_states_not_self(self.current_node)
+            self.evaluator = Evaluator(self.graph, self.syntax_tree,
+                                       self.positive_traces,
+                                       self.negative_traces,
+                                       weight_accuracy=self.w_accuracy,
+                                       weight_size=self.w_size)
 
         self.stack = list(
             filter(lambda x: x in self.graph and x not in self.visited,
                    self.stack))
         self.stack += list(
             filter(lambda x: x not in self.visited, self.outgoing))
-
-        temp_reward = self.__get_reward()
-
-        if self.first_step:
-            reward = 0
-            self.first_step = False
-        else:
-            reward = temp_reward - self.previous
-        self.previous = temp_reward
-
-        if reward < 0:
-            done = True
 
         # highest reward?
 
@@ -230,22 +253,6 @@ class GraphEnv(Env):
         return self.state_mapping[value]
 
     def get_valid_actions(self):
-        if self.graph.terminal_node in self.outgoing:
-            if len(self.outgoing) == 1 and self.outgoing[0].is_terminal:
-                return [Actions.DONT_MERGE.value]
-            elif len(self.outgoing) == 2:
-                if self.outgoing[0].is_terminal:
-                    return [Actions.DONT_MERGE.value, Actions.MERGE_SECOND.value]
-                elif self.outgoing[1].is_terminal:
-                    return [Actions.DONT_MERGE.value, Actions.MERGE_FIRST.value]
-            elif len(self.outgoing) == 3:
-                if self.outgoing[0].is_terminal:
-                    return [Actions.DONT_MERGE.value, Actions.MERGE_SECOND.value, Actions.MERGE_THIRD.value, Actions.MERGE_LAST_TWO.value]
-                elif self.outgoing[1].is_terminal:
-                    return [Actions.DONT_MERGE.value, Actions.MERGE_FIRST.value, Actions.MERGE_THIRD.value, Actions.MERGE_FIRST_AND_LAST.value]
-                elif self.outgoing[2].is_terminal:
-                    return [Actions.DONT_MERGE.value, Actions.MERGE_FIRST.value, Actions.MERGE_SECOND.value, Actions.MERGE_FIRST_TWO.value]
-
         if self.current_node.is_terminal is True:
             return [Actions.DONT_MERGE.value]
         if self.current_node == self.graph.start_node:

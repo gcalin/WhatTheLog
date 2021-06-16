@@ -33,7 +33,7 @@ class Evaluator:
         """
         self.model = new_model
 
-    def evaluate_accuracy(self, debug=False) -> float:
+    def evaluate_f_measure(self, debug=False) -> float:
         """
         Statically evaluates a model in terms of specificity and recall. The returned
         Value is the BCR (binary classification rate) defined as `(accuracy + recall) / 2`
@@ -41,7 +41,7 @@ class Evaluator:
         """
         specificity = self.calc_specificity(debug=debug)
         recall = self.calc_recall(debug=debug)
-        return (specificity + recall) / 2
+        return (2 * specificity * recall) / (specificity + recall)
 
     def evaluate_size(self) -> float:
         """
