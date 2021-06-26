@@ -59,7 +59,7 @@ class LundySchedule(CoolingSchedule):
     def chain_length(self) -> int:
         return max(2, int(self.neighborhood_size * self.sample_ratio))
 
-    def update_temperature(self, deviation: float) -> float:
+    def update_temperature(self, deviation: float = 0) -> float:
         self.temperature /= (1 + self.alpha * self.temperature)
         return self.temperature
 

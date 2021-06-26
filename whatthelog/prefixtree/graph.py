@@ -363,6 +363,8 @@ class Graph(AutoPrinter):
                 sids: List[int] = list(self.outgoing_edges[state])
                 states: List[State] = []
                 for sid in sids:
+                    if sid not in self.states:
+                        print("Error encountered here...")
                     states.append(self.states[sid])
                 return states
         else:
@@ -466,7 +468,7 @@ class Graph(AutoPrinter):
                 # If the next element in the sequence does not match the current tree node
                 current_elem_in_sequence: str = template_sequence.pop(0)
                 prefix_tree_elem: str = state_tree.properties.log_templates[0][0]
-                if  current_elem_in_sequence != prefix_tree_elem:
+                if current_elem_in_sequence != prefix_tree_elem:
                     return False
                 # Get the next tree node
                 state_tree: State = tree.get_outgoing_states_not_self(state_tree)[0]
@@ -500,8 +502,25 @@ class Graph(AutoPrinter):
             children: List[State] = self.get_outgoing_states_not_self(state)
 
         child = self.get_random_child(state)
-        while child.is_terminal:
+        while child.is_terminal or child is state:
             child = self.get_random_child(state)
 
         return state, child
 
+    def get_non_terminal_states(self) -> Tuple[State, State]:
+        state: State = self.get_random_state()
+        children: List[State] = self.get_outgoing_states_not_self(state)
+        while state.is_terminal or (len(children) == 1 and children[0].is_terminal) \
+                or (len(children) == 0) or state is self.start_node:
+            state = self.get_random_state()
+            children: List[State] = self.get_outgoing_states_not_self(state)
+
+        other_state: State = self.get_random_state()
+        other_children: List[State] = self.get_outgoing_states_not_self(other_state)
+        while state.is_terminal or (len(other_children) == 1 and other_children[0].is_terminal) \
+                or (len(other_children) == 0) or other_state is self.start_node\
+                or other_state is state:
+            other_state = self.get_random_state()
+            other_children: List[State] = self.get_outgoing_states_not_self(other_state)
+
+        return state, other_state
