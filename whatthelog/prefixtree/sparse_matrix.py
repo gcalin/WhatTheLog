@@ -80,7 +80,8 @@ class SparseMatrix:
         :return a list of tuples (child_number, value), or None if no child found.
         """
         index: int = self.bisearch(search_list, str(item) + self.separator)
-        to_delete: List[int] = []
+        to_delete = []
+        to_change = []
 
         if index != len(search_list):
             current = self.get_values(search_list, index)
@@ -89,7 +90,8 @@ class SparseMatrix:
                 if (new_parent, current[1]) in self:
                     to_delete.append(index)
                 else:
-                    search_list[index] = str(new_parent) + self.separator + str(current[1]) + self.separator + current[2]
+                    # search_list[index] = str(new_parent) + self.separator + str(current[1]) + self.separator + current[2]
+                    to_change.append((index, str(new_parent) + self.separator + str(current[1]) + self.separator + current[2]))
 
             result = [(current[1], current[2])]
             idx = index - 1
@@ -99,8 +101,9 @@ class SparseMatrix:
                     if (new_parent, current[1]) in self:
                         to_delete.append(idx)
                     else:
-                        search_list[idx] = str(new_parent) + self.separator + str(current[1]) + self.separator + current[
-                        2]
+                        to_change.append((idx, str(new_parent) + self.separator + str(current[1]) + self.separator + current[2]))
+                        # search_list[idx] = str(new_parent) + self.separator + str(current[1]) + self.separator + current[
+                        # 2]
                 result.append((current[1], current[2]))
                 idx -= 1
             idx = index + 1
@@ -110,12 +113,17 @@ class SparseMatrix:
                     if (new_parent, current[1]) in self:
                         to_delete.append(idx)
                     else:
-                        search_list[idx] = str(new_parent) + self.separator + str(current[1]) + self.separator + current[2]
+                        # search_list[idx] = str(new_parent) + self.separator + str(current[1]) + self.separator + current[2]
+                        to_change.append((idx, str(new_parent) + self.separator + str(current[1]) + self.separator + current[2]))
                 result.append((current[1], current[2]))
                 idx += 1
 
+            for i, new_v in to_change:
+                search_list[i] = new_v
+
+            to_delete.sort(reverse=True)
             for i in to_delete:
-                del self.list[i]
+                del search_list[i]
 
             return result
         else:
@@ -175,7 +183,7 @@ class SparseMatrix:
         for index, item in enumerate(self.list):
             keys = item.split('.', 2)
 
-            if int(keys[1]) is i:
+            if int(keys[1]) == i:
                 if new_child >= 0:
                     if (int(keys[0]), new_child) in self:
                         to_delete.append(index)
@@ -183,7 +191,7 @@ class SparseMatrix:
                         self.list[index] = keys[0] + self.separator + str(new_child) + self.separator + keys[2]
                 result.append(int(keys[0]))
 
-        for i in to_delete:
+        for i in reversed(to_delete):
             del self.list[i]
 
         return result

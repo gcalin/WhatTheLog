@@ -103,7 +103,7 @@ class PrefixTreeFactory(AutoPrinter):
         print("Parsing syntax tree...")
 
         syntax_tree = SyntaxTreeFactory().parse_file(config_file)
-        prefix_tree = PrefixTree(State([""]))
+        prefix_tree = PrefixTree(State([""]), State(["end"], is_terminal=True))
 
         print("Parsing traces...")
 
@@ -167,5 +167,5 @@ class PrefixTreeFactory(AutoPrinter):
             for n in nodes:
                 if n.properties.log_templates[0] == 'terminal':
                     return prefix_tree
-        prefix_tree.add_child(State(["terminal"], True), parent)
+        prefix_tree.add_edge(parent, prefix_tree.get_terminal(), EdgeProperties())
         return prefix_tree

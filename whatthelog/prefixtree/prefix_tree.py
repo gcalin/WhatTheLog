@@ -28,12 +28,15 @@ class PrefixTree(Graph):
     Prefix tree implemented using an adjacency map-based graph.
     """
 
-    __slots__ = ['__root']
+    def __init__(self, root: State, terminal: State = None):
+        super().__init__(root, terminal)
 
-    def __init__(self, root: State):
-        super().__init__(root)
-        self.__root = root
-        self.add_state(root)
+    def get_terminal(self):
+        """
+        Terminal getter
+        :return: terminal state
+        """
+        return self.terminal_node
 
     def get_root(self) -> State:
         """
@@ -41,7 +44,7 @@ class PrefixTree(Graph):
 
         :return: the root of the tree
         """
-        return self.__root
+        return self.start_node
 
     def get_children(self, state: State) -> List[State]:
         """
@@ -119,10 +122,10 @@ class PrefixTree(Graph):
         :param other: the tree to be merged into this one.
         """
 
-        if not self.__root.is_equivalent(other.get_root()):
+        if not self.get_root().is_equivalent(other.get_root()):
             raise InvalidTreeException("Merge failed: source tree does not have same root as destination tree!")
 
-        stack = [(self.__root, other.get_root())]
+        stack = [(self.get_root(), other.get_root())]
         while True:
 
             this_state, that_state = stack.pop()

@@ -2,15 +2,15 @@ from pprint import pprint
 from typing import Tuple, Dict, List
 
 import networkx as nx
-import matplotlib.pyplot as plt
-
-from networkx.drawing.nx_pydot import graphviz_layout
-
 from whatthelog.prefixtree.graph import Graph
-from whatthelog.prefixtree.prefix_tree import PrefixTree
+from whatthelog.definitions import PROJECT_ROOT
+from whatthelog.auto_printer import AutoPrinter
 
 
-class Visualizer:
+def print(msg): AutoPrinter.static_print(msg)
+
+
+class Visualizer(AutoPrinter):
     """
     Class to visualize Prefix Tree.
     """
@@ -24,7 +24,7 @@ class Visualizer:
         self.G = nx.DiGraph()
         self.label_mapping = {"": 0}
 
-    def visualize(self, file_path="../resources/prefixtree.png"):
+    def visualize(self, file_name="prefixtree.png"):
         """
         Method to visualize the prefix tree.
         :param file_path: Path to save the file, if None dont save
@@ -32,18 +32,16 @@ class Visualizer:
         """
         labels, branches, depth = self.__populate_graph()
 
-        plt.figure(1, figsize=(branches + 1, depth / 2 + 1))
+        A = nx.drawing.nx_agraph.to_agraph(self.G)
 
-        pos = graphviz_layout(self.G, prog="dot")
-        nx.draw_networkx_labels(self.G, pos, labels)
-        nx.draw(self.G, pos, node_size=500, font_size=6)
+        for node in A.nodes():
+            node.attr.update(label=labels[int(node.name)])
 
-        plt.tight_layout()
-        if file_path is not None:
-            plt.savefig(file_path)
-
-        plt.show()
-
+        A.graph_attr.update(nodesep="0.5")
+        A.graph_attr.update(pad="1")
+        A.layout('dot')
+        A.draw(str(PROJECT_ROOT.joinpath("out/" + file_name)))
+        print("Visualization has been saved at: " + str(PROJECT_ROOT.joinpath("out/" + file_name)))
         pprint(self.label_mapping)
 
     def __populate_graph(self) -> Tuple[Dict[int, str], int, int]:
@@ -69,7 +67,7 @@ class Visualizer:
 
         while len(queue) != 0:
             level_size = len(queue)
-            while level_size > 0:
+            while level_size > 0 and len(queue) != 0:
                 state = queue.pop(0)
                 if state not in visited:
                     for parent in self.graph.get_incoming_states(state):
@@ -96,10 +94,10 @@ class Visualizer:
             label += "["
         for log_template in log_templates:
             if log_template not in self.label_mapping:
-                self.label_mapping[log_template] = len(self.label_mapping)
+                self.label_mapping[log_template] = log_template
 
-            label += str(self.label_mapping[log_template])
-
+            label += str(self.label_mapping[log_template]) + ", "
+        label = label[:-2]
         if len(log_templates) > 1:
             label += "]"
 

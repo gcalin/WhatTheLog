@@ -1,12 +1,12 @@
-from typing import List, Tuple
+from copy import deepcopy
+from typing import List
+
+import pytest
 
 from whatthelog.exceptions import StateDoesNotExistException
 from whatthelog.prefixtree.edge_properties import EdgeProperties
 from whatthelog.prefixtree.graph import Graph
-import pytest
-
 from whatthelog.prefixtree.state import State
-from whatthelog.prefixtree.visualizer import Visualizer
 
 
 @pytest.fixture
@@ -19,7 +19,6 @@ def graph():
 
     graph = Graph(state0)
 
-    graph.add_state(state0)
     graph.add_state(state1)
     graph.add_state(state2)
     graph.add_state(state3)
@@ -29,6 +28,48 @@ def graph():
     graph.add_edge(state0, state2, EdgeProperties())
     graph.add_edge(state0, state4, EdgeProperties())
     graph.add_edge(state1, state3, EdgeProperties())
+
+    return graph
+
+
+@pytest.fixture
+def fully_connected_graph():
+    # A fully connected 4 state graph.
+    states: List[State] = [State(["0"]), State(["1"]), State(["2"]),
+                           State(["3"])]
+
+    graph: Graph = Graph()
+
+    for state in states:
+        graph.add_state(state)
+
+    for state in states:
+        for other_state in states:
+            graph.add_edge(state, other_state, EdgeProperties())
+
+    return graph
+
+
+@pytest.fixture
+def graph_2():
+    s0 = State(["0"])
+    s1 = State(["1"])
+    s2 = deepcopy(s0)
+    s3 = State(["2"])
+    s4 = State(["0", "1"])
+
+    states: List[State] = [s0, s1, s2, s3, s4]
+
+    graph: Graph = Graph()
+
+    for state in states:
+        graph.add_state(state)
+
+    graph.add_edge(s0, s0)
+    graph.add_edge(s0, s1)
+    graph.add_edge(s1, s2)
+    graph.add_edge(s0, s3)
+    graph.add_edge(s3, s4)
 
     return graph
 
@@ -153,3 +194,173 @@ def test_merge_states3(graph: Graph):
     assert graph.state_indices_by_id[id(state2)] == 2
     assert id(state4) not in graph.state_indices_by_id.keys()
     assert state2 in graph.get_outgoing_states(graph.states[0])
+
+
+def test_complex_merge_1(fully_connected_graph: Graph):
+    fully_connected_graph.merge_states(fully_connected_graph.states[0],
+                                       fully_connected_graph.states[1])
+
+    new_node = fully_connected_graph.states[0]
+
+    assert len(fully_connected_graph.states) == 3
+    assert new_node.properties.log_templates == ["0", "1"]
+
+    for state in fully_connected_graph.states.values():
+        for other_state in fully_connected_graph.states.values():
+            assert state in fully_connected_graph.get_outgoing_states(
+                other_state)
+
+
+def test_complex_merge_2(graph_2: Graph):
+    graph_2.full_merge_states(graph_2.states[0],
+                              graph_2.states[1])
+
+    new_node = graph_2.states[2]
+
+    assert len(graph_2) == 3
+    assert new_node.properties.log_templates == ["0", "1"]
+
+
+def test_complex_merge_3(graph_2: Graph):
+    graph_2.full_merge_states(graph_2.states[0],
+                              graph_2.states[3])
+
+    new_node = graph_2.states[1]
+
+    assert len(graph_2) == 1
+    assert set(new_node.properties.log_templates) == {"0", "1", "2"}
+
+
+def test_complex_merge_4(graph_2: Graph):
+    s5: State = State(["1"])
+    graph_2.add_state(s5)
+    graph_2.add_edge(s5, s5)
+    graph_2.add_edge(s5, graph_2.states[0])
+
+    graph_2.full_merge_states(graph_2.states[0],
+                              graph_2.states[3])
+    new_node = graph_2.states[4]
+    assert len(graph_2) == 1
+    assert set(new_node.properties.log_templates) == {"0", "1", "2"}
+
+
+def test_complex_merge_5(graph_2: Graph):
+    s5: State = State(["1"])
+    s6: State = State(["2"])
+    s7: State = State(["0"])
+
+    graph_2.add_state(s5)
+    graph_2.add_state(s6)
+    graph_2.add_state(s7)
+
+    graph_2.add_edge(s5, s5)
+    graph_2.add_edge(s5, graph_2.states[0])
+    graph_2.add_edge(s5, s6)
+    graph_2.add_edge(s7, s6)
+    graph_2.add_edge(s7, s7)
+
+    graph_2.full_merge_states(graph_2.states[0],
+                              graph_2.states[3])
+
+    new_node = list(graph_2.states.values())[0]
+    assert len(graph_2) == 1
+    assert set(new_node.properties.log_templates) == {"0", "1", "2"}
+
+
+def test_merge_equivalent_children():
+    state0 = State(["0"])
+    state1 = State(["1", "0"])
+    state2 = State(["2", "1"])
+    graph: Graph = Graph(state0)
+
+    graph.add_state(state1)
+    graph.add_state(state2)
+    graph.add_edge(state0, state1)
+
+    graph.add_edge(state0, state2)
+    graph.merge_equivalent_children(state0)
+
+    assert len(graph) == 2
+    assert "2" in state1.get_properties().log_templates
+
+
+def test_merge_equivalent_children_self():
+    state0 = State(["0"])
+    state1 = State(["1", "0"])
+
+    graph: Graph = Graph()
+
+    graph.add_state(state0)
+    graph.add_state(state1)
+
+    graph.add_edge(state0, state1)
+    graph.add_edge(state0, state0)
+
+    graph.merge_equivalent_children(state0)
+
+    assert len(graph) == 1
+    assert "1" in state0.get_properties().log_templates
+
+
+def test_merge_with_all_children():
+    start = State([""])
+    graph = Graph(start_node=start)
+
+    child1 = State(["child1"])
+    child2 = State(["child2"])
+    graph.add_state(child1)
+    graph.add_state(child2)
+    graph.add_edge(start, child1, EdgeProperties())
+    graph.add_edge(start, child2, EdgeProperties())
+
+    assert graph.size() == 3
+    graph.full_merge_states_with_children(start)
+    print(graph.edges)
+    assert graph.size() == 1
+
+
+def test_merge_child_into_parent():
+    root = State(["0"])
+    graph = Graph(root)
+    start = State(["start"])
+    child1 = State(["1"])
+    child2 = State(["2"])
+
+    graph.add_state(start)
+    graph.add_state(child1)
+    graph.add_state(child2)
+
+    graph.add_edge(child2, child2)
+    graph.add_edge(root, start)
+    graph.add_edge(start, start)
+    graph.add_edge(start, child1)
+    graph.add_edge(start, child2)
+
+    graph.full_merge_states(child2, start)
+
+    assert graph.size() == 3
+    root_children = graph.get_outgoing_states(root)
+    assert len(root_children) == 1 and root_children[0] == child2
+    child2_children = graph.get_outgoing_states(child2)
+    assert len(
+        child2_children) == 2 and child1 in child2_children and child2 in child2_children
+    assert start not in graph
+
+
+def test_merge_bug():
+    root = State(["366"])
+    child1 = State(["367"])
+    child2 = State(["368"])
+
+    graph = Graph(root)
+    graph.add_state(child1)
+    graph.add_state(child2)
+
+    graph.add_edge(root, child1)
+    graph.add_edge(root, root)
+    graph.add_edge(child1, child2)
+    graph.add_edge(child1, child1)
+
+    graph.merge_states(child1, root)
+
+    print(graph.get_outgoing_states(child1))

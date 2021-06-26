@@ -5,13 +5,13 @@ Author: Tommaso Brandirali
 Email: tommaso.brandirali@gmail.com
 """
 
-#****************************************************************************************************
+# ****************************************************************************************************
 # Imports
-#****************************************************************************************************
+# ****************************************************************************************************
 
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # External
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 import linecache
 import os
@@ -19,18 +19,19 @@ import tracemalloc
 
 from itertools import zip_longest
 
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Internal
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 from whatthelog.auto_printer import AutoPrinter
+
 
 def print(msg): AutoPrinter.static_print(msg)
 
 
-#****************************************************************************************************
+# ****************************************************************************************************
 # Utility Functions
-#****************************************************************************************************
+# ****************************************************************************************************
 
 def get_peak_mem(snapshot, key_type='lineno') -> int:
     snapshot = snapshot.filter_traces((
@@ -38,6 +39,7 @@ def get_peak_mem(snapshot, key_type='lineno') -> int:
         tracemalloc.Filter(False, "<unknown>"),
     ))
     return sum(stat.size for stat in snapshot.statistics(key_type))
+
 
 # --- Parser for memory usage data from a tracemalloc snapshot ---
 # Source: https://stackoverflow.com/a/45679009
@@ -66,13 +68,15 @@ def profile_mem(snapshot, key_type='lineno', limit=3):
     total = sum(stat.size for stat in top_stats)
     print(f"Total allocated size: {bytes_tostring(total)}")
 
+
 # --- Parser for human-readable file sizes ---
 # Source: https://web.archive.org/web/20111010015624/http://blogmag.net/blog/read/38/Print_human_readable_file_size
 def bytes_tostring(num):
-    for x in ['bytes','KB','MB','GB','TB']:
+    for x in ['bytes', 'KB', 'MB', 'GB', 'TB']:
         if num < 1024.0:
             return "%3.1f%s" % (num, x)
         num /= 1024.0
+
 
 # --- Block splitter for counting line endings ---
 def blocks(files, size=65536):
@@ -81,7 +85,8 @@ def blocks(files, size=65536):
         if not b: break
         yield b
 
+
 # --- Groups list in groups of n and fills any holes in the end with the fillvalue ---
-def group(iterable, n, fillvalue = None):
+def group(iterable, n, fillvalue=None):
     args = [iter(iterable)] * n
     return list(zip_longest(fillvalue=fillvalue, *args))
