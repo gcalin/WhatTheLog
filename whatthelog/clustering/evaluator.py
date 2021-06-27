@@ -221,9 +221,10 @@ class Evaluator(AutoPrinter):
     def process_templates(traces: List[List[str]], model: MatchableGraph, debug: bool = False) -> int:
 
         count = 0
-        for trace in tqdm(traces, file=sys.stdout, leave=False, disable=not debug):
+        pbar = tqdm(traces, file=sys.stdout, leave=False, disable=not debug)
+        for i, trace in enumerate(pbar):
 
-            if model.match_templates(trace, debug):
+            if model.match_templates(trace):
                 count += 1
 
         return count

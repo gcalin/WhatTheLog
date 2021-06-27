@@ -15,15 +15,14 @@ Email: tommaso.brandirali@gmail.com
 
 import os
 import pickle
-from copy import deepcopy, copy
 import numpy as np
 from pathlib import Path
 import sys
 from sknetwork.utils import edgelist2adjacency
-from sknetwork.hierarchy import LouvainHierarchy, Paris, BaseHierarchy
+from sknetwork.hierarchy import LouvainHierarchy
 from tqdm import tqdm
+from time import time
 from typing import Tuple, List
-from concurrent.futures import ProcessPoolExecutor, as_completed
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Internal
@@ -49,68 +48,98 @@ class StateModelFactory(AutoPrinter):
     default_true_traces_dir = "out/true_traces"
     default_false_traces_dir = "out/false_traces"
     default_pool_size = 8
-    algorithms = {
-        'louvain': LouvainHierarchy,
-        'paris': Paris
-    }
 
-    def __init__(self, tree: PrefixTree, true_traces_dir: str = None, false_traces_dir: str = None):
+    def __init__(self, tree: PrefixTree,
+                 true_traces_dir: str = None,
+                 false_traces_dir: str = None,
+                 skip_cache_build: bool = False):
 
         if not true_traces_dir:
             self.true_traces_dir = project_root.joinpath(self.default_true_traces_dir)
+        else:
+            self.true_traces_dir = true_traces_dir
         if not false_traces_dir:
             self.false_traces_dir = project_root.joinpath(self.default_false_traces_dir)
+        else:
+            self.false_traces_dir = false_traces_dir
 
         self.tree = tree
         self.evaluator = Evaluator(tree, self.true_traces_dir, self.false_traces_dir)
-        self.evaluator.build_cache(debug=True)
+        if not skip_cache_build:
+            self.evaluator.build_cache(debug=True)
 
-    def run_clustering(self, algorithm: str = 'louvain') -> Tuple[AdjacencyGraph, List[Tuple[float, float]]]:
+    def get_dendrogram(self) -> np.ndarray:
         """
-        Performs a clustering of the prefix tree using the given hierarchical algorithm,
-        returns the resulting state model as a StateGraph of merged states.
-
-        :param algorithm: the algorithm to use for clustering
-        :return: the reduced prefix tree state model
-        """
-
-        model = self.algorithms[algorithm]()
-        dendrogram = self.get_dendrogram(model)
-
-        return self.build_from_dendrogram_parallel_eval(dendrogram)
-
-    def get_dendrogram(self, model: BaseHierarchy) -> np.ndarray:
-        """
-        Builds and returns the dendrogram of the base tree using the input algorithm.
-        :param model: the sknetwork hierarchical algorithm to use
+        Builds and returns the dendrogram of the base tree using the Louvain algorithm.
         :return: a 2d array representing the dendrogram
         """
 
+        model = LouvainHierarchy()
         adj_list = self.tree.get_adj_list(remove_self_loops=True)
         adjacency = edgelist2adjacency(adj_list)
 
-        self.print(f"Running clustering algorithm...")
+        self.print(f"Running Louvain clustering algorithm...")
         return model.fit_transform(adjacency)
 
-    def build_from_dendrogram_parallel_eval(self, dendrogram: np.ndarray)\
-            -> Tuple[AdjacencyGraph, List[Tuple[float, float]]]:
+    def eval_merges(self, dendrogram: np.ndarray, n_merges: int, step: int = 1, debug: bool = False)\
+            -> List[Tuple[float, float, float]]:
         """
-        Creates a state model by recursively merging the Prefix Tree nodes
-        according to the given dendrogram produced by hierarchical clustering.
-
-        Evaluates the accuracies every 200 merges in parallel processes.
-
-        :param dendrogram: the input dendrogram
-        :return: the resulting StateGraph instance and the list of evaluation results
+        Runs the given amount of merges on the graph, based on the given dendrogram,
+        evaluating the model every 'step' merges.
+        Returns a list of evaluation results, where every result is a tuple of:
+            evaluation time, specificity, recall
+        :param dendrogram: the input dendrogram to use for merging
+        :param n_merges: the number of merges to perform
+        :param step: the period to use between each evaluation. 1 means every cycle.
+        :param debug: if True enables logging
+        :return: the list of evaluation results
         """
 
-        tree = deepcopy(self.tree)
-        start_idx = tree.state_indices_by_id[id(tree.start_node)]
-        length = len(tree)
-        futures = []
+        if debug: self.print(f"Running {n_merges} merges...")
+        merges = self.relabel_dendrogram(dendrogram)
         accuracies = []
+        start_idx = self.tree.get_state_index_by_id(id(self.tree.start_node))
+        pbar = tqdm(range(n_merges), file=sys.stdout, leave=False, disable = not debug)
+        for i in pbar:
+
+            if i >= len(merges): break
+
+            dest, source = merges[i]
+            if dest not in self.tree or source not in self.tree:
+                continue
+            if dest == start_idx or source == start_idx:
+                continue
+
+            self.tree.full_merge_states(self.tree.states[dest], self.tree.states[source])
+
+            if i % step == 0:
+                start_time = time()
+                specificity, recall = self.eval_model(self.evaluator)
+                time_delta = round(time() - start_time, 5)
+                accuracies.append((time_delta, specificity, recall))
+
+        return accuracies
+
+    def merge_full(self, dendrogram: np.ndarray):
+
+        merges = self.relabel_dendrogram(dendrogram)
+        self.print(f"Running {len(merges)} merges...")
+        start_idx = self.tree.get_state_index_by_id(id(self.tree.start_node))
+        pbar = tqdm(merges, file=sys.stdout, leave=False)
+        for merge in pbar:
+
+            dest, source = merge
+            if dest not in self.tree or source not in self.tree:
+                continue
+            if dest == start_idx or source == start_idx:
+                continue
+
+            self.tree.full_merge_states(self.tree.states[dest], self.tree.states[source])
+
+    def relabel_dendrogram(self, dendrogram: np.ndarray) -> list:
 
         # Relabel nodes in the dendrogram
+        length = len(self.tree)
         merged_states = {}
         merges = []
         self.print("Relabeling merges in dendrogram...")
@@ -124,86 +153,20 @@ class StateModelFactory(AutoPrinter):
             merges.append((dest_index, source_index))
             merged_states[length + count] = dest_index
 
-        self.print(f"Merging {len(merges)} states...")
-        with ProcessPoolExecutor(self.default_pool_size) as pool:
-            pbar = tqdm(merges, file=sys.stdout, leave=False)
-            for count, merge in enumerate(pbar):
-
-                dest, source = merge
-                # self.print(f"Merging {source} into {dest}")
-                if dest not in tree or source not in tree:
-                    continue
-
-                if dest == start_idx or source == start_idx:
-                    continue
-
-                if tree.states[dest].is_terminal or tree.states[source].is_terminal:
-                    continue
-
-                tree.full_merge_states(tree.states[dest], tree.states[source])
-
-                if count % 100 == 0:
-                    tree_copy: AdjacencyGraph = deepcopy(tree)
-                    evaluator_copy: Evaluator = copy(self.evaluator)
-                    evaluator_copy.update(tree_copy)
-                    futures.append(pool.submit(self.eval_model, evaluator_copy))
-
-            self.print(f"Completing evaluation of {len(futures)} futures...")
-            for _ in tqdm(as_completed(futures), total=len(futures), file=sys.stdout, leave=False):
-                pass
-
-        for x in futures:
-            accuracies.append(x.result())
-
-        return tree, accuracies
-
-    def build_from_dendrogram_linear_eval(self, dendrogram: np.ndarray) \
-            -> Tuple[AdjacencyGraph, List[Tuple[float, float]]]:
-        """
-        Creates a state model by recursively merging the Prefix Tree nodes
-        according to the given dendrogram produced by hierarchical clustering.
-
-        Evaluates the accuracies every 200 merges.
-
-        :param dendrogram: the input dendrogram
-        :return: the resulting StateGraph instance and the list of evaluation results
-        """
-
-        tree = deepcopy(self.tree)
-        length = len(tree)
-        merged_states = {}
-        accuracies = []
-
-        # TODO: use evaluator to merge until threshold fitness
-        self.print("Merging states...")
-        pbar = tqdm(dendrogram, file=sys.stdout, leave=False)
-        for count, merge in enumerate(pbar):
-
-            merge = merge.tolist()
-            dest, source = int(merge[0]), int(merge[1])
-            dest_index = dest if dest < length else merged_states[dest]
-            source_index = source if source < length else merged_states[source]
-
-            tree.merge_states(tree.states[dest_index], tree.states[source_index])
-            merged_states[length + count] = dest_index
-
-            if count % 200 == 0:
-                self.evaluator.update(tree)
-                accuracies.append(self.eval_model(self.evaluator))
-
-        return tree, accuracies
+        return merges
 
     @staticmethod
-    def eval_model(evaluator: Evaluator) -> Tuple[float, float]:
+    def eval_model(evaluator: Evaluator, debug: bool = False) -> Tuple[float, float]:
         """
         Worker function to evaluate specificity, recall and size of the given model.
         Intended to be used in parallel subprocesses.
         :param evaluator: the Evaluator instance to use for evaluation
+        :param debug: if True enables logging
         :return: a tuple of specificity and recall
         """
 
-        specificity = evaluator.calc_specificity()
-        recall = evaluator.calc_recall()
+        specificity = evaluator.calc_specificity(debug)
+        recall = evaluator.calc_recall(debug)
         return specificity, recall
 
     @staticmethod

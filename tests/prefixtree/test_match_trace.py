@@ -125,8 +125,8 @@ def test_match_trace_root(state_tree, traces_t0):
         # As long as the root is not terminal, no path should exist
         assert not state_tree.match_trace(t), "Incorrectly matched a non-terminal path"
 
-        # Add a terminal state to the children of the root
-        state_tree.add_child(State(["terminal"], True), t0)
+        # Make t0 terminal
+        t0.is_terminal = True
 
         # There should now be a matching path that ends in a terminal state
         assert state_tree.match_trace(t, debug=True), "Failed to match the first line to the root"
@@ -149,10 +149,10 @@ def test_match_trace_traversal_no_terminal_1(state_tree, traces_t1):
     t0 = state_tree.get_children(state_tree.get_root())[0]
     t1 = state_tree.get_children(t0)[1]
 
-    state_tree.add_child(State(["terminal"], True), t1)
+    t1.is_terminal = True
 
     for count, t in enumerate(traces_t1):
-        assert state_tree.match_trace(t), "Failed multi-state traversal"
+        assert state_tree.match_trace(t, True), "Failed multi-state traversal"
 
 
 def test_match_trace_fail_traversal_2(state_tree, traces_t2):
@@ -182,8 +182,7 @@ def test_match_trace_single_traversal_2(state_tree, traces_t2):
 
     t0 = state_tree.get_children(state_tree.get_root())[0]
     t2 = state_tree.get_children(t0)[0]
-
-    state_tree.add_child(State(["terminal"], True), t2)
+    t2.is_terminal = True
 
     for count, t in enumerate(traces_t2):
         assert state_tree.match_trace(t), "Failed multi-state traversal"
@@ -217,8 +216,7 @@ def test_match_trace_traversal_3(state_tree, traces_t3):
     t0 = state_tree.get_children(root)[0]
     t2 = state_tree.get_children(t0)[0]
     t3 = state_tree.get_children(t2)[0]
-
-    state_tree.add_child(State(["terminal"], True), t3)
+    t3.is_terminal = True
 
     for count, t in enumerate(traces_t3):
         assert state_tree.match_trace(t), "Failed multi-state traversal"

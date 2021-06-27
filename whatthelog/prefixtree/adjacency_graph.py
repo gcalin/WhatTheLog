@@ -1,7 +1,8 @@
+from collections import Iterable
 from typing import List, Union, Dict, Tuple
 
 from whatthelog.exceptions import StateAlreadyExistsException, \
-    StateDoesNotExistException, NonDeterminismException, InvalidEdgeException
+    StateDoesNotExistException, InvalidEdgeException
 from whatthelog.prefixtree.matchable_graph import MatchableGraph
 from whatthelog.prefixtree.edge_properties import EdgeProperties
 from whatthelog.prefixtree.state import State
@@ -9,7 +10,7 @@ from whatthelog.prefixtree.state_properties import StateProperties
 from whatthelog.syntaxtree.syntax_tree import SyntaxTree
 
 
-class AdjacencyGraph(MatchableGraph):
+class AdjacencyGraph(MatchableGraph, Iterable):
     """
     Class implementing a graph
     """
@@ -50,6 +51,30 @@ class AdjacencyGraph(MatchableGraph):
         if state_id not in self.state_indices_by_id:
             raise StateDoesNotExistException()
         return self.states[self.state_indices_by_id[state_id]]
+
+    def get_state_index_by_id(self, state_id: int):
+        """
+        Method to fetch the state object from its hash.
+        :param state_id: the hash of the state to fetch
+        :return: the state object
+        """
+        if state_id not in self.state_indices_by_id:
+            raise StateDoesNotExistException()
+        return self.state_indices_by_id[state_id]
+
+    def get_outgoing_props(self, state: State) -> Union[List[EdgeProperties], None]:
+        """
+        Method to get outgoing edges of a state.
+
+        :param state: State to get outgoing edges for
+        :return: List of outgoing edges from state.
+        If state does not exist return None.
+        """
+        if state in self:
+            results = self.get_outgoing_states(state)
+            return [EdgeProperties.parse(result.properties) for result in results]
+        else:
+            return None
 
     def add_state(self, state: State) -> None:
         """
@@ -104,13 +129,6 @@ class AdjacencyGraph(MatchableGraph):
 
         return True
 
-    def size(self):
-        """
-        Method to get the size of the graph.
-        :return: Number of states
-        """
-        return len(self.states)
-
     def get_outgoing_states(self, state: State) -> List[State]:
         """
         Method to get outgoing states of a state.
@@ -141,7 +159,7 @@ class AdjacencyGraph(MatchableGraph):
 
     def get_incoming_states(self, state: State):
         """
-        Method to get outgoing states of a state.
+        Method to get incoming states of a state.
         :param state: State to get outgoing states for
         :return: List of outgoing edges from state.
         If state does not exist raises StateDoesNotExistException.
@@ -186,8 +204,7 @@ class AdjacencyGraph(MatchableGraph):
         else:
             self.outgoing_edges[start][end].passes += passes
 
-
-    def full_merge_states(self, s1: State, s2: State) -> State:
+    def full_merge_states(self, s1: State, s2: State):
         """
         Fully merges two states and removes non-determinism.
         :param s1: One of the two states to merge.
@@ -201,34 +218,11 @@ class AdjacencyGraph(MatchableGraph):
         # Trivially merge the states
         self.merge_states(s1, s2)
 
-        # Remove non-determinism in the merged state's children by merging them.
-        new_state = self.determinize(s1)
-
-        return new_state
-
-    def full_merge_states_with_children(self, state: State, children_indices: List[int] = None) -> State:
-        """
-        Merges all the children of a state into the current state.
-        :param state: the state to merge
-        :return: the merged state
-        """
-        if state not in self:
-            raise StateDoesNotExistException()
-        if children_indices is not None:
-            print(children_indices)
-        # Trivially merge all children into target state.
-        outgoing_states = self.get_outgoing_states_not_self(state)
-        for i, outgoing in enumerate(outgoing_states):
-            if children_indices is not None:
-                if i in children_indices and outgoing.is_terminal is False:
-                    self.merge_states(state, outgoing)
-            else:
-                self.merge_states(state, outgoing)
-
-        # Remove non-determinism in the merged state's children by merging them.
-        new_state = self.determinize(state)
-
-        return new_state
+        # Recursively remove non-determinism around the merged state.
+        self.determinize(s1)
+        # for parent in self.get_incoming_states_not_self(s1):
+        #     if parent in self:
+        #         self.determinize(parent)
 
     def merge_states(self, state1: State, state2: State) -> None:
         """
@@ -236,6 +230,7 @@ class AdjacencyGraph(MatchableGraph):
         :param state1: The new 'merged' state
         :param state2: The state that will be deleted and which properties will be passed to state 1
         """
+
         props = state1.properties.log_templates.copy()
 
         for temp in state2.properties.log_templates:
@@ -259,20 +254,33 @@ class AdjacencyGraph(MatchableGraph):
         self.change_parent_of_children(
             state2, state1)
 
-        self.change_children_of_parents(
+        self.change_child_of_parents(
             state2, state1)
 
-        # self.print(f"Deleting state {self.state_indices_by_id[id(state2)]}")
         del self.states[self.state_indices_by_id[id(state2)]]
-        if state2 in self.outgoing_edges:
-            del self.outgoing_edges[state2]
-        if state2 in self.incoming_edges:
-            del self.incoming_edges[state2]
         del self.state_indices_by_id[id(state2)]
         del state2
 
+    def determinize(self, state: State):
+        """
+        Checks the given state's children for non-determinism.
+        If any duplicates are found, merges them
+        and recursively checks their children for non-determinism.
+        :param state: the state to determinize
+        :return:
+        """
+
+        assert state in self, "State not in self"
+        duplicates = self.__get_equivalent_states(self.get_outgoing_states_not_self(state))
+        while duplicates:
+
+            s1, s2 = duplicates
+            self.full_merge_states(s1, s2)
+
+            if state not in self: break
+            duplicates = self.__get_equivalent_states(self.get_outgoing_states_not_self(state))
+
     def change_parent_of_children(self, old_parent: State, new_parent: State) -> None:
-        # self.print(f"Moving children of {self.state_indices_by_id[id(old_parent)]} to {self.state_indices_by_id[id(new_parent)]}")
         children = self.get_outgoing_states(old_parent)
         for child in children:
             old_edge = self.incoming_edges[child].pop(old_parent)
@@ -288,8 +296,7 @@ class AdjacencyGraph(MatchableGraph):
         if old_parent in self.outgoing_edges:
             del self.outgoing_edges[old_parent]
 
-    def change_children_of_parents(self, old_child: State, new_child: State) -> None:
-        # self.print(f"Moving parents of {self.state_indices_by_id[id(old_child)]} to {self.state_indices_by_id[id(new_child)]}")
+    def change_child_of_parents(self, old_child: State, new_child: State) -> None:
         parents = self.get_incoming_states(old_child)
         for parent in parents:
             old_edge = self.outgoing_edges[parent].pop(old_child)
@@ -305,43 +312,15 @@ class AdjacencyGraph(MatchableGraph):
         if old_child in self.incoming_edges:
             del self.incoming_edges[old_child]
 
-    def determinize(self, state: State) -> State:
-        assert state in self, "State not in self"
-        new_state, changed = self.merge_equivalent_children(state)
-
-        # Get the current state's parent
-        parents = self.get_incoming_states_not_self(new_state)
-
-        # For each parent
-        # TODO: Dont include self in parents in case of self loops
-        while len(parents) > 0:
-            # Remove non-determinism in the parent
-            parent = parents.pop(0)
-            if parent in self:
-                current, changed = self.merge_equivalent_children(parent)
-
-                # If a change occurred, update the list of parents
-                if changed and current in self:
-                    new_state = current
-                    parents = self.get_incoming_states_not_self(current)
-
-        return new_state
-
-    def merge_equivalent_children(self, current: State) -> Tuple[State, bool]:
+    def merge_equivalent_children(self, current: State):
         """
         Merge all equivalent children, such that the resulting automaton remains deterministic while merging.
         :param current: The state of which we want to merge the children
         """
-        merged: bool = False
-        # self.print(f"Determinizing children of {self.state_indices_by_id[id(current)]}")
-
-        # Get all the children of the current node
-        # TODO: Refactor duplicate lines
-        children = self.get_outgoing_states_not_self(current)
 
         # Get the log templates
-        children_templates: List[List[str]] = list(
-            map(lambda x: x.properties.log_templates, children))
+        children = self.get_outgoing_states_not_self(current)
+        children_templates: List[List[str]] = [x.properties.log_templates for x in children]
 
         # Get a list of duplicate states
         # Two states are duplicates if they have any template in common
@@ -360,7 +339,6 @@ class AdjacencyGraph(MatchableGraph):
             if s1 is current:
                 current = s2
             self.merge_states(s2, s1)
-            merged = True
 
             # Update the children and duplicates list
             children = self.get_outgoing_states(current)
@@ -380,25 +358,45 @@ class AdjacencyGraph(MatchableGraph):
                 if child in self:
                     self.merge_equivalent_children(child)
 
-        return current, merged
+    def get_adj_list(self, remove_self_loops: bool = False, as_strings: bool = False) \
+            -> Union[List[Tuple[int, int, float]], List[str]]:
+        """
+        Returns an adjacency list representing the prefix tree, as a list of tuples in the form:
+            (edge_start, edge_end, edge_weight).
 
-    def match_log_template_trace(self, trace: List[str]) -> bool:
-        node = self.start_node
+        Each edge's weight is the frequency with which that edge is used from its parent,
+        in other words: if node A has two children B and C, with edge AB having 6 passes
+        and edge AC having 4 passes, then edge AB will have weight 0.6 andAC 0.4.
 
-        for name in trace:
-            if node.is_terminal:
-                return False
+        :param remove_self_loops: if True the output will not contain self-looping edges
+                                  (edges with same origin as destination)
+        :param as_strings: if True returns the edges as strings separated by a whitespace
+        :return: the adjacency matrix for the prefix tree
+        """
 
-            outgoing = self.get_outgoing_states(node)
-            outgoing = list(filter(lambda x: self.template_matches_state(name, x), outgoing))
+        adjacency = []
+        for state, children in self.outgoing_edges.items():
 
-            if len(outgoing) > 1:
-                raise NonDeterminismException()
-            elif len(outgoing) == 0:
-                return False
-            else:
-                node = outgoing[0]
-        return True
+            if state == self.start_node: continue
+
+            state_idx = self.state_indices_by_id[id(state)]
+            edges = []
+            for child, props in children.items():
+
+                child_idx = self.state_indices_by_id[id(child)]
+                if remove_self_loops and child_idx == state_idx: continue
+
+                edges.append((child_idx, props.passes))
+
+            total = sum(i for _, i in edges)
+
+            for child_idx, passes in edges:
+                if as_strings:
+                    adjacency.append(f"{state_idx} {child_idx} {1 - (passes/total)}")
+                else:
+                    adjacency.append((state_idx, child_idx, 1 - (passes/total)))
+
+        return adjacency
 
     def __remove_singular_loops(self) -> None:
         """
@@ -454,9 +452,18 @@ class AdjacencyGraph(MatchableGraph):
                 stack.append((node, been.copy()))
 
     @staticmethod
-    def template_matches_state(template: str,
-                               state: State) -> bool:
-        return template in state.properties.log_templates
+    def __get_equivalent_states(target_states: List[State]) -> Union[Tuple[State, State], None]:
+        """
+        Find equivalent states in a given list, or None if none found.
+        Equivalent states are defined as having at least one log template in common.
+        :param target_states: the list of states to search for equivalents.
+        :return: A tuple of equivalent states if any found, None otherwise.
+        """
+
+        generator = ((x, y) for x in target_states for y in target_states if x != y)
+        for x, y in generator:
+            if set(x.properties.log_templates) & set(y.properties.log_templates):
+                return x, y
 
     @staticmethod
     def __equivalence_index(target_list: List[List[str]],
@@ -483,3 +490,28 @@ class AdjacencyGraph(MatchableGraph):
 
     def __len__(self):
         return len(self.states)
+
+    def __iter__(self):
+        return TreeIterator(self)
+
+#****************************************************************************************************
+# Prefix Tree Iterator
+#****************************************************************************************************
+
+class TreeIterator:
+    """
+    Iterator class for the tree.
+    Return states in a Breadth-First Search.
+    """
+
+    def __init__(self, graph: AdjacencyGraph):
+        self.graph = graph
+        self.indices = list(graph.states.keys())
+        self.current = self.indices.pop(0)
+
+    def __next__(self) -> State:
+
+        if not self.indices:
+            raise StopIteration
+
+        return self.graph.states[self.indices.pop(0)]

@@ -17,14 +17,13 @@ def tree() -> PrefixTree:
         PROJECT_ROOT.joinpath("resources/config.json"))
     return tree
 
-
 def test_one_trace(tree: PrefixTree):
     traces_path = "tests/resources/traces_single"
 
     with open(PROJECT_ROOT.joinpath(traces_path).joinpath("xx1"), 'r') as file:
         lines = len(file.readlines())
 
-    assert len(tree) == lines + 2
+    assert len(tree) == lines + 1
 
     root = tree.get_root()
     assert root.properties.log_templates == [""]
@@ -78,7 +77,7 @@ def test_remove_trivial_loops_single_file():
         PROJECT_ROOT.joinpath(traces_path),
         PROJECT_ROOT.joinpath("resources/config.json"),
         True)
-    assert len(tree) == 14  # 12 + root + terminal
+    assert len(tree) == 13  # 12 + root
 
 
 def test_remove_trivial_loops_several():
@@ -88,7 +87,7 @@ def test_remove_trivial_loops_several():
         PROJECT_ROOT.joinpath("resources/config.json"),
         True)
 
-    assert len(tree) == 41  # 35 + root + terminal * 5
+    assert len(tree) == 36  # 35 + root
 
 
 

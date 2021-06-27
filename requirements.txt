@@ -6,3 +6,4 @@ networkx~=2.5.1
 matplotlib~=3.4.1
 scikit-network~=0.23.1
 numpy~=1.20.2
+func-timeout~=4.3.5

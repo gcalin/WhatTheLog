@@ -78,6 +78,3 @@ resources/prefixtree.png
 # Temporary Files
 temp/
 *.backup
-
-# Test script
-scripts/test.py
