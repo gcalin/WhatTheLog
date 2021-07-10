@@ -74,19 +74,6 @@ def graph_2():
     return graph
 
 
-def test_get_state_by_id(graph: Graph):
-    state = graph.states[0]
-
-    assert graph.get_state_by_id(id(state)) == state
-
-
-def test_get_state_by_hash_incorrect(graph: Graph):
-    state = State(["other"])
-
-    with pytest.raises(StateDoesNotExistException):
-        graph.get_state_by_id(id(state))
-
-
 def test_add_state(graph: Graph):
     new_state = State(["5"])
 
@@ -95,7 +82,6 @@ def test_add_state(graph: Graph):
 
     assert len(graph.states) == 6
     assert new_state in graph.states.values()
-    assert graph.get_state_by_id(id(new_state)) == new_state
 
 
 def test_add_state_properties_pointers():
@@ -160,8 +146,6 @@ def test_merge_states(graph: Graph):
 
     assert len(graph.states) == 4
     assert state1.properties.log_templates == ["1", "3"]
-    assert graph.state_indices_by_id[id(state1)] == 1
-    assert id(state3) not in graph.state_indices_by_id.keys()
     assert graph.get_outgoing_states(state1)[0] == state1
 
 
@@ -174,8 +158,6 @@ def test_merge_states2(graph: Graph):
 
     assert len(graph.states) == 4
     assert state3.properties.log_templates == ["3", "0"]
-    assert graph.state_indices_by_id[id(state3)] == 3
-    assert id(state0) not in graph.state_indices_by_id.keys()
     assert graph.states[1] in graph.get_outgoing_states(state3)
     assert state3 not in graph.get_outgoing_states(state3)
     assert graph.get_outgoing_states(graph.states[1])[0] == state3
@@ -190,8 +172,6 @@ def test_merge_states3(graph: Graph):
 
     assert len(graph.states) == 4
     assert state2.properties.log_templates == ["2", "4"]
-    assert graph.state_indices_by_id[id(state2)] == 2
-    assert id(state4) not in graph.state_indices_by_id.keys()
     assert state2 in graph.get_outgoing_states(graph.states[0])
 
 

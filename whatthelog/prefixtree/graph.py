@@ -65,16 +65,6 @@ class Graph(AutoPrinter):
         assert inc == total
         return total
 
-    def get_state_by_id(self, state_id: int):
-        """
-        Method to fetch the state object from its hash.
-        :param state_id: the hash of the state to fetch
-        :return: the state object
-        """
-        if state_id not in self.states:
-            raise StateDoesNotExistException()
-        return self.states[state_id]
-
     def add_state(self, state: State) -> None:
         """
         Method to add a new state to the graph.

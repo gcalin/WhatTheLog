@@ -4,20 +4,22 @@ from whatthelog.exceptions import InvalidTreeException
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 from whatthelog.prefixtree.state import State
 
+
 @pytest.fixture()
 def tree():
     return PrefixTree(State(["root"]))
 
 
 def test_add_child(tree: PrefixTree):
-
     root = tree.get_root()
     state = State(["state1"])
     tree.add_child(state, root)
 
     assert len(tree) == 2
-    assert len(tree.outgoing_edges) == 1 and len(tree.outgoing_edges[root]) == 1
-    assert len(tree.incoming_edges) == 1 and len(tree.incoming_edges[state]) == 1
+    assert len(tree.outgoing_edges) == 1 and len(
+        tree.outgoing_edges[root]) == 1
+    assert len(tree.incoming_edges) == 1 and len(
+        tree.incoming_edges[state]) == 1
 
     assert len(tree.get_children(root)) == 1
     assert tree.get_children(root)[0] == state
@@ -71,27 +73,6 @@ def test_get_parent_not_in_tree(tree: PrefixTree):
 
 def test_get_parent_of_root(tree: PrefixTree):
     assert tree.get_parent(tree.get_root()) is None
-
-
-def test_add_branch(tree: PrefixTree):
-    other = PrefixTree(State(["other"]))
-    child1 = State(["child1"])
-    other.add_child(child1, other.get_root())
-
-    tree.add_branch(other.get_root(), other, tree.get_root())
-
-    assert len(tree.get_children(tree.get_root())) == 1
-    assert len(tree.get_children(tree.get_children(tree.get_root())[0])) == 1
-
-
-def test_merge(tree: PrefixTree):
-    tree.add_child(State(["child1"]), tree.get_root())
-    other = PrefixTree(tree.get_root())
-    other.add_child(State(["child2"]), other.get_root())
-
-    tree.merge(other)
-
-    assert len(tree.get_children(tree.get_root())) == 2
 
 
 def test_merge_complex(tree: PrefixTree):
