@@ -40,6 +40,31 @@ class Graph(AutoPrinter):
         if terminal_node is not None:
             self.add_state(terminal_node)
 
+    def get_number_of_nodes(self):
+        """
+        Method to get the number of nodes in the graph.
+
+        :return: The number of nodes in the graph.
+        """
+        return len(self.states)
+
+    def get_number_of_transitions(self):
+        """
+        Method to ge the number of transitions in the graph.
+
+        :return: The number of transitions.
+        """
+        total = 0
+        for k in self.outgoing_edges:
+            total += len(self.outgoing_edges[k])
+
+        inc = 0
+        for i in self.incoming_edges:
+            inc += len(self.incoming_edges[i])
+
+        assert inc == total
+        return total
+
     def get_state_by_id(self, state_id: int):
         """
         Method to fetch the state object from its hash.

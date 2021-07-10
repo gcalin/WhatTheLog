@@ -20,25 +20,28 @@ def main():
     positive_traces, negative_traces = DatasetFactory.get_evaluation_traces(st, PROJECT_ROOT.joinpath("resources/data"))
     print("Finished reading positive and negative traces..")
 
+    # pt = PrefixTreeFactory().get_prefix_tree(PROJECT_ROOT.joinpath("resources/data/traces"), PROJECT_ROOT.joinpath("resources/config.json"), unique_graph=False)
     pt = PrefixTreeFactory().unpickle_tree(PROJECT_ROOT.joinpath("resources/prefix_tree.pickle"))
 
-    # new_tree = copy.deepcopy(pt)
-
+    print(pt.get_number_of_nodes(), pt.get_number_of_transitions())
+    #
+    # # new_tree = copy.deepcopy(pt)
+    #
     ev = Evaluator(pt, st, positive_traces, negative_traces)
-
-    print(ev.evaluate())
-    #
-    start = pt.start_node
-
-    for _ in range(40):
-        first = pt.get_outgoing_states(start)[0]
-        pt.full_merge_states_with_children(first, set())
-
     #
     print(ev.evaluate())
-
-    # print(pt.get_outgoing_states(first))
-    Visualizer(pt).visualize("finaltree.png")
+    # #
+    # start = pt.start_node
+    #
+    # for _ in range(40):
+    #     first = pt.get_outgoing_states(start)[0]
+    #     pt.full_merge_states_with_children(first, set())
+    #
+    # #
+    # print(ev.evaluate())
+    #
+    # # print(pt.get_outgoing_states(first))
+    # Visualizer(pt).visualize("finaltree.png")
 
 
 def dfs(pt: Graph):

@@ -24,7 +24,7 @@ class ActionSpace(Space):
 
     def get_valid_actions(self, outgoing_edges: int, entropy_d: int) -> List[int]:
         if entropy_d < 1 and outgoing_edges > 1:
-            return [2]
+            return [0, 2]
         if outgoing_edges == 0:
             return [0]
         if outgoing_edges == 1:

@@ -1,14 +1,20 @@
 import os
 import random
 import sys
+from datetime import timedelta
 from pathlib import Path
+from time import time
+from typing import List
 
-import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas
+import pandas as pd
+
+from whatthelog.syntaxtree.syntax_tree import SyntaxTree
+
 
 sys.path.append(Path(os.path.abspath(__file__)).parent.parent.parent.__str__())
-print(sys.path)
 
 from whatthelog.datasetcreator.dataset_factory import DatasetFactory
 from whatthelog.definitions import PROJECT_ROOT
@@ -17,100 +23,111 @@ from whatthelog.reinforcementlearning.environment import GraphEnv
 from whatthelog.syntaxtree.syntax_tree_factory import SyntaxTreeFactory
 
 
-if __name__ == '__main__':
-    seed = random.randrange(sys.maxsize)
-    random.seed(4)
-    st = SyntaxTreeFactory().parse_file(
-        PROJECT_ROOT.joinpath("resources/config.json"))
+class ReinforcementLearning:
 
-    print("Reading positive and negative traces..")
-    positive_traces, negative_traces = DatasetFactory.get_evaluation_traces(st,
-                                                                            PROJECT_ROOT.joinpath(
-                                                                                "resources/data"))
-    print("Finished reading positive and negative traces..")
+    def __init__(self, alpha: float, gamma: float, epsilon: float,
+                 positive_traces: List[List[str]], negative_traces: List[List[str]],
+                 syntax_tree: SyntaxTree, prefix_tree_pickle_path: str = PROJECT_ROOT.joinpath("resources/prefix_tree.pickle"),):
 
-    # Hyper-parameters
-    alpha = 0.1
-    gamma = 0.6
-    epsilon = 0.1
+        self.alpha = alpha
+        self.gamma = gamma
+        self.epsilon = epsilon
+        self.episodes = 0
 
-    epochs = 100
+        print(f"Creating environment with perfix tree: {prefix_tree_pickle_path}")
+        self.env = GraphEnv(
+            prefix_tree_pickle_path, syntax_tree,
+            positive_traces,
+            negative_traces)
 
-    w_accuracy = 0.66
-    w_size = 0.33
+        self.q_table = np.zeros([self.env.observation_space.n, self.env.action_space.n])
+        precision, recall, f1score, specificity, size = self.env.evaluator.evaluate()
+        print(precision, recall, f1score, specificity, size, self.env.graph.get_number_of_nodes(), self.env.graph.get_number_of_transitions())
 
-    env = GraphEnv(PROJECT_ROOT.joinpath("resources/prefix_tree.pickle"), st,
-                   positive_traces,
-                   negative_traces, w_accuracy, w_size)
-    q_table = np.zeros([env.observation_space.n, env.action_space.n])
+        self.total_rewards = []
+        self.total_f1scores = []
+        self.total_recalls = []
+        self.total_specificities = []
+        self.total_precisions = []
+        self.total_sizes = []
+        self.total_nodes = []
+        self.total_transitions = []
+        self.total_duration = []
+        self.total_steps = []
 
-    total_fitnesses = []
-    total_rewards = []
-    best_fitness = 0
+        self.min_epsilon = 0.1
 
-    for i in range(epochs):
-        state = env.reset()
-        total_reward = 0
-        done = False
+    def run(self, id: int=-1, debug: bool=False):
+        with open(PROJECT_ROOT.joinpath("out/parameters.csv"), "w+") as f:
+            f.write("alpha, epsilon, gamma\n")
+            f.write(str(self.alpha) + ", " + str(self.epsilon) + ", " + str(self.gamma))
+        stop = False
+        prev = 0
+        count = 0
+        steps = 0
 
-        while not done:
-            actions = env.get_valid_actions()
+        while not stop and self.episodes < 3000:
+            start_time = time()
 
-            if random.random() < epsilon:
-                index = random.randint(0, len(actions) - 1)
-                action = actions[index]
+            state = self.env.reset()
+            total_reward = 0
+            done = False
+            steps = 0
+            rewards = []
+            if self.epsilon > self.min_epsilon:
+                self.epsilon -= 0.003
+            while not done and not stop:
+                actions = self.env.get_valid_actions()
+                if random.random() < self.epsilon:
+                    index = random.randint(0, len(actions) - 1)
+                    action = actions[index]
+                else:
+
+                    random.shuffle(actions)
+                    action = max(list(zip(actions, self.q_table[state, actions])),
+                                 key=lambda x: x[1])[0]
+                # print(action, self.epsilon, actions)
+
+                next_state, reward, done, info = self.env.step(action)
+                stop = info["stop"]
+                # print(stop, reward)
+                # print(next_state, reward, done, info)
+
+                total_reward += reward
+
+                old_value = self.q_table[state][action]
+                max_q = np.max(self.q_table[next_state])
+                self.q_table[state][action] = (1 - self.alpha) * old_value + self.alpha * (
+                        reward + self.gamma * max_q)
+                state = next_state
+                steps += 1
+                rewards.append(total_reward)
+
+            if np.abs(steps - prev) <= 1:
+                count += 1
             else:
+                count = 0
+            if count >= 10:
+                stop = True
 
-                random.shuffle(actions)
-                action = max(list(zip(actions, q_table[state, actions])),
-                             key=lambda x: x[1])[0]
+            prev = steps
 
-            next_state, reward, done, info = env.step(action)
+            duration = timedelta(seconds=time() - start_time).total_seconds()
+            # pandas.DataFrame(self.q_table).to_csv(PROJECT_ROOT.joinpath(f"out/q_values/q_values_{self.episodes}"))
+            self.episodes += 1
+            precision, recall, f1score, specificity, size = self.env.evaluator.evaluate()
 
-            total_reward += reward
+            self.total_nodes.append(self.env.graph.get_number_of_nodes())
+            self.total_transitions.append(self.env.graph.get_number_of_transitions())
 
-            old_value = q_table[state][action]
-            max_q = np.max(q_table[next_state])
-            q_table[state][action] = (1 - alpha) * old_value + alpha * (
-                    reward + gamma * max_q)
-            state = next_state
+            self.total_rewards.append(total_reward)
+            self.total_f1scores.append(f1score)
+            self.total_recalls.append(recall)
+            self.total_specificities.append(specificity)
+            self.total_precisions.append(precision)
+            self.total_sizes.append(size)
+            self.total_duration.append(duration)
+            self.total_steps.append(steps)
 
-        fitness = env.evaluator.evaluate_f_measure()
-        total_rewards.append(total_reward)
-        total_fitnesses.append(fitness)
-        if fitness > best_fitness:
-            PrefixTreeFactory().pickle_tree(env.graph, PROJECT_ROOT.joinpath(
-                f"finaltree.pickle"))
-            print(f"saved: fitness: {fitness}")
-            best_fitness = fitness
-
-        print(f"Epoch {i} completed with total reward: {total_reward}.")
-
-    print(pd.DataFrame(q_table))
-    pt = PrefixTreeFactory().unpickle_tree(PROJECT_ROOT.joinpath("finaltree.pickle"))
-    # Visualizer(pt).visualize("finaltree.png")
-
-    plt.rc('axes', labelsize=15)
-    plt.plot(list(range(epochs)), total_rewards)
-    plt.ylabel("Total reward", labelpad=15)
-    plt.xlabel("Epoch", labelpad=15)
-    plt.legend()
-    plt.tight_layout()
-
-    plt.savefig(
-        PROJECT_ROOT.joinpath("out/plots/rewards.png"))
-    plt.show()
-
-    plt.rc('axes', labelsize=15)
-    plt.plot(list(range(epochs)), total_fitnesses)
-    plt.ylabel("Fitness", labelpad=15)
-    plt.xlabel("Epoch", labelpad=15)
-    plt.legend()
-    plt.tight_layout()
-
-    plt.savefig(
-        PROJECT_ROOT.joinpath("out/plots/fitnesses.png"))
-    plt.show()
-
-    pd.DataFrame(q_table).to_csv(PROJECT_ROOT.joinpath("out/q_table.csv"))
-
+            if debug:
+                print(f"Episode {self.episodes} completed with total steps: {self.env.step_count}.")

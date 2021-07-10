@@ -76,22 +76,58 @@ class DatasetFactory:
         # if visualize_tree:
         #     Visualizer(prefix_tree).visualize(name_tree)
 
+    def create_data_set_with_fold(self, traces: List[str], fold: List[str], id: int, path=PROJECT_ROOT.joinpath(f"resources/k_fold_traces")):
+        syntax_tree = SyntaxTreeFactory().parse_file(self.config_file_path)
+        fold = fold.tolist()
 
-    def __create_positive_traces(self, traces_paths: List[str], amount: int) -> None:
+        total_traces = len(traces)
+        fold_size = len(fold)
+        # Create traces
+        for i in fold:
+            traces.remove(i)
+
+        os.mkdir(path.joinpath(f"{id}"))
+        os.mkdir(path.joinpath(f"{id}/traces"))
+        os.mkdir(path.joinpath(f"{id}/positive_traces"))
+        os.mkdir(path.joinpath(f"{id}/negative_traces"))
+
+        for i, trace in enumerate(traces):
+            shutil.copy(trace,
+                        path.joinpath(f"{id}").joinpath(f"traces/xx{i}"))
+
+        assert len(traces) + len(fold) == total_traces
+
+        prefix_tree = PrefixTreeFactory().get_prefix_tree(path.joinpath(f"{id}/traces"),
+                                                          self.config_file_path,
+                                                          unique_graph=True,
+                                                          remove_trivial_loops=False)
+
+        self.__create_positive_traces(fold, int(fold_size / 2), path.joinpath(f"{id}"))
+        self.__create_negative_traces(fold, int(fold_size / 2), syntax_tree, prefix_tree, path=path.joinpath(f"{id}"))
+
+        prefix_tree = PrefixTreeFactory().get_prefix_tree(path.joinpath(f"{id}/traces"),
+                                                          self.config_file_path,
+                                                          unique_graph=True,
+                                                          remove_trivial_loops=False)
+        PrefixTreeFactory().pickle_tree(prefix_tree, path.joinpath(f"{id}/prefix_tree.pickle"))
+
+    def __create_positive_traces(self, traces_paths: List[str], amount: int, path=None) -> None:
+        if path is None:
+            path = self.DATA_PATH
         # Create positive traces
         for i in range(amount):
             rand = random.randint(0, len(traces_paths) - 1)
             shutil.copy(traces_paths[rand],
-                        self.DATA_PATH.joinpath(
+                        path.joinpath(
                             f"positive_traces/positive_xx{i}"))
             traces_paths.remove(traces_paths[rand])
 
     def __create_negative_traces(self, traces_paths: List[str],
                                  amount: int,
                                  syntax_tree: SyntaxTree,
-                                 prefix_tree: PrefixTree) -> None:
+                                 prefix_tree: PrefixTree, path=None) -> None:
         ls = LogScrambler(prefix_tree, syntax_tree)
-        ls.get_negative_traces(amount, traces_paths)
+        ls.get_negative_traces(amount, traces_paths, path=path)
 
     @staticmethod
     def get_evaluation_traces(syntax_tree: SyntaxTree,

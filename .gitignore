@@ -73,7 +73,8 @@ MANIFEST
 resources/traces*
 resources/prefixtree.png
 resources/Results.xlsx
-
+resources/k_fold_traces
+resources/data
 # Temporary Files
 temp/
 *.backup

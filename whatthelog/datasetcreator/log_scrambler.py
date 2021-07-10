@@ -12,7 +12,7 @@ class LogScrambler:
         self.prefix_tree = prefix_tree
         self.syntax_tree = syntax_tree
 
-    def get_negative_traces(self, amount: int, traces: List[str],
+    def get_negative_traces(self, amount: int, traces: List[str], path=None,
                             write_to_file=False) -> None:
         """
 
@@ -20,12 +20,12 @@ class LogScrambler:
         :param traces: List of paths of correct traces
         :return: The negative traces
         """
-
+        if path is None:
+            path = PROJECT_ROOT.joinpath(f"resources/data")
         for i in range(amount):
             rand = random.randint(0, len(traces) - 1)
 
-            output_file = PROJECT_ROOT.joinpath(
-                f"resources/data/negative_traces/negative_xx{i}")
+            output_file = path.joinpath(f"negative_traces/negative_xx{i}")
 
             scripts.log_scrambler.produce_false_trace(traces[rand],
                                                       output_file,

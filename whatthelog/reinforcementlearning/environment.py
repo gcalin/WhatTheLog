@@ -1,7 +1,7 @@
+import copy
 import json
 from typing import List
 
-import copy
 import numpy as np
 import scipy.stats
 from gym import Env
@@ -29,19 +29,17 @@ class GraphEnv(Env):
     }
 
     def __init__(self, prefix_tree_pickle_path: str, syntax_tree: SyntaxTree,
-                 positive_traces: List[List[str]], negative_traces: List[List[str]],
-                 w_accuracy: float, w_size: float):
+                 positive_traces: List[List[str]],
+                 negative_traces: List[List[str]]):
         self.prefix_tree_pickle_path = prefix_tree_pickle_path
         self.positive_traces = positive_traces
         self.negative_traces = negative_traces
-        self.w_accuracy = w_accuracy
-        self.w_size = w_size
 
-        self.graph = PrefixTreeFactory().unpickle_tree(self.prefix_tree_pickle_path)
+        self.graph = PrefixTreeFactory().unpickle_tree(
+            self.prefix_tree_pickle_path)
         self.syntax_tree = syntax_tree
-        self.evaluator = Evaluator(self.graph, syntax_tree, positive_traces, negative_traces,
-                                   weight_accuracy=w_accuracy,
-                                   weight_size=w_size)
+        self.evaluator = Evaluator(self.graph, syntax_tree, positive_traces,
+                                   negative_traces)
 
         self.stack = list()
         self.state_mapping = {}
@@ -64,18 +62,21 @@ class GraphEnv(Env):
         self.entropy_d = None
         self.__set_current_node(self.graph.start_node)
         self.__encode_current_node()
-        self.previous = 0
         self.previous_accuracy = 0
+        self.previous_size = 0
 
-        self.previous_tree = copy.deepcopy(self.graph)
-        self.previous_current_node = self.current_node.state_id
+        self.checkpoint_tree = copy.deepcopy(self.graph)
+        self.checkpoint_current_node = self.current_node.state_id
+
+        self.step_count = 0
 
         for out in self.outgoing:
             self.stack.append(out)
 
     def __set_current_node(self, node: State):
         self.current_node = node
-        outgoing = self.graph.get_outgoing_states_with_edges_no_self_no_terminal(node)
+        outgoing = self.graph.get_outgoing_states_with_edges_no_self_no_terminal(
+            node)
         self.outgoing = [out[0] for out in outgoing]
 
         passes = [out[1].props for out in outgoing]
@@ -85,7 +86,8 @@ class GraphEnv(Env):
         if len(self.frequencies) <= 1:
             entropy = scipy.stats.entropy(self.frequencies)
         else:
-            entropy = 1 / np.log2(len(self.frequencies)) * scipy.stats.entropy(self.frequencies)
+            entropy = 1 / np.log2(len(self.frequencies)) * scipy.stats.entropy(
+                self.frequencies)
         self.entropy_d = GraphEnv.round(entropy)
 
     def __create_state_mapping(self):
@@ -97,13 +99,18 @@ class GraphEnv(Env):
                 self.state_mapping[str(i) + str(j)] = len(self.state_mapping)
 
     def step(self, action: int):
+        self.step_count += 1
+        info = {}
+        done = False
+
         if len(self.stack) == 0:
             done = True
+            info["stop"] = True
         else:
-            done = False
+            info["stop"] = False
 
-        self.previous_tree = copy.deepcopy(self.graph)
-        self.previous_current_node = self.current_node.state_id
+        # self.checkpoint_tree = copy.deepcopy(self.graph)
+        # self.checkpoint_current_node = self.current_node.state_id
 
         if action == Actions.DONT_MERGE.value or self.current_node in self.visited:
             self.visited.add(self.current_node)
@@ -116,61 +123,81 @@ class GraphEnv(Env):
                     self.current_node = next_node
         else:
             if action == Actions.MERGE_ALL.value:
-                self.current_node = self.graph.full_merge_states_with_children(self.current_node, self.visited)
+                self.current_node = self.graph.full_merge_states_with_children(
+                    self.current_node, self.visited)
             elif action == Actions.MERGE_FIRST.value:
                 index = np.argmax(self.frequencies)
-                self.current_node = self.graph.full_merge_states(self.current_node,
-                                                                 self.outgoing[index], self.visited)
+                self.current_node = self.graph.full_merge_states(
+                    self.current_node,
+                    self.outgoing[index], self.visited)
             elif action == Actions.MERGE_SECOND.value:
                 index = np.argsort(self.frequencies, axis=0)[-2]
-                self.current_node = self.graph.full_merge_states(self.current_node,
-                                                                 self.outgoing[index], self.visited)
+                self.current_node = self.graph.full_merge_states(
+                    self.current_node,
+                    self.outgoing[index], self.visited)
             elif action == Actions.MERGE_THIRD.value:
                 index = np.argsort(self.frequencies, axis=0)[-3]
-                self.current_node = self.graph.full_merge_states(self.current_node,
-                                                                 self.outgoing[index], self.visited)
+                self.current_node = self.graph.full_merge_states(
+                    self.current_node,
+                    self.outgoing[index], self.visited)
             elif action == Actions.MERGE_FIRST_TWO.value:
                 indexes = np.argsort(self.frequencies, axis=0)[-2:]
-                self.current_node = self.graph.full_merge_states_with_children(self.current_node, self.visited, indexes)
+                self.current_node = self.graph.full_merge_states_with_children(
+                    self.current_node, self.visited, indexes)
             elif action == Actions.MERGE_LAST_TWO.value:
                 indexes = np.argsort(self.frequencies, axis=0)[:2]
-                self.current_node = self.graph.full_merge_states_with_children(self.current_node, self.visited, indexes)
+                self.current_node = self.graph.full_merge_states_with_children(
+                    self.current_node, self.visited, indexes)
             elif action == Actions.MERGE_FIRST_AND_LAST.value:
                 indexes = np.argsort(self.frequencies, axis=0)
                 indexes = [indexes[0], indexes[-1]]
-                self.current_node = self.graph.full_merge_states_with_children(self.current_node, self.visited, indexes)
+                self.current_node = self.graph.full_merge_states_with_children(
+                    self.current_node, self.visited, indexes)
 
         self.__set_current_node(self.current_node)
 
-        accuracy = self.evaluator.evaluate_f_measure()
+        precision, recall, f1score, specificity, size = self.evaluator.evaluate()
+        accuracy = 0.5 * f1score + 0.5 * specificity
 
         if self.first_step:
             reward = 0
             self.first_step = False
             self.previous_accuracy = accuracy
+            self.previous_size = size
         else:
-            if self.previous_accuracy > accuracy:
-                # negative reward
+            if accuracy < 0.9:
                 reward = accuracy - self.previous_accuracy
+            elif accuracy < self.previous_accuracy:
+                reward = size - self.previous_size
             else:
-                # larger reward for accuracy
-                reward = (accuracy - self.previous_accuracy) * 10 + 1
+                if size > self.previous_size:
+                    reward = (size - self.previous_size) * 10
+                else:
+                    reward = accuracy - self.previous_accuracy
 
         # reward = temp_reward - self.previous
         # self.previous = temp_reward
-        self.previous_accuracy = accuracy
 
+            info.update({
+            "precision": precision,
+            "recall": recall,
+            "f1score": accuracy,
+            "specificity": specificity,
+            "size": size
+        })
         if reward < 0:
-            self.graph = copy.deepcopy(self.previous_tree)
-            self.current_node = self.graph.get_state_by_id(self.previous_current_node)
-
-            self.__set_current_node(self.current_node)
-            # self.outgoing = self.graph.get_outgoing_states_not_self(self.current_node)
-            self.evaluator = Evaluator(self.graph, self.syntax_tree,
-                                       self.positive_traces,
-                                       self.negative_traces,
-                                       weight_accuracy=self.w_accuracy,
-                                       weight_size=self.w_size)
+            # self.graph = copy.deepcopy(self.checkpoint_tree)
+            # self.current_node = self.graph.get_state_by_id(
+            #     self.checkpoint_current_node)
+            #
+            # self.__set_current_node(self.current_node)
+            # # self.outgoing = self.graph.get_outgoing_states_not_self(self.current_node)
+            # self.evaluator.model = self.graph
+            done = True
+            info["stop"] = False
+        else:
+            self.previous_accuracy = accuracy
+            self.previous_size = size
 
         self.stack = list(
             filter(lambda x: x in self.graph and x not in self.visited,
@@ -180,31 +207,25 @@ class GraphEnv(Env):
 
         # highest reward?
 
-        info = {}
 
         return self.__encode_current_node(), reward, done, info
 
     def reset(self):
-        self.previous = 0
+        self.previous_accuracy = 0
+        self.previous_size = 0
+        self.step_count = 0
+
         self.first_step = True
 
-        if len(self.stack) == 0:
-            print("Start over")
-            self.graph = PrefixTreeFactory().unpickle_tree(self.prefix_tree_pickle_path)
-            self.current_node = self.graph.start_node
-
-        else:
-            print("Revert merge")
-            self.graph = copy.deepcopy(self.previous_tree)
-            self.current_node = self.graph.get_state_by_id(self.previous_current_node)
+        self.graph = PrefixTreeFactory().unpickle_tree(
+            self.prefix_tree_pickle_path)
+        self.current_node = self.graph.start_node
 
         self.__set_current_node(self.current_node)
         # self.outgoing = self.graph.get_outgoing_states_not_self(self.current_node)
         self.evaluator = Evaluator(self.graph, self.syntax_tree,
                                    self.positive_traces,
-                                   self.negative_traces,
-                                   weight_accuracy=self.w_accuracy,
-                                   weight_size=self.w_size)
+                                   self.negative_traces)
         self.stack = [] + self.outgoing
         self.visited = set()
 
@@ -226,9 +247,6 @@ class GraphEnv(Env):
             except IndexError:
                 return None
         return node
-
-    def __get_reward(self):
-        return self.evaluator.evaluate()
 
     def __encode_current_node(self) -> int:
         """
@@ -258,7 +276,8 @@ class GraphEnv(Env):
         if self.current_node == self.graph.start_node:
             return [Actions.DONT_MERGE.value]
 
-        return self.action_space.get_valid_actions(len(self.outgoing), self.entropy_d)
+        return self.action_space.get_valid_actions(len(self.outgoing),
+                                                   self.entropy_d)
 
     @staticmethod
     def round(value: float):
