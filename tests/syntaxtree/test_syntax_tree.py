@@ -14,6 +14,7 @@ def test_constructor():
     assert tree.prefix == "[name]"
     assert tree.isRegex == False
 
+
 def test_insert(tree):
     assert len(tree.get_children()) == 0
     tree.insert(SyntaxTree("childNode", "[childNode]", False))

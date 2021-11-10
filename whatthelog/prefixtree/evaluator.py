@@ -67,7 +67,7 @@ class Evaluator:
                  w_accuracy: float = None,
                  w_size: float = None,
                  minimizing: bool = True,
-                 true_trees: List[PrefixTree] = None,
+                 true_traces: List[] = None,
                  false_trees: List[PrefixTree] = None) -> Tuple[float, float, float, float]:
         """
         Evaluates the current model as a weighted sum between the size and the accuracy.
@@ -164,6 +164,25 @@ class Evaluator:
 
         return res
 
+    def calc_specificity_abbadingo(self, abbadingo_traces: List[str], minimizing: bool = False):
+        # Initialize counters
+        tn: int = 0
+        fp: int = 0
+
+        for trace in abbadingo_traces:
+            if self.model.matches_unique_states(trace):
+                fp += 1
+            else:
+                tn += 1
+
+        # Calculate the final result
+        res: float = tn / (tn + fp)
+
+        if minimizing:
+            res = 1 - res
+
+        return res
+
     def calc_recall(self, debug=False, minimizing: bool = False) -> float:
         """
         Calculates the recall of a model on a given directory of traces.
@@ -226,6 +245,25 @@ class Evaluator:
 
         for trace in tree_traces:
             if self.model.matches_unique_states(trace):
+                tp += 1
+            else:
+                fn += 1
+
+        # Calculate the final result
+        res: float = tp / (tp + fn)
+
+        if minimizing:
+            res = 1 - res
+
+        return res
+
+    def calc_recall_abbadingo(self, abbadingo_traces: List[PrefixTree], minimizing: bool = False):
+        # Initialize counters
+        tp: int = 0
+        fn: int = 0
+
+        for trace in abbadingo_traces:
+            if self.model.matches_abbadingo_format(trace):
                 tp += 1
             else:
                 fn += 1

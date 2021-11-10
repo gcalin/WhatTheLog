@@ -290,6 +290,18 @@
               "children": []
             },
             {
+              "name": "TakerOfferIn",
+              "syntax": "(\\s+)Offer\\sin\\:\\s(\\d+)((\\.(\\d+))?)\\/([A-Z]{3})((\\s\\(issuer\\:\\s([A-Za-z0-9]+)\\))?)",
+              "isRegex": true,
+              "children": []
+            },
+            {
+              "name": "TakerOrderIn",
+              "syntax": "(\\s+)order\\sin\\:\\s(\\d+)((\\.(\\d+))?)\\/([A-Z]{3})((\\s\\(issuer\\:\\s([A-Za-z0-9]+)\\))?)",
+              "isRegex": true,
+              "children": []
+            },
+            {
               "name": "TakerConsumingFromOffer",
               "syntax": "Consuming\\sfrom\\soffer\\s[A-Za-z0-9]{64}",
               "isRegex": true,
@@ -656,7 +668,7 @@
         },
         {
           "name": "TryToCancel",
-          "syntax": "Trying\\sto\\scancel\\soffer\\s#[\\d]+",
+          "syntax": "Trying\\sto\\scancel\\soffer\\s#\\d+",
           "isRegex": true,
           "children": []
         },

@@ -28,6 +28,7 @@ from whatthelog.auto_printer import AutoPrinter
 # Syntax Tree
 #****************************************************************************************************
 
+
 @dataclass
 class SyntaxTree(AutoPrinter):
     """
@@ -38,6 +39,7 @@ class SyntaxTree(AutoPrinter):
     name: str
     prefix: str
     isRegex: bool
+    index: int = field(default_factory=lambda: -1)
     __children: List[SyntaxTree] = field(default_factory=lambda: [])
 
     def __post_init__(self):
@@ -82,10 +84,14 @@ class SyntaxTree(AutoPrinter):
         position = re.search(self.__pattern, input)
         if position and position.start() == 0:
 
+            # Remove matching part
             stem = re.sub(self.__pattern, '', input, 1)
 
             if len(self.__children) == 0:
-                return self
+                if len(stem.rstrip()) == 0:
+                    return self
+                else:
+                    return None
 
             for child in self.__children:
 

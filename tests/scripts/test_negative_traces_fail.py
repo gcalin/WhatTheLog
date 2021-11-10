@@ -12,13 +12,10 @@ test_logs_dir = 'tests/resources/testlogs/'
 
 test_logs = [
     'xx1',
-    'xx2',
     'xx3',
     'xx4',
     'xx5',
-    'xx6',
     'xx7',
-    'xx8',
 ]
 
 
@@ -99,5 +96,5 @@ def test_negative_traces() -> None:
             # We make 10 negative traces for every log file, as they are created randomly
             failed += execute_test_on_trace(test_logs_dir + t, state_tree)
 
-    assert failed / total >= 0.9, "Less than 90% of the traces failed"
+    assert failed / total >= 0.9, f"Less than 90% of the traces failed: {failed/total*100}%"
 

@@ -73,25 +73,6 @@ def test_pickle(tree: PrefixTree):
     os.remove(pickle_file_path)
 
 
-def test_remove_trivial_loops_single_file():
-    traces_path = "tests/resources/traces_single"
-    tree = PrefixTreeFactory().get_prefix_tree(
-        PROJECT_ROOT.joinpath(traces_path),
-        PROJECT_ROOT.joinpath("resources/config.json"),
-        True)
-    assert tree.size() == 14  # 12 + root + terminal
-
-
-def test_remove_trivial_loops_several():
-    traces_path = "tests/resources/testlogs"
-    tree = PrefixTreeFactory().get_prefix_tree(
-        PROJECT_ROOT.joinpath(traces_path),
-        PROJECT_ROOT.joinpath("resources/config.json"),
-        True)
-
-    assert tree.size() == 41  # 35 + root + terminal * 5
-
-
 def test_compact_tree_1():
     traces_path = "tests/resources/traces_single"
     tree = PrefixTreeFactory().get_prefix_tree(

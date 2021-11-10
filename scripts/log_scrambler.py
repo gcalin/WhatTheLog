@@ -25,6 +25,7 @@ import tracemalloc
 from tqdm import tqdm
 
 from scripts.match_trace import match_trace
+from whatthelog.exceptions import UnidentifiedLogException
 from whatthelog.prefixtree.graph import Graph
 from whatthelog.prefixtree.prefix_tree import PrefixTree
 
@@ -221,7 +222,6 @@ def produce_false_trace(input_file: str, output_file: str, syntax_tree: SyntaxTr
     # Write to the output file
     with open(output_file, 'w+') as f:
         f.writelines(lines)
-
 
 def main(argv):
     start_time = time()

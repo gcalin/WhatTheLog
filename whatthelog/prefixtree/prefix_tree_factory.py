@@ -48,7 +48,8 @@ class PrefixTreeFactory(AutoPrinter):
                         config_file_path: str,
                         remove_trivial_loops: bool = False,
                         one_state_per_template: bool = False,
-                        syntax_tree: SyntaxTree = None) -> PrefixTree:
+                        syntax_tree: SyntaxTree = None,
+                        abbadingo_format: bool = False) -> PrefixTree:
         """
         Parses a full tree from a set of log traces in a common directory,
         using a user-supplied syntax tree from an input configuration file.
@@ -63,7 +64,8 @@ class PrefixTreeFactory(AutoPrinter):
                                                         config_file_path,
                                                         remove_trivial_loops,
                                                         one_state_per_template=one_state_per_template,
-                                                        syntax_tree=syntax_tree)
+                                                        syntax_tree=syntax_tree,
+                                                        abbadingo_format=abbadingo_format)
 
     @staticmethod
     def pickle_tree(tree: PrefixTree, file: str) -> None:
@@ -92,13 +94,36 @@ class PrefixTreeFactory(AutoPrinter):
             tree = pickle.load(f)
 
         return tree
+    
+    @staticmethod
+    def __generate_prefix_tree_abbadingo(log_dir: str,
+                                         debug: bool) -> PrefixTree:
+        """Script to parse all log traces in a given directory into a FSM.
+        
+        Args:
+            log_dir (str): The directory containing the abbadingo log traces.
+            debug   (bool): Whether or not to display debug information in the console.
+        Raises:
+            NotADirectoryError: [description]
+            FileNotFoundError: [description]
+            NotADirectoryError: [description]
+            UnidentifiedLogException: [description]
+            UnidentifiedLogException: [description]
+
+        Returns:
+            [type]: [description]
+        """
+
+        if not os.path.isdir(log_dir):
+            raise NotADirectoryError("Log directory not found!")
 
     @staticmethod
     def __generate_prefix_tree(log_dir: str,
                                config_file: str,
                                remove_trivial_loops: bool,
                                one_state_per_template: bool = False,
-                               syntax_tree: SyntaxTree = None) -> PrefixTree:
+                               syntax_tree: SyntaxTree = None,
+                               abbadingo_format: bool = False) -> PrefixTree:
         """
         Script to parse log file into prefix tree.
 
@@ -109,9 +134,9 @@ class PrefixTreeFactory(AutoPrinter):
          to unique ids.
         """
 
-        if not os.path.isdir(log_dir):
+        if (not os.path.isdir(log_dir)) and not abbadingo_format:
             raise NotADirectoryError("Log directory not found!")
-        if not os.path.isfile(config_file):
+        if (not os.path.isfile(config_file)) and syntax_tree is None:
             raise FileNotFoundError("Config file not found!")
 
         print("Parsing syntax tree...")
@@ -127,12 +152,20 @@ class PrefixTreeFactory(AutoPrinter):
                                                "terminal": terminal_state}
         print("Parsing traces...")
 
+        if abbadingo_format:
+            # Here we expect a single file to contain all traces.
+            filepath: str = log_dir
+            with open(filepath) as f:
+                lines = f.readlines()[1:]
+            for line in lines:
+                PrefixTreeFactory.__parse_trace_abbadingo_compact(line, prefix_tree, template_dict)
+
+            return prefix_tree
 
         pbar = tqdm(os.listdir(log_dir), file=sys.stdout, leave=False)
         for filename in pbar:
             filepath = str(Path(log_dir).joinpath(filename)).strip()
             if one_state_per_template:
-
                 PrefixTreeFactory.__parse_trace_compact(filepath, syntax_tree, prefix_tree, template_dict)
             else:
                 PrefixTreeFactory.__parse_trace(filepath, syntax_tree, prefix_tree, remove_trivial_loops)
@@ -163,10 +196,46 @@ class PrefixTreeFactory(AutoPrinter):
         return res
 
     @staticmethod
+    def __parse_trace_abbadingo_compact(trace: str,
+                                        prefix_tree: PrefixTree,
+                                        template_dict: Dict[str, State]):
+
+        parent = prefix_tree.get_root()
+        nodes = prefix_tree.get_children(parent)
+        trace_entries: List[str] = trace.rstrip().split(" ")[2:]
+
+        for log_entry in trace_entries:
+            if log_entry in template_dict:
+                exists = False
+                for node in nodes:
+                    if log_entry in node.properties.log_templates:
+                        parent = node
+                        nodes = prefix_tree.get_children(parent)
+                        exists = True
+                        break
+                if not exists:
+                    prefix_tree.add_edge(parent, template_dict[log_entry])
+                    parent = template_dict[log_entry]
+            else:
+                child = State([log_entry])
+                template_dict[log_entry] = child
+                prefix_tree.add_child(child, parent)
+
+                parent = child
+                nodes = prefix_tree.get_children(parent)
+
+        for n in nodes:
+            if n.properties.log_templates[0] == 'terminal':
+                return prefix_tree, template_dict
+        prefix_tree.add_edge(parent, template_dict["terminal"])
+        return prefix_tree, template_dict
+
+    @staticmethod
     def __parse_trace_compact(tracepath: str,
                               syntax_tree: SyntaxTree,
                               prefix_tree: PrefixTree,
-                              template_dict: Dict[str, State]) -> Tuple[PrefixTree, Dict[str, State]]:
+                              template_dict: Dict[str, State]) \
+            -> Tuple[PrefixTree, Dict[str, State]]:
         """
         Function that parses a trace file and modifies the given
         prefix tree to include it.
@@ -182,6 +251,8 @@ class PrefixTreeFactory(AutoPrinter):
 
         with open(tracepath, 'r') as file:
             for log in file:
+                if "Trying to cancel" in log:
+                    x = 13
                 tree = syntax_tree.search(log)
                 if tree is None:
                     raise UnidentifiedLogException(
@@ -233,7 +304,6 @@ class PrefixTreeFactory(AutoPrinter):
 
         with open(tracepath, 'r') as file:
             for log in file:
-
                 tree = syntax_tree.search(log)
                 if tree is None:
                     raise UnidentifiedLogException(

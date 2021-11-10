@@ -284,62 +284,6 @@ class Graph(AutoPrinter):
 
         return True
 
-    # def merge_equivalent_children(self, current: State) -> Tuple[State, bool]:
-    #     """
-    #     Merge all equivalent children, such that the resulting automaton remains deterministic while merging.
-    #     :param current: The state of which we want to merge the children
-    #     """
-    #     merged: bool = False
-    #
-    #     # Get all the children of the current node except possibly itself
-    #     children = self.get_outgoing_states(current)
-    #
-    #     # Get the log templates
-    #     children_templates: List[List[str]] = list(
-    #         map(lambda x: x.properties.log_templates, children))
-    #
-    #     # Get a list of duplicate states
-    #     # Two states are duplicates if they have any template in common
-    #     duplicates = [i for i, x in enumerate(children_templates)
-    #                   if i != self.__equivalence_index(children_templates, x)]
-    #
-    #     has_nondeterminism = len(duplicates) > 0
-    #
-    #     # While there are still duplicates left
-    #     while len(duplicates) > 0:
-    #
-    #         # For each duplicate
-    #         for dup in duplicates:
-    #
-    #             for c in children:
-    #                 # If a child has a common template with the duplicate, merge them
-    #                 if c.is_equivalent_weak(children[dup]) and c is not \
-    #                         children[dup]:
-    #                     if children[dup] is current:
-    #                         current = c
-    #                     self.merge_states(c, children[dup])
-    #                     merged = True
-    #                     break
-    #
-    #         # Update the children and duplicates list
-    #         children = self.get_outgoing_states(current)
-    #         if children:
-    #             children_templates = list(
-    #                 map(lambda x: x.properties.log_templates, children))
-    #             duplicates = [i for i, x in enumerate(children_templates)
-    #                           if
-    #                           i != self.__equivalence_index(children_templates,
-    #                                                         x)]
-    #         else:
-    #             duplicates = []
-    #
-    #     if has_nondeterminism:
-    #         children = self.get_outgoing_states_not_self(current)
-    #         for child in children:
-    #             self.merge_equivalent_children(child)
-    #
-    #     return current, merged
-
     def size(self):
         """
         Method to get the size of the graph.
@@ -476,6 +420,38 @@ class Graph(AutoPrinter):
                 # If it is a terminal node, check if the sequence is empty and if there is a terminal child
                 if state_tree.is_terminal:
                     return len(template_sequence) == 0 and self.has_terminal_child(state_graph)
+
+        return False
+
+    def matches_abbadingo_format(self, log_trace: str):
+        # Only works under the assumption that states in this graph are unique!
+        state_graph: State = self.start_node
+        log_entries: List[str] = log_trace.rstrip().split(" ")[2:]
+
+        current_template: str = log_entries.pop(0)
+
+        while True:
+
+            # Find matching children in the graph
+            found, state_graph, template_sequence = self.matching_children(state_graph, current_template)
+
+            # If there is no child, return false
+            if not found:
+                return False
+
+            # While the current sequence is not empty
+            while len(template_sequence) > 0:
+                # If the next element in the sequence does not match the current tree node
+                current_elem_in_sequence: str = template_sequence.pop(0)
+                prefix_tree_elem: str = current_template
+                if current_elem_in_sequence != prefix_tree_elem:
+                    return False
+
+                # If it is a terminal node, check if the sequence is empty and if there is a terminal child
+                if len(log_entries) == 0:
+                    return len(template_sequence) == 0 and self.has_terminal_child(state_graph)
+
+                current_template: str = log_entries.pop(0)
 
         return False
 

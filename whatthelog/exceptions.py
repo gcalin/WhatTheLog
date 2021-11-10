@@ -6,6 +6,7 @@ class UnidentifiedLogException(Exception):
     message: str = field(default="Log message not found in syntax tree!")
 
 
+
 @dataclass(frozen=True)
 class InvalidTreeException(Exception):
     message: str = field(default="Tree is invalid")

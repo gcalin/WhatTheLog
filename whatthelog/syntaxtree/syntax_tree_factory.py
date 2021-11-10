@@ -32,6 +32,10 @@ class SyntaxTreeFactory(AutoPrinter):
     A factory class for parsing a configuration file into a compiled Prefix Tree.
     """
 
+    def __init__(self, abbadingo_format: bool = False):
+        self.abbadingo_format = abbadingo_format
+        self.terminal_nodes = 0
+
     #================================================================================
     # Parse input
     #================================================================================
@@ -64,5 +68,10 @@ class SyntaxTreeFactory(AutoPrinter):
         tree = SyntaxTree(name, prefix, isRegex)
         for child in children:
             tree.insert(self.__parse(child))
+
+        # Add the number corresponding to the abbadingo format
+        if len(children) == 0 and self.abbadingo_format:
+            tree.index = self.terminal_nodes
+            self.terminal_nodes += 1
 
         return tree
